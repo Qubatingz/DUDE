@@ -6,17 +6,22 @@ Dude is a desktop companion for Windows. He lives on your screen, walks along th
 
 ## Get Dude
 
-1. Download **Dude-for-Windows.zip** from the [Releases](../../releases/latest) page.
-2. Right-click the zip > **Extract All**. Open the **Dude** folder and double-click **Dude.exe**.
-3. If Windows says "Windows protected your PC", click **More info** > **Run anyway**. Dude is new and not code-signed yet.
-4. Open **START HERE.txt** in the same folder for the full guide.
+GitHub builds Dude automatically every time the code changes.
+
+1. Sign in to GitHub, open the [Actions](../../actions/workflows/build-windows.yml) tab, and click the newest green run.
+2. Scroll to **Artifacts** and click **Dude-for-Windows** to download the zip.
+3. Right-click the zip > **Extract All**. Open the folder and double-click **Dude.exe**.
+4. If Windows says "Windows protected your PC", click **More info** > **Run anyway**. Dude is new and not code-signed yet.
+5. Open **START HERE.txt** in the same folder for the full guide.
+
+Each download stays available for 90 days. To make a fresh one, open the Actions tab, pick **Build Dude for Windows**, and click **Run workflow**.
 
 ## Play with him
 
 - Grab him and throw him. He bounces off the screen edges.
 - He walks on your windows. Drag a window while he stands on it.
 - Right-click him, or press **Ctrl+Shift+D**, for his control panel.
-- Hold **Ctrl+Shift+Space** to talk to him with your voice.
+- Press **Ctrl+Shift+Space** and speak to talk to him with your voice.
 - His face sits in the tray near the clock: controls, Studio, jokes, voice, sleep, start with Windows, quit.
 - **Ctrl+Shift+Q** quits him instantly.
 

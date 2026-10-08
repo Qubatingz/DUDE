@@ -1,0 +1,28 @@
+# Builds Dude for Windows on GitHub's machines every time the code changes.
+# Download: Actions tab > newest "Build Dude for Windows" run > Artifacts > Dude-for-Windows.
+name: Build Dude for Windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the icon tool
+        run: npm install --no-save --no-package-lock resedit
+      - name: Build Dude
+        run: bash build-windows.sh
+      - name: Upload Dude
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dude-for-Windows
+          path: dist/Dude/
+          retention-days: 90
+          compression-level: 9
