@@ -1,0 +1,8 @@
+The fonts in this folder are free fonts licensed under the SIL Open Font License, Version 1.1.
+Full license text: https://openfontlicense.org/open-font-license-official-text/
+
+- Patrick Hand, by Patrick Wagesreiter
+- Bagel Fat One, by The Bagel Fat One Project Authors
+- Atkinson Hyperlegible, by the Braille Institute of America
+
+The font files come from the Fontsource project (https://fontsource.org).

@@ -1,0 +1,45 @@
+DUDE - your AI desktop companion
+================================
+
+HOW TO START
+1. Right-click the zip you downloaded > Extract All > Extract.
+   (Don't run him from inside the zip.)
+2. Open the Dude folder and double-click Dude.exe.
+3. Windows will probably say "Windows protected your PC".
+   That happens because Dude is brand new and not signed yet.
+   Click "More info", then "Run anyway".
+4. Dude appears at the bottom of your screen, asks your name,
+   and asks before he looks at anything.
+
+TALK TO HIM
+- Right-click him (or press Ctrl+Shift+D) to open his panel.
+- Type in "Talk to Dude", or press the mic button / Ctrl+Shift+Space and speak.
+- Try: "find the beat I made last week", "how's my laptop doing?",
+  "organize my computer", "what did I work on yesterday?",
+  "remind me to call Eric in 20 minutes".
+
+GIVE HIM A REAL AI BRAIN (optional)
+Without it he understands simple commands. With it he understands normal sentences.
+1. Go to platform.claude.com, sign in, add some credits, and create an API key.
+2. Open his panel > Brain tab > paste the key > Connect.
+The key stays on this laptop, encrypted. You pay Anthropic per use.
+
+PRIVACY: HE ASKS FIRST
+- Access tab: switch on/off what he can see (apps, recent files, memory, folders).
+- In folders he only reads file NAMES, sizes and dates. He never deletes or moves anything.
+- He goes quiet by himself in full-screen apps, music software and video calls.
+- Memory tab > Forget everything wipes his memory.
+
+PLAY
+- Grab him and throw him. He walks on top of your open windows.
+- His face is in the tray near the clock (click the ^ arrow if you don't see it):
+  controls, voice, Studio, check-up, do not disturb, start with Windows, quit.
+- Ctrl+Shift+Q makes him leave instantly.
+
+VOICE INPUT NEEDS
+- A microphone, and Windows Settings > Privacy > Microphone > let desktop apps use it.
+- English speech recognition (Settings > Time & language > Speech).
+
+TO REMOVE HIM
+Quit him from the tray, then delete the Dude folder.
+His settings live in %APPDATA%\Dude (delete that too for a clean slate).
