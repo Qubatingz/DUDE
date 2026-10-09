@@ -9,7 +9,9 @@ const FRIENDLY = {
   winword: 'Word', excel: 'Excel', powerpnt: 'PowerPoint', outlook: 'Outlook', onenote: 'OneNote', code: 'VS Code', explorer: 'File Explorer',
   spotify: 'Spotify', teams: 'Teams', 'ms-teams': 'Teams', zoom: 'Zoom', photoshop: 'Photoshop', illustrator: 'Illustrator', afterfx: 'After Effects',
   'adobe premiere pro': 'Premiere Pro', resolve: 'DaVinci Resolve', obs64: 'OBS', whatsapp: 'WhatsApp', telegram: 'Telegram', discord: 'Discord',
-  reaper: 'REAPER', 'studio one': 'Studio One', bitwig: 'Bitwig', cubase14: 'Cubase', cubase13: 'Cubase', notepad: 'Notepad', capcut: 'CapCut', figma: 'Figma', vlc: 'VLC'
+  reaper: 'REAPER', 'studio one': 'Studio One', bitwig: 'Bitwig', cubase14: 'Cubase', cubase13: 'Cubase', notepad: 'Notepad', capcut: 'CapCut', figma: 'Figma', vlc: 'VLC',
+  claude: 'Claude', chatgpt: 'ChatGPT', cursor: 'Cursor', windowsterminal: 'Terminal', powershell: 'PowerShell', pwsh: 'PowerShell', cmd: 'Command Prompt', devenv: 'Visual Studio',
+  audacity: 'Audacity', canva: 'Canva', steam: 'Steam', netflix: 'Netflix', 'whatsapp.root': 'WhatsApp', protools: 'Pro Tools', 'adobe audition': 'Audition'
 };
 function friendly(exe) {
   const k = (exe || '').toLowerCase();
@@ -21,13 +23,16 @@ function friendly(exe) {
 
 const file = () => path.join(app.getPath('userData'), 'dude-memory.json');
 let M = null;
-function load() { try { M = JSON.parse(fs.readFileSync(file(), 'utf8')); } catch (e) { M = {}; } M.days = M.days || {}; M.opened = M.opened || []; return M; }
+function load() { try { M = JSON.parse(fs.readFileSync(file(), 'utf8')); } catch (e) { M = {}; } M.days = M.days || {}; M.opened = M.opened || []; M.routine = M.routine || {}; return M; }
 function get() { return M || load(); }
 let dirty = false;
 function save() { try { fs.writeFileSync(file(), JSON.stringify(M)); dirty = false; } catch (e) {} }
 setInterval(() => { if (dirty) save(); }, 30000);
 
-const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dkey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const today = () => dkey(new Date());
+// your "day" for routine purposes runs from 5am to 5am, so a 2am session still counts as last night
+const logicalToday = () => dkey(new Date(Date.now() - 5 * 3600e3));
 function dayRec(k) { const m = get(); return m.days[k] || (m.days[k] = { apps: {}, titles: [], talked: 0 }); }
 
 /* called every few seconds with the app in front (only when you allowed app access + memory) */
@@ -52,6 +57,31 @@ function cleanTitle(title, appName) {
 }
 function noteOpened(p) { const m = get(); m.opened = [p].concat(m.opened.filter(x => x !== p)).slice(0, 30); dirty = true; }
 function noteTalk() { dayRec(today()).talked++; dirty = true; }
+
+/* ---------- routine: when you're at the laptop (only while memory is on) ---------- */
+function routineRec(k) { const m = get(); return m.routine[k] || (m.routine[k] = { first: 0, last: 0, active: 0, hours: {}, sites: {} }); }
+function trackPresence(secs) {
+  const k = logicalToday(), r = routineRec(k), now = Date.now();
+  if (!r.first) r.first = now;
+  r.last = now; r.active += secs;
+  const h = new Date().getHours(); r.hours[h] = (r.hours[h] || 0) + secs;
+  const keys = Object.keys(get().routine).sort();
+  while (keys.length > 60) delete get().routine[keys.shift()];
+  dirty = true;
+}
+function trackSite(name, secs) { const r = routineRec(logicalToday()); r.sites[name] = (r.sites[name] || 0) + secs; dirty = true; }
+function routineDays(n) {
+  const out = [];
+  for (let i = n - 1; i >= 0; i--) { const k = dkey(new Date(Date.now() - 5 * 3600e3 - i * 86400e3)); const r = get().routine[k]; if (r) out.push({ key: k, r }); }
+  return out;
+}
+function routineToday() { return get().routine[logicalToday()] || null; }
+function markPattern() { routineRec(logicalToday()).pattern = true; dirty = true; }
+function topApps(n) {
+  const tot = {};
+  for (let i = 0; i < n; i++) { const d = get().days[dkey(new Date(Date.now() - i * 86400e3))]; if (!d) continue; for (const a in d.apps) if (!/^(File Explorer|Desktop|an app)$/.test(a)) tot[a] = (tot[a] || 0) + d.apps[a]; }
+  return Object.entries(tot).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name, s]) => ({ name, hours: s / 3600 }));
+}
 
 function fmtDur(s) { const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return h ? `${h}h ${m}m` : `${m} min`; }
 
@@ -91,6 +121,6 @@ function recentFiles(limit = 6) {
   return out;
 }
 
-function wipe() { M = { days: {}, opened: [] }; save(); }
+function wipe() { M = { days: {}, opened: [], routine: {} }; save(); }
 
-module.exports = { today, friendly, trackApp, noteOpened, noteTalk, lastDay, summary, recentFiles, wipe, fmtDur, save: () => dirty && save() };
+module.exports = { today, logicalToday, friendly, trackApp, noteOpened, noteTalk, lastDay, summary, recentFiles, wipe, fmtDur, trackPresence, trackSite, routineDays, routineToday, markPattern, topApps, save: () => dirty && save() };

@@ -8,6 +8,7 @@ const { spawn, execFile } = require('child_process');
 const settings = require('./settings');
 const files = require('./files');
 const memory = require('./memory');
+const habits = require('./habits');
 const { createBrain } = require('./brain');
 
 app.setAppUserModelId('com.dude.desktoppet');
@@ -105,8 +106,10 @@ async function openPath(p, how) {
 }
 
 /* ================= the brain ================= */
-const brain = createBrain({ settings, files, memory, status, ask, open: openPath, net, emit: (type, payload) => send('dude:' + type, payload) });
+const brain = createBrain({ settings, files, memory, habits, status, ask, open: openPath, net, emit: (type, payload) => send('dude:' + type, payload) });
 ipcMain.handle('dude:chat', (e, text, ctx) => brain.chat(String(text || '').slice(0, 600), ctx || {}));
+ipcMain.handle('dude:thought', (e, req, ctx) => brain.thought(req || {}, ctx || {}));
+ipcMain.handle('dude:habits', () => settings.get().perms.memory ? habits.learned() : { off: true, insights: [] });
 ipcMain.handle('dude:open', async (e, a) => { const f = brain.results.get(a && a.id); if (!f) return 'gone'; return openPath(f.path, a.how === 'show' ? 'show' : 'open'); });
 
 /* ================= settings & permissions ================= */
@@ -220,12 +223,15 @@ function onForeground(line) {
   focus = { exe: f.desk ? '' : (f.exe || ''), title: f.desk ? '' : (f.title || ''), app: f.desk ? 'Desktop' : memory.friendly(f.exe), fullscreen: full, quiet: focus.quiet };
   pushFocus();
 }
-// remember what you worked on (only with app access + memory, and only while you're at the laptop)
+// study your routine and remember what you worked on (only while you're at the laptop).
+// Routine needs Memory on; apps and sites also need "Which app you're using".
+const habitRun = habits.createHabits(ev => send('dude:event', ev));
 setInterval(() => {
   const s = settings.get();
-  if (!s.perms.apps || !s.perms.memory || !focus.exe) return;
-  try { if (powerMonitor.getSystemIdleTime() > 120) return; } catch (e) {}
-  memory.trackApp(focus.exe, focus.title, 5);
+  let idle = 0; try { idle = powerMonitor.getSystemIdleTime(); } catch (e) {}
+  const app = focus.exe ? (focus.app || memory.friendly(focus.exe)) : '';
+  try { habitRun.tick({ idle, app: s.perms.apps ? app : '', title: s.perms.apps ? focus.title : '', appsOn: s.perms.apps, memoryOn: s.perms.memory }); } catch (e) {}
+  if (s.perms.apps && s.perms.memory && focus.exe && idle <= 120) memory.trackApp(focus.exe, focus.title, 5);
 }, 5000);
 
 /* ================= tray ================= */

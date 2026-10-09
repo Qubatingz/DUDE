@@ -4,7 +4,7 @@ DUDE - your AI desktop companion
 HOW TO START
 1. Right-click the zip you downloaded > Extract All > Extract.
    (Don't run him from inside the zip.)
-2. Open the Dude folder and double-click Dude.exe.
+2. Open the folder and double-click Dude.exe.
 3. Windows will probably say "Windows protected your PC".
    That happens because Dude is brand new and not signed yet.
    Click "More info", then "Run anyway".
@@ -18,8 +18,24 @@ TALK TO HIM
   "organize my computer", "what did I work on yesterday?",
   "remind me to call Eric in 20 minutes".
 
+HE GETS TO KNOW YOU
+- He asks you 4 quick questions (what you're building, what you're learning, your dream).
+- He talks FIRST: when you open an app, in the morning, late at night, when you work
+  too long, and a random thought every 10-15 minutes. He stays quiet while you focus.
+- Every morning he asks for today's mission, and checks on it in the evening.
+- English practice: a word of the day, small challenges, better ways to say things.
+- Tap the laughing face on his speech bubble when he's funny, or the thumbs down
+  when he's not. He learns your sense of humor and never repeats a killed joke.
+- Teach tab: change what he talks about, how often, and teach him your own lines
+  ("When I open TikTok, say: Ten minutes, bro").
+- You can also just tell him: "roast me", "motivate me", "word of the day",
+  "I'm overthinking", "talk less", "when I open YouTube, say Tutorial or cats?"
+- If you allow "Which app you're using", he learns your routine on this laptop:
+  when you start, your busiest hour, the apps and sites you live in, late nights.
+
 GIVE HIM A REAL AI BRAIN (optional)
-Without it he understands simple commands. With it he understands normal sentences.
+Without it he understands simple commands. With it he understands normal sentences,
+and his first-to-speak thoughts are written fresh for you, using what he knows about you.
 1. Go to platform.claude.com, sign in, add some credits, and create an API key.
 2. Open his panel > Brain tab > paste the key > Connect.
 The key stays on this laptop, encrypted. You pay Anthropic per use.
@@ -28,7 +44,7 @@ PRIVACY: HE ASKS FIRST
 - Access tab: switch on/off what he can see (apps, recent files, memory, folders).
 - In folders he only reads file NAMES, sizes and dates. He never deletes or moves anything.
 - He goes quiet by himself in full-screen apps, music software and video calls.
-- Memory tab > Forget everything wipes his memory.
+- Memory tab > Forget everything wipes his memory, his routine notes and what you taught him.
 
 PLAY
 - Grab him and throw him. He walks on top of your open windows.

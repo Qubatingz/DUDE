@@ -265,6 +265,11 @@ body{height:100%;margin:0;padding-inline:16px;padding-block:16px;background:var(
 .bubble{position:absolute;left:0;top:0;z-index:1001;max-width:min(250px,72%);padding:8px 13px 9px;background:var(--bubble);color:var(--outline);border:2.5px solid var(--outline);border-radius:16px;font:20px/1.15 var(--font-hand);pointer-events:none;box-shadow:3px 4px 0 rgba(0,0,0,.28);transform-origin:50% 100%}
 .bubble::after{content:"";position:absolute;bottom:-9px;left:var(--tail,50%);width:15px;height:15px;margin-left:-7.5px;background:var(--bubble);border-right:2.5px solid var(--outline);border-bottom:2.5px solid var(--outline);transform:rotate(45deg)}
 .bubble.pop{animation:pop .22s cubic-bezier(.3,1.6,.5,1)}
+.btxt{display:block}
+.bubble .fb{display:flex;gap:5px;justify-content:flex-end;margin:6px -5px -3px 0}
+.bubble .fb button{pointer-events:auto;cursor:pointer;border:2px solid var(--outline);background:#fff;border-radius:999px;font:15px/1 var(--font-ui);padding:3px 9px 4px;box-shadow:1px 2px 0 rgba(0,0,0,.25)}
+.bubble .fb button:hover{background:#fff1bf;transform:translateY(-1px)}
+.bubble .fb button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 @keyframes pop{from{scale:.5;opacity:0}to{scale:1;opacity:1}}
 .badge{position:absolute;left:0;top:0;z-index:1001;padding:3px 8px;border-radius:999px;background:var(--bad);color:#fff;font:700 11px/1 var(--font-ui);letter-spacing:.05em;text-transform:uppercase;pointer-events:none;white-space:nowrap;box-shadow:0 2px 0 rgba(0,0,0,.3)}
 .fx{position:absolute;inset:0;pointer-events:none;z-index:1002;overflow:hidden}
@@ -368,6 +373,9 @@ html.desktop .demo-note{display:none}
 .btn.danger{color:var(--bad-fg);border-color:#e5b5ab}
 .btn.danger.confirm{background:var(--bad);border-color:var(--bad);color:#fff}
 .tip a{color:var(--accent);font-weight:700}
+.teachform{display:flex;flex-direction:column;gap:8px}
+.lasttime div+div{margin-top:4px}
+.card .chips{margin-top:-2px}
 
 /* cards that pop up next to him */
 .card{position:absolute;left:0;top:0;z-index:1003;width:min(330px,86vw);background:var(--paper);color:var(--text);border:2.5px solid var(--outline);border-radius:14px;box-shadow:4px 5px 0 rgba(0,0,0,.28);font:14px/1.4 var(--font-ui);cursor:default;color-scheme:light;overflow:hidden;user-select:text;-webkit-user-select:text}
@@ -463,6 +471,7 @@ html.desktop .studio{bottom:0}
     </header>
     <div class="tabs" role="tablist" aria-label="Control sections">
       <button class="tab on" type="button" role="tab" id="tab-home" data-tab="home" aria-selected="true">Home</button>
+      <button class="tab" type="button" role="tab" id="tab-teach" data-tab="teach" aria-selected="false">Teach</button>
       <button class="tab" type="button" role="tab" id="tab-access" data-tab="access" aria-selected="false">Access</button>
       <button class="tab" type="button" role="tab" id="tab-brain" data-tab="brain" aria-selected="false">Brain</button>
       <button class="tab" type="button" role="tab" id="tab-memory" data-tab="memory" aria-selected="false">Memory</button>
@@ -492,11 +501,12 @@ html.desktop .studio{bottom:0}
           <button class="btn primary" type="submit">Send</button>
         </form>
         <div class="chips">
+          <button class="chip" type="button" data-say="roast me">roast me</button>
+          <button class="chip" type="button" data-say="word of the day">word of the day</button>
+          <button class="chip" type="button" data-say="I'm overthinking">I'm overthinking</button>
+          <button class="chip" type="button" data-say="motivate me">motivate me</button>
           <button class="chip" type="button" data-say="how's my laptop doing?">how's my laptop?</button>
           <button class="chip" type="button" data-say="find my music projects from this week">find my projects</button>
-          <button class="chip" type="button" data-say="organize my computer">organize my computer</button>
-          <button class="chip" type="button" data-say="remind me to drink water in 10 seconds">remind me in 10 sec</button>
-          <button class="chip" type="button" data-say="tell me a joke">tell me a joke</button>
         </div>
         <ol class="chatlog" id="chatLog" aria-label="Conversation"></ol>
       </div>
@@ -542,6 +552,42 @@ html.desktop .studio{bottom:0}
       </div>
     </div>
 
+    <div class="win-body ctrl" data-pane="teach" role="tabpanel" aria-labelledby="tab-teach" hidden>
+      <p class="tip">The more you teach him, the more he sounds like your friend. Everything here stays on this laptop.</p>
+      <div class="sec"><h3 class="sec-label">About you</h3>
+        <div class="two">
+          <label class="fieldwrap"><span class="sub">What you're building</span><input class="field" id="abProject" maxlength="40" placeholder="Your big project" autocomplete="off"></label>
+          <label class="fieldwrap"><span class="sub">What it is</span><input class="field" id="abWhat" maxlength="80" placeholder="e.g. an app for artists" autocomplete="off"></label>
+          <label class="fieldwrap"><span class="sub">Getting better at</span><input class="field" id="abLearning" maxlength="40" placeholder="e.g. English" autocomplete="off"></label>
+          <label class="fieldwrap"><span class="sub">The dream</span><input class="field" id="abDream" maxlength="80" placeholder="Big or small" autocomplete="off"></label>
+        </div>
+      </div>
+      <div class="sec"><div class="sec-head"><h3 class="sec-label">What he talks about</h3><span class="sub">Tap to switch on or off</span></div><div class="chips" id="topicChips"></div></div>
+      <div class="sec"><h3 class="sec-label">When he talks first</h3><div class="chips" id="trigChips"></div></div>
+      <div class="sec">
+        <span class="sec-label" id="intLabel">How often he speaks up</span>
+        <div class="seg" id="interruptSeg" role="radiogroup" aria-labelledby="intLabel">
+          <button type="button" role="radio" data-v="rarely">When something happens</button><button type="button" role="radio" data-v="sometimes">Every 10&#8211;15 min</button><button type="button" role="radio" data-v="often">Every 3&#8211;5 min</button>
+        </div>
+      </div>
+      <div class="sec"><h3 class="sec-label">Teach him a line</h3>
+        <form class="teachform" id="ruleForm" autocomplete="off">
+          <div class="two">
+            <label class="fieldwrap"><span class="sub">When</span><select id="ruleWhen"><option value="app">I open an app</option><option value="morning">Every morning</option><option value="night">Late at night</option><option value="back">I come back</option><option value="anytime">Anytime</option></select></label>
+            <label class="fieldwrap" id="ruleAppWrap"><span class="sub">App or site</span><input class="field" id="ruleApp" maxlength="30" placeholder="e.g. TikTok"></label>
+          </div>
+          <div class="talk"><input id="ruleSay" maxlength="140" placeholder="He says..." aria-label="What he says"><button class="btn primary" type="submit">Teach</button></div>
+        </form>
+        <ul class="mem" id="ruleList"></ul>
+      </div>
+      <div class="sec"><h3 class="sec-label">Things he knows about you</h3>
+        <form class="talk" id="factForm" autocomplete="off"><input id="factIn" maxlength="120" placeholder="e.g. I make beats at night" aria-label="Something about you"><button class="btn primary" type="submit">Add</button></form>
+        <ul class="mem" id="factList"></ul>
+      </div>
+      <div class="sec"><h3 class="sec-label">What he learned by watching</h3><div class="lasttime" id="learnedBox">Studying you...</div></div>
+      <div class="sec"><h3 class="sec-label">Your sense of humor</h3><div class="lasttime" id="tasteBox"></div><span class="sub">Tap &#128514; or &#128078; on his speech bubble and he learns what's funny to you.</span></div>
+    </div>
+
     <div class="win-body ctrl" data-pane="access" role="tabpanel" aria-labelledby="tab-access" hidden>
       <p class="tip"><span class="petName">Dude</span> never looks at your stuff without asking. Everything below starts switched off, except computer health. Switch anything off again whenever you want.</p>
       <p class="demo-note" data-demo>This is the browser demo, so nothing here is real. In the Windows app these switches control what he can see.</p>
@@ -569,10 +615,6 @@ html.desktop .studio{bottom:0}
       </div>
       <label class="fieldwrap"><span class="sec-label">What he calls you</span><input id="userNameIn" class="field" maxlength="24" placeholder="Your name" autocomplete="off"></label>
       <div class="sec">
-        <span class="sec-label" id="intLabel">Interruptions</span>
-        <div class="seg" id="interruptSeg" role="radiogroup" aria-labelledby="intLabel">
-          <button type="button" role="radio" data-v="rarely">Rarely</button><button type="button" role="radio" data-v="sometimes">Sometimes</button><button type="button" role="radio" data-v="often">Often</button>
-        </div>
         <div class="prow"><div class="ptxt"><span class="pname">Do not disturb</span><span class="pdesc">He stays quiet unless something is important. He also goes quiet by himself during full-screen apps, music software and video calls.</span></div><button class="switch" type="button" role="switch" id="dndSw" aria-checked="false" aria-label="Do not disturb"></button></div>
       </div>
       <div class="sec">
@@ -894,7 +936,7 @@ html.desktop .studio{bottom:0}
 
   <div class="badge" id="badge" hidden></div>
   <div class="card" id="card" role="dialog" aria-labelledby="cardTitle" hidden></div>
-  <div class="bubble" id="bubble" role="status" aria-live="polite" hidden></div>
+  <div class="bubble" id="bubble" role="status" aria-live="polite" hidden><span class="btxt" id="btxt"></span><span class="fb" hidden><button type="button" data-fb="up" aria-label="That was funny" title="Funny! More like this">&#128514;</button><button type="button" data-fb="down" aria-label="Not funny" title="Not funny. Never again">&#128078;</button></span></div>
   <div class="fx" id="fx" aria-hidden="true"></div>
 
   <nav class="taskbar" id="taskbar" aria-label="Taskbar">
@@ -1523,17 +1565,20 @@ $('#voiceTest').addEventListener('click', testVoice);
 fillVoices(); renderVoiceCfg();
 
 /* ================= speech bubble ================= */
-let bubbleTimer = 0, ready = false;
+let bubbleTimer = 0, ready = false, bubbleFb = null;
+const btxt = $('#btxt'), fbEl = bubble.querySelector('.fb');
 function say(text, o = {}) {
   if (pet.mode === 'trash' && !o.force) return;
   // a good companion knows when NOT to talk
   if (quiet && !o.important && !o.reply && !o.force && !logReply) return;
   if (logReply) { logReply = false; logChat('him', text); }
   if (o.reply) lastReplyAt = performance.now();
-  bubble.textContent = text; bubble.hidden = false;
+  btxt.textContent = text; bubbleFb = o.fb || null; fbEl.hidden = !bubbleFb; bubble.hidden = false;
   bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
   pet.lastTalk = performance.now();
-  clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, o.ms || Math.max(2600, text.length * 75));
+  // a bubble with the 😂 / 👎 buttons stays a bit longer, and stays while your mouse is on it
+  const hide = () => { if (bubble.matches(':hover')) { bubbleTimer = setTimeout(hide, 1500); return; } bubble.hidden = true; bubbleFb = null; };
+  clearTimeout(bubbleTimer); bubbleTimer = setTimeout(hide, (o.ms || Math.max(2600, text.length * 75)) + (bubbleFb ? 3500 : 0));
   startTalk(text, o);
   if (o.voice || o.forceVoice) speak(text, !!o.forceVoice);
 }
@@ -2097,7 +2142,7 @@ if (DESKTOP) {
   addEventListener('mousemove', e => {
     if (drag) { setThrough(false); return; }
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    setThrough(!(el && el.closest('.pet,.win,.studio,.errbox,.card')));
+    setThrough(!(el && el.closest('.pet,.win,.studio,.errbox,.card,.fb')));
   });
   KD.onWindows(list => setRealWindows(list));
   KD.onCommand(c => {
@@ -2150,17 +2195,16 @@ function decide() {
     else chatter();
     return;
   }
-  const sleepAfter = o.day === 'Sunday' ? 30000 : 50000;
-  if (now - pet.lastUser > sleepAfter && Math.random() < .45) { setAct('sleep', 1e9); return; }
+  // on the real desktop he sleeps when YOU are away (or takes a quick power nap now and then)
+  const seen = DESKTOP ? Math.max(pet.lastUser, lastActiveAt) : pet.lastUser, sleepAfter = DESKTOP ? 180000 : o.day === 'Sunday' ? 30000 : 50000;
+  if (now - seen > sleepAfter && Math.random() < .45) { setAct('sleep', 1e9); return; }
+  if (DESKTOP && Math.random() < .012) { setAct('sleep', rand(12, 25)); return; }
   if (o.bias.includes('sit') && Math.random() < .15) { setAct('sit', rand(4, 8)); return; }
   // don't talk over a conversation or an open card
   const chatty = now - lastReplyAt > 15000 && cardEl.hidden && (!perf.talk || perf.talk.ended);
   if (chatty && Math.random() < h * .55 * Math.min(1.4, im)) {
-    const r = wpick([
-      ['move', 42], ['talk', now - pet.lastTalk > talkGap && bubble.hidden ? 28 : 0], ['joke', 8 * h],
-      ['rap', canDo('rap', 60) ? 6 * h : 0], ['graffiti', canDo('graf', 50) ? 7 * h : 0],
-      ['idea', canDo('idea', 80) ? 6 * h : 0], ['error', canDo('err', 100) ? 4 * h : 0]
-    ]);
+    // he talks when a thought comes (see "getting to know you"); here he just moves and creates
+    const r = wpick([['move', 42], ['graffiti', canDo('graf', 50) ? 5 * h : 0]]);
     switch (r) {
       case 'move': startMove(funMove()); return;
       case 'talk': chatter(); return;
@@ -2227,6 +2271,7 @@ function groundUpdate(dt) {
     else { const max = deskW - w.offsetWidth; let nl = w.offsetLeft + pet.surfDir * Math.max(2, 150 * dt); if (nl < 0 || nl > max) { nl = clamp(nl, 0, max); setAct('idle', 1.4); } w.style.left = nl + 'px'; pet.dir = pet.surfDir; }
   } else if (a === 'sleep') {
     pet.zzT += dt; if (pet.zzT > 1.2) { pet.zzT = 0; zzz(pet.x + pet.dir * 10 * S, pet.y - (G - 30) * S + 58 * S); }
+    if (pet.actDur < 1e8 && pet.actT > pet.actDur) wake(true);
   } else if (a === 'sneeze') {
     if (!pet.sneezed && pet.actT > .5) { pet.sneezed = true; say('ACHOO!', { ms: 1300 }); drops(pet.x + pet.dir * 18 * S, pet.y - H * .58, pet.dir); }
   } else if (a === 'look') {
@@ -2635,7 +2680,7 @@ for (const [label, emo, act] of FACES) {
 
 
 /* ================= real life: brain, permissions, cards, memory ================= */
-let lastReplyAt = 0, quiet = false, logReply = false, focusInfo = { app: '' }, dudeView = null, thinkingTimer = 0;
+let lastReplyAt = 0, quiet = false, logReply = false, focusInfo = { app: '' }, dudeView = null, thinkingTimer = 0, lifeReady = false;
 const INTMULT = { rarely: .35, sometimes: 1, often: 1.6 };
 const MOODMAP = { concerned: 'concerned', chill: 'chill', thinking: 'thinking', laugh: 'laugh' };
 const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -2650,13 +2695,15 @@ function logChat(who, text) {
 function setBrainBadge(kind) { const b = $('#brainBadge'); if (!b) return; b.textContent = kind === 'ai' ? 'AI brain' : kind === 'error' ? 'Brain offline' : 'Basic brain'; }
 function chatCtx() {
   const o = outfit();
-  return { petName, outfit: `${o.name} (${o.day})`, humor, online: navigator.onLine, battery: batt ? { level: Math.round(batt.level * 100), charging: batt.charging } : null, focusApp: focusInfo.app || '', sick: primary() ? PROB[primary()].mood : '' };
+  const me = lifeReady ? { about: teach.about, facts: teach.facts.slice(0, 12), notes: notes.filter(n => !n.ex).slice(0, 8).map(n => n.t), topics: TOPICS.filter(([k]) => teach.topics[k]).map(([, l]) => l()), liked: taste.upText.slice(-5), disliked: taste.downText.slice(-5), word: wordToday()[0], mission: day.mission || '', missionDone: !!day.missionDone, lastThought: thinkState.lastThought } : {};
+  return { petName, outfit: `${o.name} (${o.day})`, humor, online: navigator.onLine, battery: batt ? { level: Math.round(batt.level * 100), charging: batt.charging } : null, focusApp: focusInfo.app || '', sick: primary() ? PROB[primary()].mood : '', me };
 }
 
 /* ---- talking to him ---- */
 async function talk(raw) {
   const text = String(raw || '').trim(); if (!text) return;
   userPing(); wake(true); logChat('you', text);
+  if (localFirst(text)) return;
   if (!DESKTOP) { logReply = true; if (!demoBrain(text)) handle(text); logReply = false; return; }
   setEmo('thinking', 30); perf.pop += 1;
   clearTimeout(thinkingTimer);
@@ -2708,18 +2755,24 @@ function showCard(c) {
       (r.recommendations.length ? `<span class="sec-label">What I'd do</span><ol class="recs">${r.recommendations.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : '<div class="card-why">Nothing to fix. Clean laptop, clean mind.</div>') +
       (r.large && r.large.length ? `<span class="sec-label">Biggest files</span><ul class="flist">${r.large.map(f => `<li><span class="fname">${esc(f.name)}</span><span class="fsub">${esc(f.sub)}</span><span class="fbtns"><button class="btn sm" type="button" data-c="show" data-id="${esc(f.id)}">Show</button></span></li>`).join('')}</ul>` : '');
   }
+  else if (c.kind === 'q') body = `<div class="card-q">${esc(c.question)}</div>${c.chips ? `<div class="chips">${c.chips.map(x => `<button class="chip" type="button" data-c="chip" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : ''}<form class="talk" data-c="qform" autocomplete="off"><input id="qIn" maxlength="120" placeholder="${esc(c.placeholder || '')}" aria-label="${esc(c.question)}" value="${esc(c.value || '')}"><button class="btn primary" type="submit">${esc(c.submit || 'Save')}</button></form><div class="card-row"><button class="btn sm" type="button" data-c="skip">Skip</button></div>`;
+  else if (c.kind === 'choice') body = `<div class="card-q">${esc(c.question)}</div><div class="card-row">${c.choices.map(([v, l, pri]) => `<button class="btn${pri ? ' primary' : ''}" type="button" data-c="pick" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
   else if (c.kind === 'name') body = `<div class="card-q">What should I call you?</div><form class="talk" data-c="nameform" autocomplete="off"><input id="nameAsk" maxlength="24" placeholder="Your name" aria-label="Your name"><button class="btn primary" type="submit">Save</button></form>`;
   else if (c.kind === 'welcome') body = c.lines.map(l => `<div>${esc(l)}</div>`).join('') + (c.items && c.items.length ? `<ul class="flist">${c.items.map(f => `<li><span class="fname">${esc(f.name)}</span><span class="fsub">Opened recently</span><span class="fbtns"><button class="btn sm primary" type="button" data-c="open" data-id="${esc(f.id)}">Continue</button></span></li>`).join('')}</ul>` : '');
-  const closable = c.kind !== 'ask' && c.kind !== 'name';
+  const closable = !['ask', 'name', 'q', 'choice'].includes(c.kind);
   cardEl.innerHTML = `<div class="card-h"><span class="card-t" id="cardTitle">${esc(c.title || (c.kind === 'ask' ? 'Can I?' : c.kind === 'name' ? 'Hey there' : petName))}</span>${closable ? '<button class="wb" type="button" data-c="close" aria-label="Close">&#215;</button>' : ''}</div><div class="card-b">${body}</div>`;
   cardEl.hidden = false; cardEl.classList.remove('pop'); void cardEl.offsetWidth; cardEl.classList.add('pop');
   if (c.kind === 'name') setTimeout(() => { const i = $('#nameAsk'); if (i) i.focus(); }, 50);
+  if (c.kind === 'q') setTimeout(() => { const i = $('#qIn'); if (i) i.focus(); }, 50);
+  if (c.kind === 'q' || c.kind === 'choice') cardTimer = setTimeout(() => { if (card === c && !cardEl.matches(':hover') && !cardEl.contains(document.activeElement)) { hideCard(); flow = null; } }, 180000);
   if (closable) cardTimer = setTimeout(() => { if (card === c && !cardEl.matches(':hover')) hideCard(); }, 75000);
 }
 cardEl.addEventListener('click', async e => {
   const b = e.target.closest('[data-c]'); if (!b || !card) return;
   const c = card, act = b.dataset.c; userPing();
   if (act === 'close') return hideCard();
+  if (act === 'chip') { const i = $('#qIn'); if (i) { i.value = b.dataset.v; i.focus(); } return; }
+  if (act === 'skip' || act === 'pick') { hideCard(); if (c.onAnswer) c.onAnswer(act === 'pick' ? b.dataset.v : ''); return; }
   if (act === 'allow' || act === 'deny') {
     const ok = act === 'allow'; hideCard();
     if (c.onAnswer) return c.onAnswer(ok);
@@ -2739,6 +2792,7 @@ cardEl.addEventListener('click', async e => {
 cardEl.addEventListener('submit', e => {
   e.preventDefault();
   if (card && card.kind === 'name') { const v = ($('#nameAsk').value || '').trim().slice(0, 24); if (v && card.onName) { const f = card.onName; hideCard(); f(v); } }
+  else if (card && card.kind === 'q') { const v = ($('#qIn').value || '').trim(); const f = card.onAnswer; hideCard(); if (f) f(v); }
 });
 let cardBox = null;
 function placeCard() {
@@ -2778,6 +2832,7 @@ function renderView(v) {
   if (document.activeElement !== $('#userNameIn')) $('#userNameIn').value = v.userName || '';
   $$('#interruptSeg button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === v.interrupt)));
   $('#dndSw').setAttribute('aria-checked', String(!!v.dnd));
+  if (lifeReady) renderLearned();
 }
 async function setView(patch) {
   if (DESKTOP) renderView(await KD.setSettings(patch));
@@ -2802,7 +2857,7 @@ $('#win-pet').addEventListener('click', e => {
   const rm = e.target.closest('[data-rm]');
   if (rm) setView({ removeCustom: rm.dataset.rm });
   const seg = e.target.closest('#interruptSeg button');
-  if (seg) { setView({ interrupt: seg.dataset.v }); say(seg.dataset.v === 'rarely' ? "Okay. I'll mostly mind my business." : seg.dataset.v === 'often' ? 'Oh, you WANT the full show? Say less.' : 'Balanced. Like a good beat.', { emo: 'cheeky', reply: true }); }
+  if (seg) { setView({ interrupt: seg.dataset.v }); thinkState.next = performance.now() + (seg.dataset.v === 'rarely' ? Infinity : seg.dataset.v === 'often' ? rand(1, 2) * 6e4 : rand(4, 8) * 6e4); say(seg.dataset.v === 'rarely' ? "Okay. I'll only talk when something happens." : seg.dataset.v === 'often' ? 'Oh, you WANT the full show? Say less.' : 'Every 10 to 15 minutes. Balanced. Like a good beat.', { emo: 'cheeky', reply: true }); }
 });
 $('#dndSw').addEventListener('click', () => { const on = $('#dndSw').getAttribute('aria-checked') !== 'true'; setView({ dnd: on }); if (!DESKTOP) { quiet = on; } say(on ? 'Shh. Do not disturb. I\'ll only speak if something is important.' : 'I\'m back! Did you miss me?', { emo: on ? 'sleepy' : 'excited', reply: true }); });
 $('#addFolder').addEventListener('click', async () => { if (!DESKTOP) { say('In the Windows app this opens a folder picker.', { emo: 'cheeky', reply: true }); return; } renderView(await KD.addFolder()); });
@@ -2828,6 +2883,7 @@ $('#forgetAll').addEventListener('click', async () => {
   forgetArmed = 0; b.classList.remove('confirm'); b.textContent = 'Forget everything';
   if (DESKTOP) await KD.wipeMemory();
   notes = []; saveNotes(); renderMem(); refreshLastTime();
+  teach = JSON.parse(JSON.stringify(TEACH0)); saveTeach(); taste = { up: {}, down: {}, topic: {}, upText: [], downText: [], recent: [], ups: 0, downs: 0 }; saveTaste(); day = { key: logicalDay() }; saveDay(); learnedCache = null; renderTeach(); refreshLearned();
   say('Done. Who are you again? Kidding... mostly.', { emo: 'cheeky', reply: true });
 });
 async function refreshLastTime() {
@@ -2855,6 +2911,8 @@ micBtn.addEventListener('click', listenNow);
 /* ---- events from Windows ---- */
 function nameBit() { return dudeView && dudeView.userName ? ', ' + dudeView.userName : ''; }
 function onDudeEvent(ev) {
+  if (ev.type === 'active') { lastActiveAt = performance.now(); if (pet.act === 'sleep' && pet.actDur > 1e8 && grounded()) wake(true); return; }
+  if (ev.type === 'moment') { lastActiveAt = performance.now(); return onMoment(ev); }
   if (ev.type === 'focus') {
     const was = quiet; quiet = !!ev.quiet; focusInfo = ev;
     if (quiet && !was) { bubble.hidden = true; if (grounded() && ['idle', 'walk', 'look'].includes(pet.act)) setAct('sit', 8); }
@@ -2882,6 +2940,7 @@ if (DESKTOP) {
   KD.onAction(a => {
     if (a.type === 'reminder') addReminder(a.text, a.minutes);
     else if (a.type === 'note') addNote(a.text);
+    else if (a.type === 'teach') applyTeach(a);
     else if (a.type === 'move') doMove(a.move === 'dance' ? pick(['noodle', 'shimmy', 'swag', 'runningman', 'guitar']) : a.move === 'wave' ? 'come' : a.move, false);
   });
   KD.onEvent(onDudeEvent);
@@ -2893,12 +2952,14 @@ if (DESKTOP) {
 /* ---- first meeting, and "welcome back" ---- */
 function askCard(question, reason, onAnswer) { say(question, { emo: 'thinking', voice: true, reply: true, ms: 60000 }); showCard({ kind: 'ask', title: 'Can I?', question, reason, onAnswer }); }
 function onboard() {
+  flow = 'onboard';
   say("Yo! I'm Dude. I live here now. What should I call you?", { emo: 'excited', voice: true, reply: true, ms: 60000 });
   showCard({ kind: 'name', title: 'Nice to meet you', onName: async name => {
     await setView({ userName: name });
     say(`${name}! Great name. One rule: I never touch your stuff without asking.`, { emo: 'happy', voice: true, reply: true, ms: 6000 });
     setTimeout(() => askCard('Can I see which app you\'re using?', 'Then I stay quiet when you\'re busy, and I remember what you worked on. App names and window titles only. You can switch it off anytime.', async ok => {
       await setView({ perms: { apps: ok }, onboarded: true });
+      flow = null; lastReplyAt = performance.now() - 30000;
       say(ok ? `Deal. Right-click me anytime to see what I can see. Now let's make money, ${name}.` : `No problem. Right-click me anytime if you change your mind. Now let's make money, ${name}.`, { emo: 'cheeky', voice: true, reply: true, ms: 7000 });
     }), 5500);
   } });
@@ -2924,6 +2985,561 @@ async function dudeStart() {
   const v = await KD.settings(); renderView(v);
   if (!v.onboarded) setTimeout(onboard, 1400); else setTimeout(welcomeBack, 7500);
 }
+
+/* ================= getting to know you: he talks first, learns your taste, and you teach him ================= */
+const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const logicalDay = () => ymd(new Date(Date.now() - 5 * 3600e3));   // your "day" runs 5am to 5am
+const hashS = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+const TEACH0 = { about: { project: '', what: '', learning: '', dream: '' }, facts: [], rules: [], topics: { hustle: true, english: true, roast: true, calm: true, random: true }, triggers: { apps: true, daytime: true, long: true }, interview: 0 };
+let teach = (() => { const t = store.get('teach', {}) || {}; return { about: Object.assign({}, TEACH0.about, t.about), facts: Array.isArray(t.facts) ? t.facts : [], rules: Array.isArray(t.rules) ? t.rules : [], topics: Object.assign({}, TEACH0.topics, t.topics), triggers: Object.assign({}, TEACH0.triggers, t.triggers), interview: t.interview || 0 }; })();
+const saveTeach = () => store.set('teach', teach);
+let taste = Object.assign({ up: {}, down: {}, topic: {}, upText: [], downText: [], recent: [], ups: 0, downs: 0 }, store.get('taste', {}) || {});
+const saveTaste = () => store.set('taste', taste);
+let day = store.get('day', null);
+if (!day || day.key !== logicalDay()) day = { key: logicalDay() };
+const saveDay = () => store.set('day', day);
+function rollDay() { if (day.key !== logicalDay()) { day = { key: logicalDay() }; saveDay(); } }
+let lastActiveAt = performance.now(), learnedCache = null, flow = null;   // flow: interview / mission / calm, so nothing else interrupts
+const thinkState = { next: performance.now() + rand(2.5, 4) * 6e4, lastApp: 0, ruleAt: {}, challenge: null, calm: null, lastThought: '', bootAt: performance.now() };
+
+/* ---- who he's talking to ---- */
+const N = () => (dudeView && dudeView.userName) || 'boss';
+const P = () => teach.about.project || 'the big project';
+const isMusicy = () => /music|artist|song|beat|radio|dj|promot|playlist|label|studio/i.test(teach.about.what + ' ' + teach.about.project) || (dudeView && dudeView.mode === 'music');
+const fmtMins = m => { m = Math.round(m); if (m < 60) return m + ' minutes'; const h = Math.floor(m / 60), r = m % 60; return h + (h === 1 ? ' hour' : ' hours') + (r >= 10 ? ' ' + r + ' minutes' : ''); };
+const clockNow = () => { const d = new Date(); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
+function fill(tpl, d = {}) {
+  const w = wordToday();
+  const map = { n: N(), p: P(), pw: teach.about.what || 'your idea', l: teach.about.learning || 'new skills', d: teach.about.dream || 'the dream', app: d.app || 'that', m: d.mins != null ? Math.round(d.mins) : (d.away || ''), h: d.mins != null ? fmtMins(d.mins) : '', time: clockNow(), k: d.k != null ? d.k : '', word: w[0], mean: w[1], ex: (w[2] || '').replace(/\{p\}/g, P()), outfit: outfit().name, mission: day.mission || '' };
+  const out = String(tpl).replace(/\{(\w+)\}/g, (all, k) => k in map ? map[k] : all);
+  return out.charAt(0).toUpperCase() + out.slice(1);
+}
+
+/* ================= what he says ================= */
+const THINK = {
+  random: {
+    hustle: [
+      'Quick question, {n}: what did you do for {p} today? Even one small thing counts.',
+      "Every big company started with one tired person and a laptop. You're right on schedule.",
+      'Small steps every day beat one big step once a month. Boring, but true.',
+      'Money move: write down 3 people who would pay for {p}. Message one of them today.',
+      'Imagine {p} one year from now. Okay. Now do one thing that gets us closer.',
+      'Done is better than perfect. Ship it, then fix it.',
+      'If {p} had a billboard, what would it say? That sentence is your pitch.',
+      'Your future self is watching you right now. Make him proud. Or at least not embarrassed.',
+      'Talk to one real customer this week. One real conversation beats 100 ideas in your head.',
+      "Don't build everything. Build the one thing people will pay for first.",
+      "I believe in {p}. I'm a cartoon, so my opinion is worth zero dollars. But still.",
+      'Before you add a new feature, ask: does it make money, or make users happy? No? Skip it.',
+      "Write this week's goal on paper. Put it where you can see it. Not under your phone.",
+      'The best time to post about {p} was yesterday. The second best time is today.',
+      'Price is not just a number. It shows how much you believe in {p}.',
+      'Big dream, small next step. What is the small next step?'
+    ],
+    music: [
+      "Picture this: a small artist uses {p}, and their song plays on the radio for the first time. That's why we build.",
+      'Money move: ask 3 artists what they hate most about promoting a song. Free market research.',
+      'Every DJ, blogger and radio host is a door. {p} is the key ring. Okay, that was deep. Write it down.',
+      "Idea: a weekly 'Top 10 on {p}' post. Free hype for the artists, free ads for you.",
+      "Artists don't want 'promotion'. They want people to hear their song. Sell the result.",
+      'Somewhere right now, an artist is posting a song that nobody will hear. {p} is for that guy.'
+    ],
+    roast: [
+      'I watched you work. Respectfully. Mostly I watched you open and close the same tab.',
+      'You have so many tabs open, your browser is basically a small city.',
+      "You said 'five more minutes' a while ago. I'm a cartoon, but I can count.",
+      'Your Downloads folder is where files go to be forgotten forever.',
+      'You type like the keyboard owes you money.',
+      'You and that chair are in a serious relationship now. Introduce her to your family.',
+      "I saw that typo. I'm not saying anything. ...You fixed it? Good.",
+      "Your phone is face down, but I know you're thinking about it.",
+      "You've been 'about to start' for a while. Want me to count down? Three... two...",
+      "If overthinking was a sport, you'd have a gold medal and a sponsor.",
+      'You click like you are angry at the mouse. What did it do to you?',
+      'Your laptop works so hard. It deserves a holiday. Not today, though.'
+    ],
+    calm: [
+      'Overthinking check: is this a problem for today, or for future {n}? Let future {n} handle it.',
+      'Your brain has 47 tabs open. Close three. Which one first?',
+      "You don't need the whole plan. You need the next step.",
+      'Thoughts are not facts. Some of them are just loud.',
+      "If you've thought about it three times, stop thinking. Do the smallest step.",
+      "Breathe in for 4. Hold for 4. Out for 4. I'll do it with you. I don't have lungs. I'll pretend.",
+      'Write the worry on paper. Paper can hold it. Your head needs space for ideas.',
+      'Nobody has it all figured out. Everybody is just pretending with confidence. Like me.',
+      'Scared of a decision? Make it small. Try it for one week. Then decide again.',
+      "You're not behind. You're on your own timeline.",
+      'What would you tell a friend in your place? Okay. Now tell yourself that.',
+      "You're further than you were a month ago. I was there. I saw it."
+    ],
+    random: [
+      'Do you think the mouse cursor gets tired? It works all day and nobody says thank you.',
+      "If I'm on your screen and you're on your phone... who is watching who?",
+      "I just realized I've never seen my own feet. Hold on. ...Okay. Nice feet.",
+      'What if the Recycle Bin is just a hotel for files that made bad choices?',
+      'I tried to count your files. I got to 12 and took a nap.',
+      'Some people have a dog. You have me. A pet with opinions.',
+      "Fun fact: I don't have bones. That's why I dance like this.",
+      "I live in your laptop and I've never paid rent. Is that a problem? Don't answer.",
+      'My screen time is 24 hours a day. Every day. I AM the screen.',
+      'I think my hat is smarter than me. It stays on top of everything.',
+      'Breaking news: local cartoon still handsome. More at eleven.',
+      "Imagine if Windows updates asked nicely. 'Is now a good time?' Never happens.",
+      'Wi-Fi is basically magic and nobody talks about it.',
+      'When you turn off the laptop, do I dream? I hope I dream about chips.',
+      "Every time you press Ctrl+Z, a mistake travels back in time. You're a time traveler.",
+      "I wonder what your keyboard thinks about you. Actually, I don't want to know."
+    ]
+  },
+  long: {
+    general: ["{h} straight, {n}. Stand up, stretch, drink some water. I'll guard the laptop.", 'Your eyes need a break. Look at something far away for 20 seconds. Not your phone.', 'Productivity tip: legs exist. Use them for two minutes.', '{h} of work. Even machines cool down. Take five.'],
+    hustle: ['{h} on the grind. {p} is getting stronger. You need water, though. Go.'],
+    calm: ['{h} of focus. A tired brain overthinks. Short walk, then come back.'],
+    roast: ["{h} without a break. I checked. Are you okay? Blink twice."]
+  },
+  night: {
+    general: ["It's {time}, {n}. Night owl mode. One more thing, then sleep?", 'Past midnight. Your bed called. I told it you are busy changing the world.', "It's {time}. Even the Wi-Fi is sleepy."],
+    many: ['{k} late nights this week. Legend or vampire? Either way, sleep is free.'],
+    calm: ['Late-night thoughts lie. Everything looks bigger at {time}. Sleep, and look again tomorrow.'],
+    hustle: ["Before you sleep: write tomorrow's first task for {p}. Morning-you will thank you."]
+  },
+  back: ["Welcome back, {n}! I didn't touch anything. (I touched everything.)", 'You are back! I was so bored I started counting pixels.', 'Back after {m} minutes. Did you eat? Tell me you ate.', 'There he is! I kept your seat warm. Not really, I am a cartoon.'],
+  app: {
+    music: ["Studio time! Go make something crazy. I'll be quiet.", '{app} is open. My legs are ready. My mouth is closed. Go.', 'Make a hit. No pressure. (A little pressure.)'],
+    build: ["Building {p}? Let's go. I'm your intern. Unpaid, as usual.", '{app}! The money machine is warming up.', "Code mode. If it works, don't touch it."],
+    social: ["{app}? Okay. Ten minutes. I'm counting.", 'Quick scroll or deep scroll? Be honest.', '{app} again? Tell the algorithm I said hi.'],
+    video: ["{app}: tutorial, or 'just one video'?", "If it's a tutorial, I'm proud. If it's funny videos, I'm also proud."],
+    chat: ['Tell them Dude says hi.', "{app}? Who's texting you? ...I'm not jealous. I'm a little jealous."],
+    docs: ['{app}. You look smarter already.', "Paperwork time. The boss life isn't all dancing."],
+    design: ['Design mode. Make it pop. Not too much. Okay, a little too much.', '{app}! Show me something beautiful.'],
+    listen: ['Music on? Say less.', '{app}! My legs heard that.'],
+    call: ["Meeting time. I'll be quiet. Mostly."],
+    game: ["Game time? I won't tell anyone. I'll watch, though."]
+  },
+  binge: {
+    roast: ["{m} minutes on {app}. That's not research, {n}.", '{m} minutes of {app}. The algorithm says thank you.', 'Fun fact: {m} minutes is enough to message one real customer. Just saying.'],
+    hustle: ['{m} minutes on {app}. Want to give {p} the next 20?'],
+    video: ['{m} minutes of {app}. Is this still the tutorial?']
+  }
+};
+const MORNING = {
+  normal: ['Morning, {n}! New day, new chances to be legendary.', 'Rise and grind. Mostly grind. A little bit of rise.', "Good morning! I'm wearing {outfit} today. Match my energy.", 'Morning, {n}. Coffee? Tea? Pure ambition?'],
+  early: ["You're up early! Who are you, and what did you do with {n}?", "Early bird mode! The worm doesn't stand a chance."],
+  late: ["Good morning... or afternoon? We don't judge here. Much.", "Morning, {n}! Or what's left of it."]
+};
+const TOPIC_EMO = { hustle: 'excited', english: 'happy', roast: 'cheeky', calm: 'chill', random: 'cheeky', taught: 'happy' };
+const TOPICS = [['hustle', () => `${teach.about.project || 'Business'} & money moves`], ['english', () => 'English practice'], ['roast', () => 'Roasting you'], ['calm', () => 'Calm your overthinking'], ['random', () => 'Random thoughts']];
+const TRIGS = [['apps', 'When you open an app'], ['daytime', 'Morning & late night'], ['long', 'When you work too long']];
+
+/* ---- English practice ---- */
+const WORDS = [
+  ['momentum', 'the energy that keeps something moving forward', '{p} has momentum now. Don\'t stop.'], ['leverage', 'to use what you have to get more', 'Use your network as leverage.'],
+  ['consistent', 'doing something well, again and again', 'Consistent posting beats one viral post.'], ['eventually', 'in the end, after some time', 'Eventually, every hard thing gets easier.'],
+  ['suddenly', 'very fast, when nobody expected it', 'Suddenly, the song was everywhere.'], ['meanwhile', 'at the same time, somewhere else', 'I was sleeping. Meanwhile, the code was breaking.'],
+  ['although', 'even if; but', 'Although it was late, he kept working.'], ['therefore', 'so; because of that', 'Artists need fans; therefore, they need promotion.'],
+  ['opportunity', 'a good chance to do something', 'Every problem is an opportunity in disguise.'], ['persuade', 'to make someone agree with you', 'A good pitch can persuade anyone.'],
+  ['negotiate', 'to talk until both sides agree on a deal', 'We negotiated a better price.'], ['ambitious', 'wanting to do big things', 'He is young and ambitious.'],
+  ['reliable', 'you can trust it to work every time', 'A reliable app keeps users happy.'], ['audience', 'the people who watch, listen or read', 'Know your audience before you post.'],
+  ['feedback', 'what people tell you about your work', 'Feedback hurts a little, then it helps a lot.'], ['deadline', 'the last day or time to finish something', 'The deadline is Friday. No excuses.'],
+  ['priority', 'the most important thing to do first', 'My priority today is one feature.'], ['strategy', 'a plan to reach a goal', 'Our strategy: start small, grow fast.'],
+  ['campaign', 'a planned set of actions to promote something', 'The campaign ran on radio and TikTok.'], ['exposure', 'being seen or heard by many people', 'New artists need exposure.'],
+  ['revenue', 'the money a business makes from sales', 'More users, more revenue.'], ['profit', 'the money left after paying all costs', 'Revenue is nice. Profit is nicer.'],
+  ['invest', 'to put money or time into something to get more later', 'Invest one hour a day in yourself.'], ['collaborate', 'to work together', 'Two artists collaborated on one song.'],
+  ['milestone', 'an important step on the way to a goal', 'First 100 users: a big milestone.'], ['breakthrough', 'a big success after trying for a long time', 'This feature could be our breakthrough.'],
+  ['genuine', 'real and honest', 'People love a genuine story.'], ['curious', 'wanting to know and learn things', 'Stay curious. Ask questions.'],
+  ['confident', 'sure about yourself', 'Speak slowly and sound confident.'], ['determined', 'you decided, and nothing will stop you', 'He was determined to finish.'],
+  ['resilient', 'you get back up after a hard time', "Resilient people don't quit after one no."], ['grateful', 'thankful', "I'm grateful for every user."],
+  ['overwhelmed', 'feeling there is too much to handle', 'When you feel overwhelmed, do one thing.'], ['exhausted', 'very, very tired', 'After that long night, he was exhausted.'],
+  ['thrilled', 'very happy and excited', 'The artist was thrilled with the results.'], ['hilarious', 'very, very funny', 'My jokes are hilarious. Sometimes.'],
+  ['awkward', 'uncomfortable, a little embarrassing', 'That silence was awkward.'], ['vivid', 'very clear and full of color in your mind', 'Tell your story with vivid details.'],
+  ['unexpected', 'something you did not think would happen', 'The ending was unexpected.'], ['legacy', 'what you leave behind for others', 'Build something that becomes your legacy.'],
+  ['launch', 'to start something new for the public', 'We launch next month.'], ['hustle', 'to work hard and fast to make things happen', 'He hustles every day for his dream.']
+];
+const UPGRADES = [['tired', 'exhausted'], ['happy', 'thrilled'], ['funny', 'hilarious'], ['big', 'huge'], ['small', 'tiny'], ['smart', 'brilliant'], ['scared', 'terrified'], ['hungry', 'starving'], ['important', 'crucial'], ['busy', 'swamped'], ['angry', 'furious'], ['beautiful', 'gorgeous'], ['good', 'excellent'], ['bad', 'terrible'], ['cold', 'freezing'], ['hot', 'boiling'], ['sure', 'certain'], ['clean', 'spotless']];
+const PHRASES = [
+  ['on the same page', 'we agree and understand each other', "Let's get on the same page about {p}."], ['the ball is in your court', "now it's your turn to decide or act", 'I sent the offer. The ball is in your court.'],
+  ['break the ice', 'start talking when it feels awkward', 'A joke helps break the ice.'], ['hit the ground running', 'start fast, with lots of energy', "We'll hit the ground running on Monday."],
+  ['a piece of cake', 'very easy', 'This bug? A piece of cake.'], ['once in a blue moon', 'very rarely', 'I clean my desktop once in a blue moon.'],
+  ['cut corners', 'do something badly to save time', "Don't cut corners on the payment page."], ['call it a day', 'stop working for today', "It's late. Let's call it a day."],
+  ['get the hang of it', 'learn how to do it', 'English is hard at first, then you get the hang of it.'], ['up in the air', 'not decided yet', 'The launch date is still up in the air.'],
+  ['go the extra mile', 'do more than people expect', 'Go the extra mile for your first users.'], ['think outside the box', 'think in a new, creative way', 'To win, think outside the box.']
+];
+const STORIES = ["Story challenge: tell me in 3 sentences what you did today. Simple words are fine.", "Explain {p} to me like I'm 10 years old. Two sentences. Go.", 'Pitch {p} to me in one sentence. Make me want it.', 'Tell me the funniest thing that happened to you this week.', "Describe your dream office in 3 sentences. Try the word 'huge'.", "Finish this sentence: 'This month, I will...'", 'Tell me about a song you love, and why. Three sentences.'];
+function wordToday() { const n = Math.floor(new Date(logicalDay() + 'T12:00:00').getTime() / 864e5); return WORDS[((n % WORDS.length) + WORDS.length) % WORDS.length]; }
+function englishLine() {
+  const w = wordToday(), r = Math.random();
+  if (!day.wordSaid) return { text: `Word of the day: "${w[0]}". It means ${w[1]}. Example: ${fill(w[2])}`, key: 'en:word', word: true };
+  if (r < .3) return { text: `Challenge: use "${w[0]}" in a sentence. Type it to me. I'm a great listener. I have no other plans.`, key: 'en:use', challenge: { type: 'word', word: w[0] } };
+  if (r < .55) { const u = pick(UPGRADES); return { text: `English upgrade: instead of "very ${u[0]}", say "${u[1]}". Try it today.`, key: 'en:up:' + u[0] }; }
+  if (r < .8) { const ph = pick(PHRASES); return { text: `Phrase of the moment: "${ph[0]}". It means ${ph[1]}. Like: "${fill(ph[2])}"`, key: 'en:ph:' + ph[0] }; }
+  const s = pick(STORIES); return { text: fill(s), key: 'en:st:' + hashS(s), challenge: { type: 'story' } };
+}
+
+/* ---- picking what to say: his taste decides ---- */
+const topicOn = t => !!teach.topics[t];
+const topicW = t => clamp(1 + .35 * (taste.topic[t] || 0), .25, 3);
+function pickTopic() {
+  const opts = TOPICS.map(([t]) => t).filter(topicOn).map(t => [t, topicW(t)]);
+  if (teach.rules.some(r => r.when === 'anytime')) opts.push(['taught', 1.3]);
+  return opts.length ? wpick(opts) : null;
+}
+function choose(list, prefix) {
+  const ok = list.filter(t => !taste.down[prefix + hashS(t)]);
+  if (!ok.length) return null;
+  const fresh = ok.filter(t => !taste.recent.includes(prefix + hashS(t)));
+  const pool = fresh.length ? fresh : ok;
+  const tpl = wpick(pool.map(t => [t, taste.up[prefix + hashS(t)] ? 1.7 : 1]));
+  return { tpl, key: prefix + hashS(tpl) };
+}
+function lineFor(trigger, topic, d = {}) {
+  let list = [], tp = topic;
+  if (trigger === 'random') {
+    if (topic === 'taught') { const r = pick(teach.rules.filter(x => x.when === 'anytime')); return r && { text: fill(r.say, d), key: 'rule:' + hashS(r.say), topic }; }
+    if (topic === 'english') { const e = englishLine(); return Object.assign({ topic }, e, { key: e.key }); }
+    list = topic === 'hustle' ? THINK.random.hustle.concat(isMusicy() ? THINK.random.music : []) : topic === 'random' ? THINK.random.random.concat(outfit().lines) : THINK.random[topic] || [];
+  } else if (trigger === 'long') { list = THINK.long.general.slice(); for (const t of ['hustle', 'calm', 'roast']) if (topicOn(t)) list = list.concat(THINK.long[t]); tp = 'calm'; }
+  else if (trigger === 'night') { list = THINK.night.general.slice(); if ((d.k || 0) >= 3) list = list.concat(THINK.night.many, THINK.night.many); for (const t of ['calm', 'hustle']) if (topicOn(t)) list = list.concat(THINK.night[t]); tp = 'calm'; }
+  else if (trigger === 'back') { list = THINK.back; tp = 'random'; }
+  else if (trigger === 'app') { list = THINK.app[d.cat] || []; tp = d.cat === 'social' ? 'roast' : 'random'; }
+  else if (trigger === 'binge') { if (topicOn('roast')) list = list.concat(THINK.binge.roast); if (topicOn('hustle')) list = list.concat(THINK.binge.hustle); if (d.cat === 'video' && list.length) list = list.concat(THINK.binge.video); tp = 'roast'; }
+  else if (trigger === 'pattern') { list = patternLines(d.learned || learnedCache); tp = 'random'; }
+  const c = choose(list, trigger + ':');
+  return c && { text: fill(c.tpl, d), key: c.key, topic: tp };
+}
+function patternLines(L) {
+  if (!L) return [];
+  const f = L.fmt || {}, out = [], hrs = h => h >= 1 ? (Math.round(h * 10) / 10) + ' hours' : Math.round(h * 60) + ' minutes';
+  if (L.usualStart != null) out.push(`I've been studying you. You usually start around ${f.usualStart}. Very consistent. I start never.`);
+  if (L.busiestHour != null) out.push(`Your power hour is around ${f.busiestHour}. That's when you work the most. Save the hard stuff for then.`);
+  if (L.topApps && L.topApps[0]) out.push(`This week you spent ${hrs(L.topApps[0].hours)} in ${L.topApps[0].name}. ${L.topApps[0].name} should pay you rent.`);
+  if (L.topSites && L.topSites[0]) out.push(`${hrs(L.topSites[0].hours)} on ${L.topSites[0].name} this week. I'm not judging. I'm just counting.`);
+  if (L.lateNights >= 2) out.push(`${L.lateNights} late nights this week. Your brain loves the night. Your body? Ask it.`);
+  if (L.avgHours) out.push(`You're on this laptop about ${hrs(L.avgHours)} a day. That's a full-time job. Who's paying?`);
+  return out;
+}
+
+/* ---- saying it (with the 😂 / 👎 buttons so he learns) ---- */
+function canSpeakNow() {
+  const now = performance.now();
+  return ready && !flow && !quiet && bubble.hidden && cardEl.hidden && (!perf.talk || perf.talk.ended) && now - lastReplyAt > 45000 &&
+    pet.mode === 'ground' && !drag && !(pet.act === 'move' && ['rap', 'joke', 'idea', 'error', 'graffiti'].includes(pet.move));
+}
+function sayThought(text, c = {}) {
+  wake(true);
+  thinkState.lastThought = text;
+  if (c.key) { taste.recent = taste.recent.filter(k => k !== c.key).concat([c.key]).slice(-40); saveTaste(); }
+  if (c.word) { day.wordSaid = true; saveDay(); }
+  if (c.challenge) thinkState.challenge = Object.assign({ at: Date.now() }, c.challenge);
+  say(text, { voice: true, emo: c.emo || TOPIC_EMO[c.topic] || 'happy', fb: c.key ? { key: c.key, topic: c.topic, text } : null, ms: Math.max(4800, text.length * 85), important: c.important, reply: c.reply });
+  if (c.topic === 'calm' && grounded() && pet.act === 'idle' && Math.random() < .4) startFid('stretch');
+}
+const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+function aiOk() { return DESKTOP && dudeView && dudeView.hasKey && navigator.onLine; }
+async function think(trigger = 'random', d = {}, o = {}) {
+  if (!o.force) thinkState.next = performance.now() + gapMs();
+  if (trigger === 'random' && !o.force && !o.topic && Math.random() < .18 * hum() && grounded()) {   // sometimes the thought is a little show instead
+    const s = pick(['joke', 'rap', 'idea', 'error']);
+    if (s === 'idea') doMove('idea', false); else startMove(s);
+    return;
+  }
+  const topic = o.topic || (trigger === 'random' ? pickTopic() : null);
+  if (trigger === 'random' && !topic) return;
+  if (aiOk() && trigger !== 'app' && topic !== 'taught' && !(topic === 'english' && !day.wordSaid) && (o.force || Math.random() < .6)) {
+    const r = await withTimeout(KD.thought({ trigger, topic: topic || (trigger === 'binge' ? 'roast' : trigger === 'long' || trigger === 'night' ? 'calm' : 'random'), data: aiData(trigger, d) }, chatCtx()).catch(() => null), 9000);
+    if (r && r.say && (o.force || o.important || canSpeakNow())) return sayThought(r.say, { key: 'ai:' + hashS(r.say), topic: topic || 'random', emo: MOODMAP[r.mood] || r.mood, reply: o.force, important: o.important });
+    if (!o.force && !o.important && !canSpeakNow()) return;
+  }
+  const c = lineFor(trigger, topic, d);
+  if (c) sayThought(c.text, Object.assign(c, { reply: o.force, important: o.important }));
+}
+function aiData(trigger, d) {
+  const x = {};
+  if (d.app) x.app = d.app; if (d.cat) x.kind = d.cat; if (d.mins) x.minutes = Math.round(d.mins); if (d.away) x.awayMinutes = d.away;
+  if (trigger === 'night') x.time = clockNow();
+  if (trigger === 'pattern' && (d.learned || learnedCache)) x.learned = (d.learned || learnedCache).insights;
+  return x;
+}
+function gapMs() { const v = (dudeView && dudeView.interrupt) || 'sometimes'; return v === 'often' ? rand(3, 5) * 6e4 : v === 'rarely' ? Infinity : rand(10, 15) * 6e4; }
+function ruleFor(when, app) {
+  const now = Date.now();
+  const list = teach.rules.filter(r => r.when === when && (when !== 'app' || (r.app && app && (app.toLowerCase().includes(r.app.toLowerCase()) || r.app.toLowerCase().includes(app.toLowerCase())))));
+  const r = list.length ? pick(list) : null;
+  if (!r || now - (thinkState.ruleAt[r.say] || 0) < 20 * 6e4) return null;
+  thinkState.ruleAt[r.say] = now;
+  return r;
+}
+
+/* ---- feedback: 😂 makes more like it, 👎 means never again ---- */
+function rateLine(fb, good) {
+  if (!fb || !fb.key) return;
+  const k = fb.key, t = fb.topic || 'random';
+  if (good) { taste.up[k] = (taste.up[k] || 0) + 1; delete taste.down[k]; taste.ups++; taste.upText = taste.upText.filter(x => x !== fb.text).concat([fb.text]).slice(-8); }
+  else { taste.down[k] = 1; taste.downs++; taste.downText = taste.downText.filter(x => x !== fb.text).concat([fb.text]).slice(-8); }
+  taste.topic[t] = clamp((taste.topic[t] || 0) + (good ? 1 : -1), -4, 6);
+  saveTaste(); renderTeach();
+  userPing(); perf.pop += 2;
+  if (good) { say(pick(['Ha! Noted. More of that.', "You laughed! I'm writing that down.", 'Yes! I knew that one was good.']), { emo: 'laugh', ms: 2600 }); if (grounded() && ['idle', 'sit', 'look'].includes(pet.act)) setAct('prehop', .1); }
+  else say(pick(['Okay. That one goes in the trash. Noted.', 'Tough crowd. Never again, I promise.', 'Deleted from my brain. Respectfully.']), { emo: 'sad', ms: 2800 });
+}
+
+/* ================= his day with you ================= */
+function morning() {
+  rollDay(); day.morningDone = true; saveDay();
+  thinkState.next = performance.now() + gapMs();
+  const r = ruleFor('morning'), nowH = new Date().getHours() + new Date().getMinutes() / 60, us = learnedCache && learnedCache.usualStart;
+  const kind = nowH >= 12 ? 'late' : us != null && nowH < us - .75 ? 'early' : us != null && nowH > us + 2 ? 'late' : 'normal';
+  const c = r ? { text: fill(r.say), key: 'rule:' + hashS(r.say), topic: 'taught' } : (() => { const x = choose(MORNING[kind], 'morning:'); return x && { text: fill(x.tpl), key: x.key, topic: 'random' }; })();
+  if (c) sayThought(c.text, Object.assign(c, { emo: 'excited', important: true }));
+  if (grounded()) setAct('wave', 2.2);
+  flow = 'morning';
+  setTimeout(() => {
+    flow = null;
+    if (topicOn('hustle')) askMission();
+    else if (topicOn('english')) setTimeout(() => { if (!day.wordSaid) sayThought(englishLine().text, { word: true, topic: 'english', key: 'en:word', important: true }); }, 400);
+  }, 7000);
+}
+function askMission() {
+  if (day.mission || !cardEl.hidden) return;
+  flow = 'mission';
+  say(fill("What's the ONE thing for {p} today?"), { emo: 'thinking', voice: true, reply: true, ms: 60000 });
+  showCard({ kind: 'q', title: "Today's mission", question: fill("What's the ONE thing for {p} today?"), placeholder: 'e.g. finish the sign-up page', submit: 'Lock it in', onAnswer: v => {
+    flow = null;
+    if (v) { day.mission = v.slice(0, 120); saveDay(); say(`Locked in: "${day.mission}". I'll ask you tonight. No pressure. (A little pressure.)`, { emo: 'proud', voice: true, reply: true, ms: 6500 }); }
+    else say('Freestyle day. Respect.', { emo: 'cheeky', voice: true, reply: true });
+    if (topicOn('english') && !day.wordSaid) setTimeout(() => { if (bubble.hidden && cardEl.hidden) sayThought(englishLine().text, { word: true, topic: 'english', key: 'en:word', important: true }); else day.wordSoon = 1; }, 9000);
+  } });
+}
+function missionCheck() {
+  if (!day.mission || day.missionChecked) return;
+  day.missionChecked = true; saveDay();
+  flow = 'mission';
+  say(`Mission check: did you do it? "${day.mission}"`, { emo: 'thinking', voice: true, reply: true, ms: 60000 });
+  showCard({ kind: 'choice', title: 'Mission check', question: `"${day.mission}"`, choices: [['done', 'Done!', true], ['no', 'Not yet']], onAnswer: v => {
+    flow = null;
+    if (v === 'done') { day.missionDone = true; saveDay(); say(fill("LET'S GO! That's how {p} gets built."), { emo: 'excited', voice: true, reply: true }); stars(pet.x, pet.y - H, 16); if (grounded()) startMove('noodle'); }
+    else say('No stress. Tomorrow we go again. Or... 20 minutes now? I will be quiet.', { emo: 'chill', voice: true, reply: true, ms: 6000 });
+  } });
+}
+function night() {
+  rollDay(); day.nightDone = true; saveDay();
+  thinkState.next = performance.now() + gapMs();
+  const r = ruleFor('night');
+  if (r) sayThought(fill(r.say), { key: 'rule:' + hashS(r.say), topic: 'taught' });
+  else think('night', { k: learnedCache ? learnedCache.lateNights : 0 }, { important: true });
+  if (day.mission && !day.missionChecked) setTimeout(() => { if (cardEl.hidden && !flow) missionCheck(); }, 9000);
+}
+
+/* ---- the tick: is it time to say something? ---- */
+function lifeTick() {
+  if (!ready) return;
+  rollDay();
+  const now = performance.now(), present = now - Math.max(lastActiveAt, pet.lastUser) < 3 * 6e4, h = new Date().getHours();
+  if (!present || flow || !canSpeakNow()) return;
+  if (needsInterview() && now - thinkState.bootAt > 15000 && (!DESKTOP || (dudeView && dudeView.onboarded))) { interview(); return; }
+  if (teach.triggers.daytime && !day.morningDone && h >= 5 && h < 15 && now - thinkState.bootAt > 20000) { morning(); return; }
+  if (day.wordSoon && !day.wordSaid && topicOn('english')) { day.wordSoon = 0; sayThought(englishLine().text, { word: true, topic: 'english', key: 'en:word' }); return; }
+  if (teach.triggers.daytime && !day.nightDone && h < 5) { night(); return; }
+  if (day.mission && !day.missionChecked && h >= 19) { missionCheck(); return; }
+  if (now >= thinkState.next) think('random');
+}
+setInterval(lifeTick, 15000);
+addEventListener('pointermove', () => { lastActiveAt = performance.now(); }, { passive: true });
+addEventListener('keydown', () => { lastActiveAt = performance.now(); });
+
+/* ---- moments from Windows: apps, long sessions, coming back, patterns ---- */
+function onMoment(ev) {
+  const now = performance.now(), T = teach.triggers;
+  if (!ready || flow) return;
+  const loud = quiet && !(focusInfo && (focusInfo.dnd || focusInfo.fullscreen));   // quiet only because of a focus app
+  if (ev.kind === 'app') {
+    if (now - thinkState.bootAt < 60000 || !bubble.hidden || !cardEl.hidden) return;
+    const r = ruleFor('app', ev.app);
+    if (r) { thinkState.lastApp = now; return sayThought(fill(r.say, ev), { key: 'rule:' + hashS(r.say), topic: 'taught', important: loud }); }
+    if (!T.apps || !THINK.app[ev.cat] || now - thinkState.lastApp < 4 * 6e4) return;
+    if (quiet && !(loud && (ev.cat === 'music' || ev.cat === 'call'))) return;
+    thinkState.lastApp = now;
+    const c = lineFor('app', null, ev);
+    if (c) sayThought(c.text, Object.assign(c, { important: quiet }));
+  } else if (ev.kind === 'long') {
+    if (!T.long || (quiet && !loud) || !bubble.hidden || !cardEl.hidden) return;
+    think('long', ev, { important: quiet });
+    if (grounded() && pet.act !== 'move') setTimeout(() => startFid('stretch'), 1200);
+  } else if (ev.kind === 'back') {
+    const h = new Date().getHours();
+    if (!canSpeakNow()) return;
+    if (T.daytime && !day.morningDone && h >= 5 && h < 15) return morning();
+    const r = ruleFor('back');
+    if (r) return sayThought(fill(r.say, ev), { key: 'rule:' + hashS(r.say), topic: 'taught' });
+    if (T.daytime && Math.random() < .7) think('back', { away: ev.away, mins: ev.away });
+  } else if (ev.kind === 'binge') {
+    if ((topicOn('roast') || topicOn('hustle')) && canSpeakNow()) think('binge', ev);
+  } else if (ev.kind === 'pattern') {
+    learnedCache = ev.learned || learnedCache; renderLearned();
+    if (canSpeakNow()) think('pattern', ev);
+  }
+}
+async function refreshLearned() { if (!DESKTOP || !KD.habits) return; try { learnedCache = await KD.habits(); } catch (e) {} renderLearned(); }
+if (DESKTOP) { setTimeout(refreshLearned, 4000); setInterval(refreshLearned, 30 * 6e4); }
+
+/* ================= he gets to know you: four questions ================= */
+const needsInterview = () => teach.interview === 0 || (teach.interview > 1 && Date.now() > teach.interview);
+function interview() {
+  if (!needsInterview() || flow || !cardEl.hidden) return;
+  flow = 'interview';
+  say(fill('{n}, I got an upgrade. I want to really know you. Four quick questions?'), { emo: 'excited', voice: true, reply: true, ms: 60000 });
+  showCard({ kind: 'choice', title: 'Get to know you', question: 'Four quick questions so I stop sounding like a stranger.', choices: [['go', "Let's go", true], ['later', 'Later']], onAnswer: v => {
+    if (v !== 'go') { flow = null; teach.interview = Date.now() + 20 * 3600e3; saveTeach(); say("No problem. I'll ask again tomorrow. I'm patient. Like a cat.", { emo: 'chill', voice: true, reply: true }); return; }
+    const Q = [
+      ['project', "What's the big thing you're building?", 'Name of your project', null, v => `${v}. I like the sound of that.`],
+      ['what', () => `What is ${P()}, in a few words?`, 'e.g. an app that helps artists get heard', null, () => 'Got it. Big brain stuff.'],
+      ['learning', 'What are you getting better at right now?', 'e.g. English', ['English', 'Coding', 'Music', 'Business', 'Design'], v => `${v}? I'll help. I'm a great teacher. Okay, a funny one.`],
+      ['dream', "Last one. What's the dream? Big or small.", 'e.g. turn my ideas into real money', null, () => "That's a real dream. I'm in."]
+    ];
+    let i = 0;
+    const next = () => {
+      if (i >= Q.length) {
+        flow = null; teach.interview = 1; saveTeach(); renderTeach();
+        say('Done! I am studying you now. Right-click me and open the Teach tab to teach me more.', { emo: 'proud', voice: true, reply: true, ms: 7000 });
+        stars(pet.x, pet.y - H, 14); if (grounded()) setTimeout(() => startMove('noodle'), 2500);
+        thinkState.next = performance.now() + rand(4, 6) * 6e4;
+        // studying him needs to see which apps he uses
+        if (DESKTOP && dudeView && !dudeView.perms.apps) setTimeout(() => {
+          if (!cardEl.hidden || flow) return;
+          askCard("Can I watch which apps you use? That's how I learn your routine.", 'App names and window titles only. It stays on this laptop. Switch it off anytime in the Access tab.', async ok => {
+            await setView({ perms: { apps: ok } }); refreshLearned();
+            say(ok ? 'Deal. Class is in session. I am studying you.' : 'No problem. I will learn from what you tell me.', { emo: ok ? 'excited' : 'chill', voice: true, reply: true });
+          });
+        }, 9000);
+        return;
+      }
+      const [field, q, ph, chips, react] = Q[i++], qq = typeof q === 'function' ? q() : q;
+      say(qq, { emo: 'thinking', voice: true, reply: true, ms: 60000 });
+      showCard({ kind: 'q', title: `Question ${i} of ${Q.length}`, question: qq, placeholder: ph, chips, value: teach.about[field], submit: i === Q.length ? 'Done' : 'Next', onAnswer: v => {
+        if (v) { teach.about[field] = v.slice(0, field === 'what' || field === 'dream' ? 80 : 40); saveTeach(); say(react(v), { emo: 'happy', voice: true, reply: true, ms: 2600 }); }
+        setTimeout(next, v ? 2200 : 300);
+      } });
+    };
+    next();
+  } });
+}
+
+/* ================= talking: things he handles himself ================= */
+function reply(text, o = {}) { logReply = true; say(text, Object.assign({ voice: true, reply: true, ms: Math.max(3800, text.length * 80) }, o)); logReply = false; }
+function addRule(when, app, sayTxt) {
+  sayTxt = String(sayTxt || '').trim().replace(/^["']|["']$/g, '').slice(0, 140);
+  if (!sayTxt) return false;
+  teach.rules.unshift({ when, app: when === 'app' ? String(app || '').trim().slice(0, 30) : '', say: sayTxt });
+  teach.rules = teach.rules.slice(0, 30); saveTeach(); renderTeach();
+  return true;
+}
+const WHEN_TXT = { app: 'When I open', morning: 'Every morning', night: 'Late at night', back: 'When I come back', anytime: 'Anytime' };
+function applyTeach(a) {
+  if (a.kind === 'fact' && a.fact) { teach.facts.unshift(a.fact.slice(0, 120)); teach.facts = teach.facts.slice(0, 30); saveTeach(); }
+  else if (a.kind === 'rule' && a.say) addRule(a.when || 'anytime', a.app, a.say);
+  else if ((a.kind === 'topic_on' || a.kind === 'topic_off') && a.topic in teach.topics) { teach.topics[a.topic] = a.kind === 'topic_on'; saveTeach(); }
+  else if (a.kind === 'talk_more' || a.kind === 'talk_less') { const v = (dudeView && dudeView.interrupt) || 'sometimes'; setView({ interrupt: a.kind === 'talk_more' ? (v === 'rarely' ? 'sometimes' : 'often') : (v === 'often' ? 'sometimes' : 'rarely') }); }
+  else if (a.kind === 'about' && a.field in teach.about && a.value) { teach.about[a.field] = a.value.slice(0, 80); saveTeach(); }
+  renderTeach();
+}
+const CRISIS = /\b(kill myself|suicid\w*|end my life|want to die|don'?t want to (live|be alive)|hurt myself|self[- ]?harm)\b/i;
+function localFirst(text) {
+  const t = text.toLowerCase().trim(); let m;
+  if (CRISIS.test(t)) { thinkState.calm = null; reply(`${N() === 'boss' ? 'Hey' : N()}, that sounds really heavy. You don't have to carry it alone. Please talk to someone you trust right now, or call a local crisis line or emergency number. I'm here, but you deserve real support.`, { emo: 'concerned', ms: 16000 }); return true; }
+  // the overthinking flow: dump it, pick one small step, check back
+  const C = thinkState.calm;
+  if (C && Date.now() - C.at < 15 * 6e4 && !/^(stop|cancel|never ?mind|forget it)\b/.test(t)) {
+    if (C.step === 1) { thinkState.calm = { step: 2, at: Date.now() }; reply("Got it. That's a lot to carry. Now: what's ONE small thing you can do in the next 10 minutes?", { emo: 'chill', ms: 9000 }); return true; }
+    thinkState.calm = null; addReminder(`Did you do it? "${text.slice(0, 80)}"`, 10);
+    reply('Perfect. Do just that. Nothing else. I will check on you in 10 minutes.', { emo: 'proud', ms: 6500 }); return true;
+  }
+  if (/\boverthink\w*|my (head|mind|brain) is (so )?(full|heavy|loud|racing|spinning)|\b(i'?m|i am|feel|feeling) (so |very |really )?(stressed|overwhelmed|stuck in my head|anxious)\b|too much on my mind|can'?t stop thinking/.test(t)) {
+    thinkState.calm = { step: 1, at: Date.now() };
+    reply('Okay. Dump it. Type everything in your head. No order, no grammar, no judging.', { emo: 'chill', ms: 9000 }); return true;
+  }
+  // English practice
+  const ch = thinkState.challenge;
+  if (ch && Date.now() - ch.at > 12 * 3600e3) thinkState.challenge = null;
+  if (ch && ch.type === 'word' && new RegExp('\\b' + ch.word + '\\b', 'i').test(t) && t.split(/\s+/).length >= 3) { thinkState.challenge = null; reply(pick([`You used "${ch.word}"! Teacher Dude is proud.`, `"${ch.word}" in a real sentence! Your English is leveling up.`, `Look at you using "${ch.word}" like a pro. I'm emotional.`]), { emo: 'excited' }); stars(pet.x, pet.y - H, 10); return true; }
+  if (ch && ch.type === 'story' && t.split(/\s+/).length >= 6 && !/^(find|search|open|remind|how'?s|organi|what did)/.test(t)) {
+    thinkState.challenge = null;
+    if (aiOk()) return false;   // his AI brain gives a real tip
+    const k = t.split(/\s+/).length;
+    reply(pick([`Nice! That's ${k} words of English practice. Every story makes the next one easier.`, `Love it. ${k} words, zero fear. Do it again tomorrow.`, `Good story, ${N()}! You're getting better. I can hear it.`]), { emo: 'proud' }); return true;
+  }
+  if (/^(word of the day|teach me (an? )?(english )?word|teach me english|english (word|practice|lesson))\b/.test(t)) { const w = wordToday(); day.wordSaid = true; saveDay(); thinkState.challenge = { type: 'word', word: w[0], at: Date.now() }; reply(`Word of the day: "${w[0]}". It means ${w[1]}. Example: ${fill(w[2])} Now you: use it in a sentence.`, { emo: 'happy', ms: 12000 }); return true; }
+  // teaching him
+  if ((m = text.match(/^(?:when|if|every time|whenever) i open ([\w .+&'-]{2,30}?),?\s+(?:say|tell me|you say|you should say)[:,]?\s+(.+)$/i))) { addRule('app', m[1], m[2]); reply(`Got it. When you open ${m[1].trim()}, I'll say: "${m[2].trim().slice(0, 80)}"`, { emo: 'proud' }); return true; }
+  if ((m = text.match(/^(?:every morning|in the morning|each morning),?\s+(?:say|tell me)[:,]?\s+(.+)$/i))) { addRule('morning', '', m[1]); reply('Deal. That is my new morning line.', { emo: 'proud' }); return true; }
+  if ((m = text.match(/^(?:late at night|at night|every night),?\s+(?:say|tell me)[:,]?\s+(.+)$/i))) { addRule('night', '', m[1]); reply('Okay. Night shift line saved.', { emo: 'proud' }); return true; }
+  if ((m = text.match(/^when i come back,?\s+(?:say|tell me)[:,]?\s+(.+)$/i))) { addRule('back', '', m[1]); reply("Saved. That's how I'll welcome you back.", { emo: 'proud' }); return true; }
+  if (/^(stop|no more|don'?t|do not) roast(ing)?( me)?\b/.test(t)) { teach.topics.roast = false; saveTeach(); renderTeach(); reply("Okay, okay. No more roasts. I'll be nice. It's hard.", { emo: 'sad' }); return true; }
+  if (/^roast me\b/.test(t)) { if (!teach.topics.roast) { teach.topics.roast = true; saveTeach(); renderTeach(); } think('random', {}, { force: true, topic: 'roast' }); return true; }
+  if (/^(motivate me|hype me( up)?|push me)\b/.test(t)) { think('random', {}, { force: true, topic: 'hustle' }); return true; }
+  if (/^(say something|talk to me|what'?s on your mind|tell me something)\b/.test(t)) { think('random', {}, { force: true, topic: pickTopic() || 'random' }); return true; }
+  if (/^(please |dude,? )?(talk less|you talk too much|be quiet(er)?|shut up)\b/.test(t)) { applyTeach({ kind: 'talk_less' }); reply('Fine. I will talk less. My feelings are hurt, quietly.', { emo: 'sad' }); return true; }
+  if (/^(please |dude,? )?(talk more|say more|be more chatty)\b/.test(t)) { applyTeach({ kind: 'talk_more' }); reply('Oh, you WANT the full show? Say less. Actually, say more.', { emo: 'excited' }); return true; }
+  if ((m = text.match(/^(?:my project is called|i'?m building|i am building|my project is)\s+(.{2,40})$/i))) { teach.about.project = m[1].replace(/[.!]+$/, '').trim(); saveTeach(); renderTeach(); reply(fill('{p}. Saved in my big head. I believe in it already.'), { emo: 'excited' }); return true; }
+  if ((m = text.match(/^(?:i'?m learning|i am learning|i want to get better at)\s+(.{2,40})$/i))) { teach.about.learning = m[1].replace(/[.!]+$/, '').trim(); saveTeach(); renderTeach(); reply(`${teach.about.learning}? Let's go. I'll help.`, { emo: 'happy' }); return true; }
+  if (/^(what do you know about me|who am i|do you know me)\b/.test(t)) {
+    const a = teach.about, bits = [];
+    if (a.project) bits.push(`you're building ${a.project}${a.what ? `, ${a.what}` : ''}`);
+    if (a.learning) bits.push(`you're getting better at ${a.learning}`);
+    if (a.dream) bits.push(`the dream is: ${a.dream}`);
+    const more = teach.facts.length + (learnedCache && learnedCache.insights ? learnedCache.insights.length : 0);
+    const said = bits.join('; ');
+    reply(bits.length ? `You're ${N()}. ${said[0].toUpperCase() + said.slice(1)}.${more ? ` And I know ${more} more thing${more > 1 ? 's' : ''}. Check my Teach tab.` : ''}` : "Not enough yet! Open my Teach tab, or say 'my project is called...'", { emo: 'smug', ms: 9000 });
+    if (!bits.length && needsInterview()) setTimeout(interview, 3000);
+    return true;
+  }
+  return false;
+}
+
+/* ================= the Teach tab ================= */
+function renderTeach() {
+  const A = teach.about;
+  for (const [id, k] of [['abProject', 'project'], ['abWhat', 'what'], ['abLearning', 'learning'], ['abDream', 'dream']]) { const el = $('#' + id); if (el && document.activeElement !== el) el.value = A[k] || ''; }
+  $('#topicChips').innerHTML = TOPICS.map(([k, lab]) => `<button class="chip${teach.topics[k] ? ' on' : ''}" type="button" data-topic="${k}" aria-pressed="${!!teach.topics[k]}">${esc(lab())}</button>`).join('');
+  $('#trigChips').innerHTML = TRIGS.map(([k, lab]) => `<button class="chip${teach.triggers[k] ? ' on' : ''}" type="button" data-trig="${k}" aria-pressed="${!!teach.triggers[k]}">${esc(lab)}</button>`).join('');
+  $('#ruleList').innerHTML = teach.rules.length ? teach.rules.map((r, i) => `<li><span class="tag">${esc(WHEN_TXT[r.when] || r.when)}${r.when === 'app' ? ' ' + esc(r.app) : ''}</span><span class="txt">"${esc(r.say)}"</span><button class="x" type="button" data-rmrule="${i}" aria-label="Remove this line">&#215;</button></li>`).join('') : '<li class="empty">No lines yet. Try: When I open TikTok, he says "Ten minutes, bro."</li>';
+  $('#factList').innerHTML = teach.facts.length ? teach.facts.map((f, i) => `<li><span class="txt">${esc(f)}</span><button class="x" type="button" data-rmfact="${i}" aria-label="Forget this">&#215;</button></li>`).join('') : '<li class="empty">Tell him things about you. He uses them when he talks to you.</li>';
+  const tb = $('#tasteBox');
+  if (tb) {
+    const fav = Object.entries(taste.topic).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k]) => (TOPICS.find(x => x[0] === k) || [0, () => k])[1]());
+    tb.innerHTML = `<b>${taste.ups}</b> joke${taste.ups === 1 ? '' : 's'} you loved, <b>${taste.downs}</b> you killed.` + (fav.length ? `<br>You laugh most at: ${esc(fav.slice(0, 2).join(', '))}.` : '') + (taste.upText.length ? `<br>Your favorite: "${esc(taste.upText[taste.upText.length - 1])}"` : '');
+  }
+  renderLearned();
+}
+function renderLearned() {
+  const el = $('#learnedBox'); if (!el) return;
+  if (!DESKTOP) { el.textContent = 'In the Windows app he studies your routine: when you start, which apps you live in, your late nights. It stays on your laptop.'; return; }
+  const L = learnedCache;
+  if (!dudeView || !dudeView.perms.memory) { el.textContent = 'Memory is off (Access tab), so he can\'t learn your routine.'; return; }
+  if (!L || !L.insights) { el.textContent = 'Studying you...'; return; }
+  el.innerHTML = L.insights.map(x => `<div>${esc(x)}</div>`).join('') + (dudeView.perms.apps ? '' : '<div class="sub">Switch on "Which app you\'re using" in the Access tab so he also learns your apps and sites.</div>');
+}
+$('#win-pet').addEventListener('click', e => {
+  const tc = e.target.closest('[data-topic]'), gc = e.target.closest('[data-trig]'), rr = e.target.closest('[data-rmrule]'), rf = e.target.closest('[data-rmfact]');
+  if (tc) { const k = tc.dataset.topic; teach.topics[k] = !teach.topics[k]; saveTeach(); renderTeach(); userPing(); say(teach.topics[k] ? pick(['Topic unlocked.', "Ooh. Yes. I'll talk about that."]) : pick(["Okay. I won't bring it up.", 'Topic deleted from my mouth.']), { emo: teach.topics[k] ? 'excited' : 'chill', reply: true }); }
+  if (gc) { const k = gc.dataset.trig; teach.triggers[k] = !teach.triggers[k]; saveTeach(); renderTeach(); userPing(); }
+  if (rr) { teach.rules.splice(+rr.dataset.rmrule, 1); saveTeach(); renderTeach(); }
+  if (rf) { teach.facts.splice(+rf.dataset.rmfact, 1); saveTeach(); renderTeach(); say('Forgotten. What were we talking about?', { reply: true }); }
+});
+for (const [id, k] of [['abProject', 'project'], ['abWhat', 'what'], ['abLearning', 'learning'], ['abDream', 'dream']]) {
+  $('#' + id).addEventListener('change', e => { teach.about[k] = e.target.value.trim(); if (teach.interview === 0 && teach.about.project) teach.interview = 1; saveTeach(); renderTeach(); if (e.target.value.trim()) say(k === 'project' ? fill('{p}! Saved. I believe in it.') : 'Saved in my big head.', { emo: 'happy', reply: true }); });
+}
+const ruleWhen = $('#ruleWhen'), ruleApp = $('#ruleApp');
+ruleWhen.addEventListener('change', () => { $('#ruleAppWrap').hidden = ruleWhen.value !== 'app'; });
+$('#ruleForm').addEventListener('submit', e => {
+  e.preventDefault(); userPing();
+  const sayTxt = $('#ruleSay').value, w = ruleWhen.value;
+  if (w === 'app' && !ruleApp.value.trim()) { ruleApp.focus(); return; }
+  if (addRule(w, ruleApp.value, sayTxt)) { $('#ruleSay').value = ''; ruleApp.value = ''; say(pick(['Learned it.', 'New line unlocked.', "Got it. I'll say it like I mean it."]), { emo: 'proud', reply: true }); }
+});
+$('#factForm').addEventListener('submit', e => { e.preventDefault(); const v = $('#factIn').value.trim(); if (!v) return; applyTeach({ kind: 'fact', fact: v }); $('#factIn').value = ''; say('Saved in my big head.', { emo: 'happy', reply: true }); });
+bubble.addEventListener('click', e => { const b = e.target.closest('[data-fb]'); if (!b || !bubbleFb) return; const fb = bubbleFb; bubbleFb = null; bubble.querySelector('.fb').hidden = true; rateLine(fb, b.dataset.fb === 'up'); });
+renderTeach();
+
+lifeReady = true;
 
 /* ================= drawing ================= */
 let lastMood = '';
@@ -3111,6 +3727,6 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__kito = { enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard };
+window.__kito = { enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard, think, morning, night, interview, missionCheck, onDudeEvent, lifeTick, rateLine, get teach() { return teach; }, get taste() { return taste; }, get day() { return day; }, get thinkState() { return thinkState; }, get flow() { return flow; }, canSpeakNow, lineFor, wordToday, _hurry() { lastReplyAt = -1e9; thinkState.bootAt -= 1e6; thinkState.lastApp = -1e9; thinkState.ruleAt = {}; } };
 })();
 </script>

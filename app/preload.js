@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('kitoDesktop', {
   quit: () => ipcRenderer.send('kito:quit'),
   // brain, permissions, memory
   chat: (text, ctx) => ipcRenderer.invoke('dude:chat', text, ctx),
+  thought: (req, ctx) => ipcRenderer.invoke('dude:thought', req, ctx),
+  habits: () => ipcRenderer.invoke('dude:habits'),
   open: (id, how) => ipcRenderer.invoke('dude:open', { id, how }),
   settings: () => ipcRenderer.invoke('dude:settings'),
   setSettings: patch => ipcRenderer.invoke('dude:settings:set', patch),

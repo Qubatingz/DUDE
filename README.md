@@ -25,6 +25,17 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 - His face sits in the tray near the clock: controls, Studio, jokes, voice, sleep, start with Windows, quit.
 - **Ctrl+Shift+Q** quits him instantly.
 
+## He gets to know you
+
+- **Talks first:** when you open an app, in the morning, late at night, when you work too long, and a random thought every 10&#8211;15 minutes. He stays quiet while you focus.
+- **Get-to-know-you questions:** what you're building, what you're learning, your dream.
+- **Studies your routine** (on your laptop only): when you start, your busiest hour, the apps and sites you live in, late nights, long sessions.
+- **Learns your humor:** tap &#128514; or &#128078; on his speech bubble. He does more of what you laugh at and never repeats a killed joke.
+- **Daily mission:** every morning he asks for the one thing you'll do today, and checks on it in the evening.
+- **English practice:** word of the day, small challenges, better ways to say things.
+- **Calms overthinking:** say "I'm overthinking" and he walks you to one small next step.
+- **Teach tab:** pick his topics and how often he talks, and teach him your own lines.
+
 ## What he can do
 
 - **Acting:** lip-synced talking, hand gestures that match his words, 20+ facial expressions, blinking, head movement, idle fidgets.
@@ -52,6 +63,7 @@ Dude asks before he touches anything. Access to your folders, apps and recent fi
 | `app/brain.js` | The AI brain: talks to Claude and gives it tools (search files, report, reminders, moves). |
 | `app/files.js` | File search, the check-up report, and watching for new downloads and exports. |
 | `app/memory.js` | What you worked on each day, kept on your laptop. |
+| `app/habits.js` | Learns your routine and tells Dude about moments worth reacting to. |
 | `app/settings.js` | Permissions, allowed folders, the encrypted API key. |
 | `app/windows.ps1` | Reads where your open windows are so he can stand on them, and which app is in front so he can stay quiet. |
 | `app/listen.ps1` | Push-to-talk speech recognition using Windows' built-in recognizer. |

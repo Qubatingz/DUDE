@@ -21,8 +21,25 @@ const TOOLS = [
   { name: 'recent_activity', description: 'What the user worked on recently: apps used, documents or projects that were open, and recent files. Needs memory and app permission.', input_schema: { type: 'object', properties: {} } },
   { name: 'set_reminder', description: 'Remind the user about something after a number of minutes.', input_schema: { type: 'object', properties: { text: { type: 'string' }, minutes: { type: 'number' } }, required: ['text', 'minutes'] } },
   { name: 'remember_note', description: 'Save a short note the user wants you to remember.', input_schema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } },
-  { name: 'do_move', description: 'Perform an animation on screen, for fun or to celebrate.', input_schema: { type: 'object', properties: { move: { type: 'string', enum: ['dance', 'noodle', 'moonwalk', 'backflip', 'dab', 'robot', 'shimmy', 'runningman', 'guitar', 'headspin', 'flex', 'selfie', 'graffiti', 'rap', 'wave', 'sleep'] } }, required: ['move'] } }
+  { name: 'do_move', description: 'Perform an animation on screen, for fun or to celebrate.', input_schema: { type: 'object', properties: { move: { type: 'string', enum: ['dance', 'noodle', 'moonwalk', 'backflip', 'dab', 'robot', 'shimmy', 'runningman', 'guitar', 'headspin', 'flex', 'selfie', 'graffiti', 'rap', 'wave', 'sleep'] } }, required: ['move'] } },
+  { name: 'teach_dude', description: 'Save something the user teaches you about himself or about how you should behave. kind=fact: a fact about him ("I make beats at night"). kind=rule: when something happens, say a line (when=app needs the app or website name). kind=topic_on/topic_off: what you talk about by yourself. kind=talk_more/talk_less: how often you speak up by yourself. kind=about: his project, what it is, what he is learning, or his dream.', input_schema: { type: 'object', properties: { kind: { type: 'string', enum: ['fact', 'rule', 'topic_on', 'topic_off', 'talk_more', 'talk_less', 'about'] }, fact: { type: 'string' }, when: { type: 'string', enum: ['app', 'morning', 'night', 'back', 'anytime'] }, app: { type: 'string' }, say: { type: 'string' }, topic: { type: 'string', enum: ['hustle', 'english', 'roast', 'calm', 'random'] }, field: { type: 'string', enum: ['project', 'what', 'learning', 'dream'] }, value: { type: 'string' } }, required: ['kind'] } }
 ];
+const TOPIC_TEXT = {
+  hustle: 'his project and money moves: hype, a practical business tip, or a push to do one small thing today',
+  english: 'English practice: a useful word, a better way to say something, or a tiny speaking challenge',
+  roast: 'a friendly roast about what he is doing right now (never about looks, money problems, family or anything sensitive)',
+  calm: 'calming his overthinking: one grounding thought or one small next step, no lectures',
+  random: 'a random funny thought that just popped into your cartoon head'
+};
+const TRIGGER_TEXT = {
+  random: 'Nothing special happened; a thought just came to you.',
+  long: 'He has been working for a long time without a break.',
+  night: 'It is late at night and he is still on the laptop.',
+  back: 'He just came back to the laptop after being away.',
+  binge: 'He has been on the same social or video site for a while.',
+  pattern: 'You noticed something about his routine by watching.',
+  app: 'He just opened an app or website.'
+};
 
 function createBrain(d) {
   // d: { settings, files, memory, status(ctx), ask(scopeKey, question, reason), emit(type, payload), net }
@@ -96,6 +113,7 @@ function createBrain(d) {
       if (name === 'set_reminder') { d.emit('action', { type: 'reminder', text: String(input.text || '').slice(0, 120), minutes: Math.max(.1, Math.min(1440, +input.minutes || 5)) }); return { done: true }; }
       if (name === 'remember_note') { if (!s.perms.memory) return { error: 'memory_off' }; d.emit('action', { type: 'note', text: String(input.text || '').slice(0, 160) }); return { done: true }; }
       if (name === 'do_move') { d.emit('action', { type: 'move', move: input.move }); return { done: true }; }
+      if (name === 'teach_dude') { const t = {}; for (const k of ['kind', 'fact', 'when', 'app', 'say', 'topic', 'field', 'value']) if (input[k] != null) t[k] = String(input[k]).slice(0, 160); d.emit('action', Object.assign({ type: 'teach' }, t)); return { done: true }; }
     } catch (e) { return { error: String(e.message || e) }; }
     return { error: 'unknown_tool' };
   }
@@ -117,8 +135,31 @@ How to answer:
 - When a search finds files, the app shows them as a clickable list, so just say what you found in a few words and offer to open the best match.
 - Use ${nm === 'the user' ? 'their name' : nm} now and then, not every message.
 
-Right now: ${new Date().toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'long' })}. Folders you may search: ${allowed.length ? allowed.join(', ') : 'none yet'}. App access: ${s.perms.apps ? 'on' : 'off'}. Memory: ${s.perms.memory ? 'on' : 'off'}.${ctx.focusApp ? ' App in front: ' + ctx.focusApp + '.' : ''}${ctx.sick ? ' The computer has a problem right now: ' + ctx.sick + '.' : ''}`;
+Right now: ${new Date().toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'long' })}. Folders you may search: ${allowed.length ? allowed.join(', ') : 'none yet'}. App access: ${s.perms.apps ? 'on' : 'off'}. Memory: ${s.perms.memory ? 'on' : 'off'}.${ctx.focusApp ? ' App in front: ' + ctx.focusApp + '.' : ''}${ctx.sick ? ' The computer has a problem right now: ' + ctx.sick + '.' : ''}
+${aboutHim(ctx, nm)}`;
   }
+  /* everything he taught Dude, plus what Dude noticed, so Dude sounds like a friend and not a stranger */
+  function aboutHim(ctx, nm) {
+    const me = ctx.me || {}, a = me.about || {}, L = [];
+    const who = [a.project && `building ${a.project}${a.what ? ` (${a.what})` : ''}`, a.learning && `getting better at ${a.learning}`, a.dream && `dream: ${a.dream}`].filter(Boolean);
+    if (who.length) L.push(`- ${who.join('; ')}.`);
+    if (me.facts && me.facts.length) L.push(`- Things he told you: ${me.facts.join(' | ')}`);
+    if (me.notes && me.notes.length) L.push(`- Notes you saved for him: ${me.notes.join(' | ')}`);
+    if (d.habits && s0().perms.memory) { try { L.push(`- His routine (you learned it by watching): ${d.habits.brief()}`); } catch (e) {} }
+    if (me.mission) L.push(`- His mission for today: "${me.mission}"${me.missionDone ? ' (done!)' : ''}.`);
+    if (me.word) L.push(`- Word of the day you taught him: "${me.word}".`);
+    if (me.topics && me.topics.length) L.push(`- He wants you to talk about: ${me.topics.join(', ')}.`);
+    if (me.liked && me.liked.length) L.push(`- Lines he laughed at (more like these): ${me.liked.map(x => '"' + x + '"').join(' ')}`);
+    if (me.disliked && me.disliked.length) L.push(`- Lines he did NOT like (avoid this kind): ${me.disliked.map(x => '"' + x + '"').join(' ')}`);
+    if (me.lastThought) L.push(`- The last thing you said on your own: "${me.lastThought}".`);
+    const learning = /english/i.test(a.learning || '') || (me.topics || []).includes('English practice');
+    return `About ${nm} (use this to sound like his friend who really knows him; bring it up naturally, not every time):
+${L.length ? L.join('\n') : '- You are still getting to know him.'}
+${learning ? `- ${nm} is learning English. Use simple words. When he practices (a story or a sentence), cheer him on and give at most one small, kind correction.\n` : ''}- If he seems stuck in his head or overthinking: help him get out. Ask him to dump it, then help him pick one 10-minute step, and offer a reminder. No lectures.
+- If he teaches you something about himself or how to behave, save it with teach_dude.
+- Serious moments: if he mentions self-harm, suicide or a real crisis, drop all jokes, answer with care, and encourage him to reach out right now to someone he trusts or to a local crisis line or emergency number.`;
+  }
+  const s0 = () => d.settings.get();
   async function call(key, body) {
     const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 45000);
     try {
@@ -128,8 +169,9 @@ Right now: ${new Date().toLocaleString('en-US', { weekday: 'long', hour: 'numeri
       return j;
     } finally { clearTimeout(timer); }
   }
-  async function claude(key, msgs, ctx) {
-    const body = { model: d.settings.get().model || 'claude-haiku-5-5', max_tokens: 700, system: system(ctx), tools: TOOLS, messages: msgs };
+  async function claude(key, msgs, ctx, opt = {}) {
+    const body = { model: d.settings.get().model || 'claude-haiku-5-5', max_tokens: opt.max || 700, system: opt.system || system(ctx), messages: msgs };
+    if (!opt.noTools) body.tools = TOOLS;
     if (!plain) { body.output_config = { effort: 'low' }; body.thinking = { type: 'disabled' }; }
     try { return await call(key, body); }
     catch (e) {
@@ -228,6 +270,22 @@ Right now: ${new Date().toLocaleString('en-US', { weekday: 'long', hour: 'numeri
         if (!basic.local) return Object.assign({ brain: 'basic' }, basic);
         return { say: 'I can\'t reach my brain right now. Is the internet okay?', mood: 'concerned', brain: 'error' };
       }
+    },
+    /* Dude speaks first: one short line, written for this moment and this person */
+    async thought(req, ctx = {}) {
+      const key = d.settings.getKey();
+      if (!key) return null;
+      lastCtx = ctx;
+      const nm = d.settings.get().userName || 'the user';
+      const extra = `\n\nRight now you speak FIRST, without being asked. ${TRIGGER_TEXT[req.trigger] || TRIGGER_TEXT.random} Topic: ${TOPIC_TEXT[req.topic] || TOPIC_TEXT.random}.${req.data ? ' Details: ' + JSON.stringify(req.data).slice(0, 500) + '.' : ''}
+Write ONE short line, at most 25 words, that only you could say to ${nm}, because you know him. Start with one mood tag. Do not greet him and do not ask how he is. No emojis.`;
+      try {
+        const res = await claude(key, [{ role: 'user', content: '(Say what comes to your mind.)' }], ctx, { system: system(ctx) + extra, noTools: true, max: 160 });
+        const text = (res.content || []).filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+        if (!text) return null;
+        const r = parse(text);
+        return r.say.length > 220 ? null : Object.assign({ brain: 'ai' }, r);
+      } catch (e) { return null; }
     },
     async testKey(key) {
       try { await call(key, { model: d.settings.get().model || 'claude-haiku-5-5', max_tokens: 5, messages: [{ role: 'user', content: 'Say hi' }] }); return { ok: true }; }
