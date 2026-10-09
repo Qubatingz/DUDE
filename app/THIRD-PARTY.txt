@@ -1,0 +1,12 @@
+Dude uses these free, open-source pieces. Thank you to their authors.
+
+- Electron (MIT) - https://www.electronjs.org
+- sherpa-onnx (Apache-2.0) - the voice engine for "My voice" - https://github.com/k2-fsa/sherpa-onnx
+- ONNX Runtime (MIT), included with sherpa-onnx - https://onnxruntime.ai
+- Fonts: Patrick Hand, Bagel Fat One, Atkinson Hyperlegible (SIL Open Font License 1.1), see fonts/FONTS-LICENSE.txt
+
+Downloaded only when you switch on "My voice" (not part of this download):
+- ZipVoice voice-copying model from the k2-fsa project. It was trained on the Emilia dataset,
+  which is licensed for non-commercial use, so "My voice" is for personal use.
+- Vocos vocoder (MIT)
+- eSpeak NG pronunciation data (GPL-3.0) - https://github.com/espeak-ng/espeak-ng

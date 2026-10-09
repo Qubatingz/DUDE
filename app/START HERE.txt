@@ -33,6 +33,21 @@ HE GETS TO KNOW YOU
 - If you allow "Which app you're using", he learns your routine on this laptop:
   when you start, your busiest hour, the apps and sites you live in, late nights.
 
+TEACH HIM YOURSELF (any language, in your voice)
+- Teach tab > "Teach him something": pick WHEN (I say..., I open an app, every morning,
+  late at night, I come back, I finish something, anytime), then type what he says,
+  or press the mic and say it in YOUR voice. Kinyarwanda, English, anything.
+- He can do a move with it too (dab, backflip, noodle dance...).
+- Example: when you say "Amakuru?", he answers "Ni meza!" in your voice.
+- Or just tell him: "when I say show them, do a backflip", or "learn this".
+
+MY VOICE (he talks like you)
+- Brain tab > His voice > My voice, then read the card out loud (about 15 seconds).
+- The first time he downloads his new vocal cords (about 160 MB, one time only).
+- It all happens on this laptop. Free, and your recording never leaves it.
+- He needs a second or two before he talks. The Windows voice is instant.
+- "Delete my recording" in the same place removes it.
+
 GIVE HIM A REAL AI BRAIN (optional)
 Without it he understands simple commands. With it he understands normal sentences,
 and his first-to-speak thoughts are written fresh for you, using what he knows about you.
@@ -44,7 +59,8 @@ PRIVACY: HE ASKS FIRST
 - Access tab: switch on/off what he can see (apps, recent files, memory, folders).
 - In folders he only reads file NAMES, sizes and dates. He never deletes or moves anything.
 - He goes quiet by himself in full-screen apps, music software and video calls.
-- Memory tab > Forget everything wipes his memory, his routine notes and what you taught him.
+- Memory tab > Forget everything wipes his memory, his routine notes, what you taught him
+  and your voice recordings.
 
 PLAY
 - Grab him and throw him. He walks on top of your open windows.

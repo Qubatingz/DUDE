@@ -11,6 +11,13 @@ contextBridge.exposeInMainWorld('kitoDesktop', {
   chat: (text, ctx) => ipcRenderer.invoke('dude:chat', text, ctx),
   thought: (req, ctx) => ipcRenderer.invoke('dude:thought', req, ctx),
   habits: () => ipcRenderer.invoke('dude:habits'),
+  // "my voice"
+  voiceStatus: () => ipcRenderer.invoke('dude:voice:status'),
+  voicePrepare: () => ipcRenderer.invoke('dude:voice:prepare'),
+  voiceSetRef: (samples, sr, text) => ipcRenderer.invoke('dude:voice:setRef', samples, sr, text),
+  voiceSay: (text, speed) => ipcRenderer.invoke('dude:voice:say', text, speed),
+  voiceForget: () => ipcRenderer.invoke('dude:voice:forget'),
+  onVoiceStatus: on('dude:voiceStatus'),
   open: (id, how) => ipcRenderer.invoke('dude:open', { id, how }),
   settings: () => ipcRenderer.invoke('dude:settings'),
   setSettings: patch => ipcRenderer.invoke('dude:settings:set', patch),

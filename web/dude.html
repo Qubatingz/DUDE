@@ -374,6 +374,13 @@ html.desktop .demo-note{display:none}
 .btn.danger.confirm{background:var(--bad);border-color:var(--bad);color:#fff}
 .tip a{color:var(--accent);font-weight:700}
 .teachform{display:flex;flex-direction:column;gap:8px}
+.clipbox{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:6px 8px}
+.cliplab{flex:1;font-size:13px;min-width:120px}
+.badge2{display:inline-block;font-size:11px;font-weight:700;background:var(--paper-2);border-radius:999px;padding:1px 7px;margin-left:4px;white-space:nowrap}
+.mem .rbtns{grid-column:2;grid-row:1 / span 2;align-self:center;display:flex;gap:1px}
+.script{font:18px/1.35 var(--font-hand);background:#fff;border:1.5px dashed var(--line);border-radius:9px;padding:9px 11px}
+.btn.rec{background:var(--bad);border-color:var(--bad);color:#fff}
+#myVoiceBox .card-row{margin-top:8px}
 .lasttime div+div{margin-top:4px}
 .card .chips{margin-top:-2px}
 
@@ -554,6 +561,22 @@ html.desktop .studio{bottom:0}
 
     <div class="win-body ctrl" data-pane="teach" role="tabpanel" aria-labelledby="tab-teach" hidden>
       <p class="tip">The more you teach him, the more he sounds like your friend. Everything here stays on this laptop.</p>
+      <div class="sec"><div class="sec-head"><h3 class="sec-label">Teach him something</h3><span class="sub">Any language. Your voice.</span></div>
+        <form class="teachform" id="ruleForm" autocomplete="off">
+          <div class="two">
+            <label class="fieldwrap"><span class="sub">When</span><select id="ruleWhen"><option value="say">I say...</option><option value="app">I open an app</option><option value="morning">Every morning</option><option value="night">Late at night</option><option value="back">I come back</option><option value="win">I finish something</option><option value="anytime">Anytime</option></select></label>
+            <label class="fieldwrap" id="ruleAppWrap"><span class="sub" id="ruleAppLab">You say</span><input class="field" id="ruleApp" maxlength="60" placeholder="e.g. Amakuru?"></label>
+          </div>
+          <span class="sub">He says: type it, or press the mic and say it in your voice.</span>
+          <div class="talk"><input id="ruleSay" maxlength="140" placeholder="He says..." aria-label="What he says"><button class="btn mic" type="button" id="ruleMic" aria-label="Record it in your voice" title="Record it in your voice"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="5.5" y="1.8" width="5" height="8.2" rx="2.5"/><path d="M3 7.6a5 5 0 0 0 10 0M8 12.6v2"/></svg></button></div>
+          <div class="clipbox" id="ruleClipBox" hidden><span class="cliplab">&#127908; Your voice &middot; <b id="ruleClipLen"></b></span><button class="btn sm" type="button" id="ruleClipPlay">Play</button><button class="btn sm" type="button" id="ruleClipDel">Remove</button></div>
+          <div class="two">
+            <label class="fieldwrap"><span class="sub">He does</span><select id="ruleMove"><option value="">Nothing</option><option value="noodle">Noodle dance</option><option value="backflip">Backflip</option><option value="moonwalk">Moonwalk</option><option value="dab">Dab</option><option value="robot">Robot</option><option value="flex">Flex</option><option value="shimmy">Shimmy</option><option value="headspin">Head spin</option><option value="guitar">Air guitar</option></select></label>
+            <div class="fieldwrap"><span class="sub">&#8203;</span><button class="btn primary" type="submit">Teach him</button></div>
+          </div>
+        </form>
+        <ul class="mem" id="ruleList"></ul>
+      </div>
       <div class="sec"><h3 class="sec-label">About you</h3>
         <div class="two">
           <label class="fieldwrap"><span class="sub">What you're building</span><input class="field" id="abProject" maxlength="40" placeholder="Your big project" autocomplete="off"></label>
@@ -569,16 +592,6 @@ html.desktop .studio{bottom:0}
         <div class="seg" id="interruptSeg" role="radiogroup" aria-labelledby="intLabel">
           <button type="button" role="radio" data-v="rarely">When something happens</button><button type="button" role="radio" data-v="sometimes">Every 10&#8211;15 min</button><button type="button" role="radio" data-v="often">Every 3&#8211;5 min</button>
         </div>
-      </div>
-      <div class="sec"><h3 class="sec-label">Teach him a line</h3>
-        <form class="teachform" id="ruleForm" autocomplete="off">
-          <div class="two">
-            <label class="fieldwrap"><span class="sub">When</span><select id="ruleWhen"><option value="app">I open an app</option><option value="morning">Every morning</option><option value="night">Late at night</option><option value="back">I come back</option><option value="anytime">Anytime</option></select></label>
-            <label class="fieldwrap" id="ruleAppWrap"><span class="sub">App or site</span><input class="field" id="ruleApp" maxlength="30" placeholder="e.g. TikTok"></label>
-          </div>
-          <div class="talk"><input id="ruleSay" maxlength="140" placeholder="He says..." aria-label="What he says"><button class="btn primary" type="submit">Teach</button></div>
-        </form>
-        <ul class="mem" id="ruleList"></ul>
       </div>
       <div class="sec"><h3 class="sec-label">Things he knows about you</h3>
         <form class="talk" id="factForm" autocomplete="off"><input id="factIn" maxlength="120" placeholder="e.g. I make beats at night" aria-label="Something about you"><button class="btn primary" type="submit">Add</button></form>
@@ -623,10 +636,15 @@ html.desktop .studio{bottom:0}
           <button class="btn" id="voiceBtn" type="button" aria-pressed="false">Turn on his voice</button>
           <button class="btn" id="voiceTest" type="button">Test voice</button>
         </div>
+        <div class="seg" id="engineSeg" role="radiogroup" aria-label="Which voice"><button type="button" role="radio" data-eng="windows">Windows voice</button><button type="button" role="radio" data-eng="me">My voice</button></div>
+        <div class="lasttime" id="myVoiceBox" hidden>
+          <div id="myVoiceStatus"></div>
+          <div class="card-row"><button class="btn sm primary" type="button" id="myVoiceRec">Record my voice</button><button class="btn sm" type="button" id="myVoiceTest">Test</button><button class="btn sm danger" type="button" id="myVoiceDel">Delete my recording</button></div>
+        </div>
         <div class="chips" id="voicePresets" aria-label="Voice styles"></div>
-        <label class="fieldwrap"><span class="sec-label">Voice</span><select id="voiceSel"></select></label>
+        <label class="fieldwrap" id="voiceSelWrap"><span class="sec-label">Voice</span><select id="voiceSel"></select></label>
         <div class="two">
-          <label class="fieldwrap"><span class="sec-label">Pitch <span class="vval" id="pitchVal"></span></span><input type="range" id="pitchIn" min="0.3" max="2" step="0.05"></label>
+          <label class="fieldwrap" id="pitchWrap"><span class="sec-label">Pitch <span class="vval" id="pitchVal"></span></span><input type="range" id="pitchIn" min="0.3" max="2" step="0.05"></label>
           <label class="fieldwrap"><span class="sec-label">Speed <span class="vval" id="rateVal"></span></span><input type="range" id="rateIn" min="0.6" max="1.8" step="0.05"></label>
         </div>
         <span class="sub" id="voiceSub">These voices come from your computer, so the list depends on your laptop and browser.</span>
@@ -1564,6 +1582,87 @@ pitchIn.addEventListener('change', testVoice); rateIn.addEventListener('change',
 $('#voiceTest').addEventListener('click', testVoice);
 fillVoices(); renderVoiceCfg();
 
+/* ================= audio: his own recorded lines, and "my voice" ================= */
+let actx = null, curSrc = null, voiceTok = 0, muteUntil = 0;
+function AC() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume().catch(() => {}); return actx; }
+function stopAudio() { if (curSrc) { try { curSrc.stop(); } catch (e) {} curSrc = null; } }
+function playSamples(samples, sr) {
+  const ctx = AC(), data = samples instanceof Float32Array ? samples : Float32Array.from(samples);
+  const b = ctx.createBuffer(1, data.length, sr); b.copyToChannel(data, 0);
+  const src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination);
+  stopAudio(); try { speechSynthesis.cancel(); } catch (e) {}
+  curSrc = src; src.onended = () => { if (curSrc === src) curSrc = null; };
+  src.start();
+  return b.duration;
+}
+const timeoutP = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+/* the lines you record live in this laptop's browser storage (IndexedDB) */
+const clipDB = (() => {
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res, rej) => { const r = indexedDB.open('dude-voice', 1); r.onupgradeneeded = () => r.result.createObjectStore('clips'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
+  const tx = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction('clips', mode), q = fn(t.objectStore('clips')); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); }); };
+  return { put: (k, v) => tx('readwrite', s => s.put(v, k)), get: k => tx('readonly', s => s.get(k)), del: k => tx('readwrite', s => s.delete(k)), clear: () => tx('readwrite', s => s.clear()) };
+})();
+const clipCache = new Map();
+async function loadClip(id) { if (clipCache.has(id)) return clipCache.get(id); const v = await clipDB.get(id); if (v) clipCache.set(id, v); return v; }
+/* while audio is loading his lips wait ("hold"); then they follow the real length of the audio */
+function releaseTalk(key, dur) {
+  const T = perf.talk; if (!T || T.text !== key) return;
+  T.hold = false;
+  if (dur) { T.cps = Math.max(2.5, T.len / dur); clearTimeout(bubbleTimer); bubbleTimer = setTimeout(hideBubble, dur * 1000 + 1700 + (bubbleFb ? 3500 : 0)); }
+}
+async function playClip(id, key) {
+  const tok = ++voiceTok;
+  try { const c = await loadClip(id); if (tok !== voiceTok) return; if (!c) throw new Error('gone'); releaseTalk(key, playSamples(c.data, c.sr)); }
+  catch (e) { if (tok === voiceTok) releaseTalk(key, null); }
+}
+const myVoice = { status: null, cache: new Map() };
+const useMyVoice = () => DESKTOP && voiceCfg.engine === 'me' && !!myVoice.status && myVoice.status.state === 'ready' && myVoice.status.hasRef;
+async function speakMine(text, key) {
+  const tok = ++voiceTok;
+  let r = myVoice.cache.get(text);
+  if (!r) {
+    r = await timeoutP(KD.voiceSay(text, voiceCfg.rate).catch(e => ({ error: String(e) })), 25000);
+    if (r && r.samples) { myVoice.cache.set(text, r); if (myVoice.cache.size > 40) myVoice.cache.delete(myVoice.cache.keys().next().value); }
+  }
+  if (tok !== voiceTok) return;
+  if (!r || !r.samples) { releaseTalk(key, null); speak(text, true); return; }   // fall back to the Windows voice
+  releaseTalk(key, playSamples(r.samples, r.sampleRate));
+}
+/* record from the microphone; returns the trimmed sound */
+async function micRecord(maxSec, onTick) {
+  if (!navigator.mediaDevices || !window.MediaRecorder) throw new Error('This browser cannot record.');
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+  const rec = new MediaRecorder(stream), chunks = [];
+  rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  const stopped = new Promise(res => { rec.onstop = res; });
+  const t0 = performance.now(); let timer = 0;
+  const stop = () => { clearInterval(timer); if (rec.state !== 'inactive') rec.stop(); stream.getTracks().forEach(t => t.stop()); };
+  rec.start(200);
+  timer = setInterval(() => { const s = (performance.now() - t0) / 1000; if (onTick) onTick(s); if (s >= maxSec) stop(); }, 200);
+  const result = stopped.then(async () => {
+    const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
+    const buf = await AC().decodeAudioData(await blob.arrayBuffer());
+    return trimAudio(buf.getChannelData(0), buf.sampleRate);
+  });
+  return { stop, result };
+}
+function trimAudio(x, sr) {
+  let peak = 0; for (let i = 0; i < x.length; i++) { const v = Math.abs(x[i]); if (v > peak) peak = v; }
+  const th = Math.max(.012, peak * .06);
+  let a = 0, b = x.length - 1;
+  while (a < x.length && Math.abs(x[a]) < th) a++;
+  while (b > a && Math.abs(x[b]) < th) b--;
+  a = Math.max(0, a - Math.round(sr * .12)); b = Math.min(x.length, b + Math.round(sr * .25));
+  const data = x.slice(a, b);
+  if (peak > .01 && peak < .5) { const g = Math.min(4, .7 / peak); for (let i = 0; i < data.length; i++) data[i] *= g; }   // quiet mic? make it audible
+  return { data, sr, dur: data.length / sr, peak };
+}
+function micError(e) {
+  const s = String(e && (e.name + ' ' + e.message));
+  return /denied|NotAllowed|Permission/i.test(s) ? "I can't use the microphone. Allow it in Windows Settings > Privacy > Microphone." : /NotFound|device/i.test(s) ? "I can't find a microphone." : "Recording didn't work. Try again?";
+}
+
 /* ================= speech bubble ================= */
 let bubbleTimer = 0, ready = false, bubbleFb = null;
 const btxt = $('#btxt'), fbEl = bubble.querySelector('.fb');
@@ -1571,17 +1670,24 @@ function say(text, o = {}) {
   if (pet.mode === 'trash' && !o.force) return;
   // a good companion knows when NOT to talk
   if (quiet && !o.important && !o.reply && !o.force && !logReply) return;
+  if (performance.now() < muteUntil && !o.rule && !o.reply && !o.important && !o.force) return;   // a taught move is running: no move chatter
   if (logReply) { logReply = false; logChat('him', text); }
   if (o.reply) lastReplyAt = performance.now();
   btxt.textContent = text; bubbleFb = o.fb || null; fbEl.hidden = !bubbleFb; bubble.hidden = false;
   bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
   pet.lastTalk = performance.now();
   // a bubble with the 😂 / 👎 buttons stays a bit longer, and stays while your mouse is on it
-  const hide = () => { if (bubble.matches(':hover')) { bubbleTimer = setTimeout(hide, 1500); return; } bubble.hidden = true; bubbleFb = null; };
-  clearTimeout(bubbleTimer); bubbleTimer = setTimeout(hide, (o.ms || Math.max(2600, text.length * 75)) + (bubbleFb ? 3500 : 0));
-  startTalk(text, o);
-  if (o.voice || o.forceVoice) speak(text, !!o.forceVoice);
+  clearTimeout(bubbleTimer); bubbleTimer = setTimeout(hideBubble, (o.ms || Math.max(2600, text.length * 75)) + (bubbleFb ? 3500 : 0));
+  // his voice: a line you recorded, your cloned voice, or the Windows voice
+  stopAudio(); voiceTok++;
+  const loud = (o.voice && voiceOn) || o.forceVoice, clip = o.clip && (loud || o.reply) ? o.clip : '', mine = !clip && loud && useMyVoice();
+  const key = o.talkText || text;
+  startTalk(key, Object.assign({}, o, { hold: !!(clip || mine) }));
+  if (clip) playClip(clip, key);
+  else if (mine) speakMine(text, key);
+  else if (o.voice || o.forceVoice) speak(text, !!o.forceVoice);
 }
+function hideBubble() { if (bubble.matches(':hover')) { bubbleTimer = setTimeout(hideBubble, 1500); return; } bubble.hidden = true; bubbleFb = null; }
 
 /* ================= effects ================= */
 function particle(cls, x, y, txt, frames, dur, host) {
@@ -2439,7 +2545,7 @@ function setGest(name, hold) { perf.gest = name ? { name, t: 0, hold: hold || 1.
 function startTalk(text, o) {
   const emo = o.emo || feel(text), words = [], re = /[A-Za-z0-9']+|[!?.,]/g; let m;
   while ((m = re.exec(text))) words.push({ w: m[0], i: m.index });
-  perf.talk = { text, emo, words, t: 0, idx: 0, wi: -1, n: 0, len: text.length, cps: (o.voice && voiceOn) || o.forceVoice ? 13.3 * voiceCfg.rate : 14, pause: 0, ended: false, endT: 0, gestAt: -9 };
+  perf.talk = { text, emo, words, t: 0, idx: 0, wi: -1, n: 0, len: text.length, cps: (o.voice && voiceOn) || o.forceVoice ? 13.3 * voiceCfg.rate : 14, pause: 0, ended: false, endT: 0, gestAt: -9, hold: !!o.hold };
   setEmo(emo, text.length / 14 + 2.2);
   perf.fid = null;
   perf.pop += ['excited', 'surprised', 'scared', 'angry'].includes(emo) ? 2.4 : 1.1;
@@ -2551,7 +2657,7 @@ function perfPose(p, dt, t) {
   if (T) {
     T.t += dt;
     if (!T.ended) {
-      if (T.pause > 0) T.pause -= dt; else T.idx += dt * T.cps;
+      if (T.hold) { if (T.t > 30) T.hold = false; } else if (T.pause > 0) T.pause -= dt; else T.idx += dt * T.cps;
       while (T.wi + 1 < T.words.length && T.words[T.wi + 1].i <= T.idx) { T.wi++; talkBeat(T, T.words[T.wi]); }
       if (T.idx >= T.len) { T.ended = true; endTalk(T); }
       else if (T.pause <= 0) vis = viseme(T.text[Math.floor(T.idx)]);
@@ -2695,7 +2801,7 @@ function logChat(who, text) {
 function setBrainBadge(kind) { const b = $('#brainBadge'); if (!b) return; b.textContent = kind === 'ai' ? 'AI brain' : kind === 'error' ? 'Brain offline' : 'Basic brain'; }
 function chatCtx() {
   const o = outfit();
-  const me = lifeReady ? { about: teach.about, facts: teach.facts.slice(0, 12), notes: notes.filter(n => !n.ex).slice(0, 8).map(n => n.t), topics: TOPICS.filter(([k]) => teach.topics[k]).map(([, l]) => l()), liked: taste.upText.slice(-5), disliked: taste.downText.slice(-5), word: wordToday()[0], mission: day.mission || '', missionDone: !!day.missionDone, lastThought: thinkState.lastThought } : {};
+  const me = lifeReady ? { about: teach.about, facts: teach.facts.slice(0, 12), notes: notes.filter(n => !n.ex).slice(0, 8).map(n => n.t), topics: TOPICS.filter(([k]) => teach.topics[k]).map(([, l]) => l()), liked: taste.upText.slice(-5), disliked: taste.downText.slice(-5), word: wordToday()[0], mission: day.mission || '', missionDone: !!day.missionDone, lastThought: thinkState.lastThought, taught: teach.rules.filter(r => r.say).slice(0, 12).map(r => (r.when === 'say' ? `when he says "${r.phrase}"` : r.when === 'app' ? `when he opens ${r.app}` : (WHEN_TXT[r.when] || r.when).toLowerCase()) + `: "${r.say}"`) } : {};
   return { petName, outfit: `${o.name} (${o.day})`, humor, online: navigator.onLine, battery: batt ? { level: Math.round(batt.level * 100), charging: batt.charging } : null, focusApp: focusInfo.app || '', sick: primary() ? PROB[primary()].mood : '', me };
 }
 
@@ -2756,10 +2862,11 @@ function showCard(c) {
       (r.large && r.large.length ? `<span class="sec-label">Biggest files</span><ul class="flist">${r.large.map(f => `<li><span class="fname">${esc(f.name)}</span><span class="fsub">${esc(f.sub)}</span><span class="fbtns"><button class="btn sm" type="button" data-c="show" data-id="${esc(f.id)}">Show</button></span></li>`).join('')}</ul>` : '');
   }
   else if (c.kind === 'q') body = `<div class="card-q">${esc(c.question)}</div>${c.chips ? `<div class="chips">${c.chips.map(x => `<button class="chip" type="button" data-c="chip" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : ''}<form class="talk" data-c="qform" autocomplete="off"><input id="qIn" maxlength="120" placeholder="${esc(c.placeholder || '')}" aria-label="${esc(c.question)}" value="${esc(c.value || '')}"><button class="btn primary" type="submit">${esc(c.submit || 'Save')}</button></form><div class="card-row"><button class="btn sm" type="button" data-c="skip">Skip</button></div>`;
+  else if (c.kind === 'rec') body = `<div class="card-why">Read this out loud with your normal energy. About 15 seconds, in a quiet room.</div><div class="script">"${esc(c.script)}"</div><div class="card-row"><button class="btn primary" type="button" data-c="rec">&#9679; Start recording</button><button class="btn" type="button" data-c="reccancel">Cancel</button></div>`;
   else if (c.kind === 'choice') body = `<div class="card-q">${esc(c.question)}</div><div class="card-row">${c.choices.map(([v, l, pri]) => `<button class="btn${pri ? ' primary' : ''}" type="button" data-c="pick" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
   else if (c.kind === 'name') body = `<div class="card-q">What should I call you?</div><form class="talk" data-c="nameform" autocomplete="off"><input id="nameAsk" maxlength="24" placeholder="Your name" aria-label="Your name"><button class="btn primary" type="submit">Save</button></form>`;
   else if (c.kind === 'welcome') body = c.lines.map(l => `<div>${esc(l)}</div>`).join('') + (c.items && c.items.length ? `<ul class="flist">${c.items.map(f => `<li><span class="fname">${esc(f.name)}</span><span class="fsub">Opened recently</span><span class="fbtns"><button class="btn sm primary" type="button" data-c="open" data-id="${esc(f.id)}">Continue</button></span></li>`).join('')}</ul>` : '');
-  const closable = !['ask', 'name', 'q', 'choice'].includes(c.kind);
+  const closable = !['ask', 'name', 'q', 'choice', 'rec'].includes(c.kind);
   cardEl.innerHTML = `<div class="card-h"><span class="card-t" id="cardTitle">${esc(c.title || (c.kind === 'ask' ? 'Can I?' : c.kind === 'name' ? 'Hey there' : petName))}</span>${closable ? '<button class="wb" type="button" data-c="close" aria-label="Close">&#215;</button>' : ''}</div><div class="card-b">${body}</div>`;
   cardEl.hidden = false; cardEl.classList.remove('pop'); void cardEl.offsetWidth; cardEl.classList.add('pop');
   if (c.kind === 'name') setTimeout(() => { const i = $('#nameAsk'); if (i) i.focus(); }, 50);
@@ -2771,6 +2878,18 @@ cardEl.addEventListener('click', async e => {
   const b = e.target.closest('[data-c]'); if (!b || !card) return;
   const c = card, act = b.dataset.c; userPing();
   if (act === 'close') return hideCard();
+  if (act === 'rec') {
+    if (c.rec) { c.rec.stop(); return; }
+    try {
+      c.rec = await micRecord(30, s => { b.textContent = `\u25A0 Stop (${Math.floor(s)}s)`; });
+      b.classList.add('rec');
+      const clip = await c.rec.result;
+      if (c.cancelled) return;
+      hideCard(); c.onDone(clip);
+    } catch (err) { c.rec = null; b.classList.remove('rec'); b.textContent = '\u25CF Start recording'; say(micError(err), { emo: 'concerned', reply: true, ms: 7000 }); }
+    return;
+  }
+  if (act === 'reccancel') { c.cancelled = true; if (c.rec) c.rec.stop(); hideCard(); c.onDone(null); return; }
   if (act === 'chip') { const i = $('#qIn'); if (i) { i.value = b.dataset.v; i.focus(); } return; }
   if (act === 'skip' || act === 'pick') { hideCard(); if (c.onAnswer) c.onAnswer(act === 'pick' ? b.dataset.v : ''); return; }
   if (act === 'allow' || act === 'deny') {
@@ -2883,6 +3002,7 @@ $('#forgetAll').addEventListener('click', async () => {
   forgetArmed = 0; b.classList.remove('confirm'); b.textContent = 'Forget everything';
   if (DESKTOP) await KD.wipeMemory();
   notes = []; saveNotes(); renderMem(); refreshLastTime();
+  try { await clipDB.clear(); } catch (e) {} clipCache.clear(); myVoice.cache.clear(); setVoice({ engine: 'windows' }); if (DESKTOP) myVoice.status = await KD.voiceStatus(); renderMyVoice();
   teach = JSON.parse(JSON.stringify(TEACH0)); saveTeach(); taste = { up: {}, down: {}, topic: {}, upText: [], downText: [], recent: [], ups: 0, downs: 0 }; saveTaste(); day = { key: logicalDay() }; saveDay(); learnedCache = null; renderTeach(); refreshLearned();
   say('Done. Who are you again? Kidding... mostly.', { emo: 'cheeky', reply: true });
 });
@@ -2920,6 +3040,8 @@ function onDudeEvent(ev) {
   } else if (ev.type === 'suspicious') {
     say(`Heads up${nameBit()}: a new program just landed in Downloads, "${ev.name}". Only open it if you trust where it came from.`, { emo: 'concerned', voice: true, important: true, ms: 10000 });
   } else if (ev.type === 'export') {
+    const w = typeof ruleFor === 'function' && lifeReady ? ruleFor('win') : null;
+    if (w) { playRule(w, { app: ev.name }); return; }
     say(pick([`New export: "${ev.name}"! Is that a hit I hear?`, `"${ev.name}" just dropped. I'm already dancing.`, `Fresh file: "${ev.name}". We celebrate progress here.`]), { emo: 'excited', voice: true });
     if (!quiet && grounded()) startMove(pick(['shimmy', 'runningman', 'guitar']));
   }
@@ -3194,7 +3316,7 @@ function choose(list, prefix) {
 function lineFor(trigger, topic, d = {}) {
   let list = [], tp = topic;
   if (trigger === 'random') {
-    if (topic === 'taught') { const r = pick(teach.rules.filter(x => x.when === 'anytime')); return r && { text: fill(r.say, d), key: 'rule:' + hashS(r.say), topic }; }
+    if (topic === 'taught') { const r = pick(teach.rules.filter(x => x.when === 'anytime')); return r && Object.assign({ text: ruleText(r, d) }, ruleOpts(r)); }
     if (topic === 'english') { const e = englishLine(); return Object.assign({ topic }, e, { key: e.key }); }
     list = topic === 'hustle' ? THINK.random.hustle.concat(isMusicy() ? THINK.random.music : []) : topic === 'random' ? THINK.random.random.concat(outfit().lines) : THINK.random[topic] || [];
   } else if (trigger === 'long') { list = THINK.long.general.slice(); for (const t of ['hustle', 'calm', 'roast']) if (topicOn(t)) list = list.concat(THINK.long[t]); tp = 'calm'; }
@@ -3230,7 +3352,9 @@ function sayThought(text, c = {}) {
   if (c.key) { taste.recent = taste.recent.filter(k => k !== c.key).concat([c.key]).slice(-40); saveTaste(); }
   if (c.word) { day.wordSaid = true; saveDay(); }
   if (c.challenge) thinkState.challenge = Object.assign({ at: Date.now() }, c.challenge);
-  say(text, { voice: true, emo: c.emo || TOPIC_EMO[c.topic] || 'happy', fb: c.key ? { key: c.key, topic: c.topic, text } : null, ms: Math.max(4800, text.length * 85), important: c.important, reply: c.reply });
+  if (c.topic === 'taught') muteUntil = performance.now() + 4000;   // your line is not interrupted by his random chatter
+  if (c.move && grounded() && !studio) { muteUntil = performance.now() + 5000; setTimeout(() => doMove(c.move, false), 350); }
+  say(text, { voice: true, emo: c.emo || TOPIC_EMO[c.topic] || 'happy', fb: c.key ? { key: c.key, topic: c.topic, text } : null, ms: Math.max(4800, text.length * 85), important: c.important, reply: c.reply, clip: c.clip, talkText: c.talkText, rule: c.topic === 'taught' });
   if (c.topic === 'calm' && grounded() && pet.act === 'idle' && Math.random() < .4) startFid('stretch');
 }
 const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
@@ -3264,10 +3388,15 @@ function ruleFor(when, app) {
   const now = Date.now();
   const list = teach.rules.filter(r => r.when === when && (when !== 'app' || (r.app && app && (app.toLowerCase().includes(r.app.toLowerCase()) || r.app.toLowerCase().includes(app.toLowerCase())))));
   const r = list.length ? pick(list) : null;
-  if (!r || now - (thinkState.ruleAt[r.say] || 0) < 20 * 6e4) return null;
-  thinkState.ruleAt[r.say] = now;
+  const id = r && (r.id || r.say);
+  if (!r || now - (thinkState.ruleAt[id] || 0) < 20 * 6e4) return null;
+  thinkState.ruleAt[id] = now;
   return r;
 }
+/* a line you taught him: your words (or your recorded voice), maybe with a move */
+function ruleText(r, d) { return r.say ? fill(r.say, d) : r.clip ? '\u{1F3A4}' : pick(['Watch this!', 'Say less.', 'Okay!']); }
+function ruleOpts(r, o = {}) { return { key: 'rule:' + (r.id || hashS(r.say)), topic: 'taught', clip: r.clip || '', move: r.move || '', talkText: !r.say && r.clip ? 'ba la ma da ya ba la ma da ya ba' : '', important: o.important, reply: o.reply }; }
+function playRule(r, d = {}, o = {}) { if (r) sayThought(ruleText(r, d), ruleOpts(r, o)); }
 
 /* ---- feedback: 😂 makes more like it, 👎 means never again ---- */
 function rateLine(fb, good) {
@@ -3288,7 +3417,7 @@ function morning() {
   thinkState.next = performance.now() + gapMs();
   const r = ruleFor('morning'), nowH = new Date().getHours() + new Date().getMinutes() / 60, us = learnedCache && learnedCache.usualStart;
   const kind = nowH >= 12 ? 'late' : us != null && nowH < us - .75 ? 'early' : us != null && nowH > us + 2 ? 'late' : 'normal';
-  const c = r ? { text: fill(r.say), key: 'rule:' + hashS(r.say), topic: 'taught' } : (() => { const x = choose(MORNING[kind], 'morning:'); return x && { text: fill(x.tpl), key: x.key, topic: 'random' }; })();
+  const c = r ? Object.assign({ text: ruleText(r) }, ruleOpts(r)) : (() => { const x = choose(MORNING[kind], 'morning:'); return x && { text: fill(x.tpl), key: x.key, topic: 'random' }; })();
   if (c) sayThought(c.text, Object.assign(c, { emo: 'excited', important: true }));
   if (grounded()) setAct('wave', 2.2);
   flow = 'morning';
@@ -3316,7 +3445,7 @@ function missionCheck() {
   say(`Mission check: did you do it? "${day.mission}"`, { emo: 'thinking', voice: true, reply: true, ms: 60000 });
   showCard({ kind: 'choice', title: 'Mission check', question: `"${day.mission}"`, choices: [['done', 'Done!', true], ['no', 'Not yet']], onAnswer: v => {
     flow = null;
-    if (v === 'done') { day.missionDone = true; saveDay(); say(fill("LET'S GO! That's how {p} gets built."), { emo: 'excited', voice: true, reply: true }); stars(pet.x, pet.y - H, 16); if (grounded()) startMove('noodle'); }
+    if (v === 'done') { day.missionDone = true; saveDay(); const w = ruleFor('win'); if (w) playRule(w, {}, { reply: true }); else say(fill("LET'S GO! That's how {p} gets built."), { emo: 'excited', voice: true, reply: true }); stars(pet.x, pet.y - H, 16); if (grounded() && !(w && w.move)) startMove('noodle'); }
     else say('No stress. Tomorrow we go again. Or... 20 minutes now? I will be quiet.', { emo: 'chill', voice: true, reply: true, ms: 6000 });
   } });
 }
@@ -3324,7 +3453,7 @@ function night() {
   rollDay(); day.nightDone = true; saveDay();
   thinkState.next = performance.now() + gapMs();
   const r = ruleFor('night');
-  if (r) sayThought(fill(r.say), { key: 'rule:' + hashS(r.say), topic: 'taught' });
+  if (r) playRule(r);
   else think('night', { k: learnedCache ? learnedCache.lateNights : 0 }, { important: true });
   if (day.mission && !day.missionChecked) setTimeout(() => { if (cardEl.hidden && !flow) missionCheck(); }, 9000);
 }
@@ -3354,7 +3483,7 @@ function onMoment(ev) {
   if (ev.kind === 'app') {
     if (now - thinkState.bootAt < 60000 || !bubble.hidden || !cardEl.hidden) return;
     const r = ruleFor('app', ev.app);
-    if (r) { thinkState.lastApp = now; return sayThought(fill(r.say, ev), { key: 'rule:' + hashS(r.say), topic: 'taught', important: loud }); }
+    if (r) { thinkState.lastApp = now; return playRule(r, ev, { important: loud }); }
     if (!T.apps || !THINK.app[ev.cat] || now - thinkState.lastApp < 4 * 6e4) return;
     if (quiet && !(loud && (ev.cat === 'music' || ev.cat === 'call'))) return;
     thinkState.lastApp = now;
@@ -3369,7 +3498,7 @@ function onMoment(ev) {
     if (!canSpeakNow()) return;
     if (T.daytime && !day.morningDone && h >= 5 && h < 15) return morning();
     const r = ruleFor('back');
-    if (r) return sayThought(fill(r.say, ev), { key: 'rule:' + hashS(r.say), topic: 'taught' });
+    if (r) return playRule(r, ev);
     if (T.daytime && Math.random() < .7) think('back', { away: ev.away, mins: ev.away });
   } else if (ev.kind === 'binge') {
     if ((topicOn('roast') || topicOn('hustle')) && canSpeakNow()) think('binge', ev);
@@ -3425,17 +3554,19 @@ function interview() {
 
 /* ================= talking: things he handles himself ================= */
 function reply(text, o = {}) { logReply = true; say(text, Object.assign({ voice: true, reply: true, ms: Math.max(3800, text.length * 80) }, o)); logReply = false; }
-function addRule(when, app, sayTxt) {
+function addRule(when, target, sayTxt, x = {}) {
   sayTxt = String(sayTxt || '').trim().replace(/^["']|["']$/g, '').slice(0, 140);
-  if (!sayTxt) return false;
-  teach.rules.unshift({ when, app: when === 'app' ? String(app || '').trim().slice(0, 30) : '', say: sayTxt });
-  teach.rules = teach.rules.slice(0, 30); saveTeach(); renderTeach();
+  if (!sayTxt && !x.clip && !x.move) return false;
+  teach.rules.unshift({ id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), when, app: when === 'app' ? String(target || '').trim().slice(0, 30) : '', phrase: when === 'say' ? String(target || '').trim().replace(/^["']|["']$/g, '').slice(0, 60) : '', say: sayTxt, clip: x.clip || '', move: x.move || '' });
+  for (const g of teach.rules.slice(60)) if (g.clip) clipDB.del(g.clip).catch(() => {});
+  teach.rules = teach.rules.slice(0, 60); saveTeach(); renderTeach();
   return true;
 }
-const WHEN_TXT = { app: 'When I open', morning: 'Every morning', night: 'Late at night', back: 'When I come back', anytime: 'Anytime' };
+const WHEN_TXT = { say: 'When I say', app: 'When I open', morning: 'Every morning', night: 'Late at night', back: 'When I come back', win: 'When I finish something', anytime: 'Anytime' };
+const moveFrom = s => { s = String(s || '').toLowerCase(); return /back ?flip|flip/.test(s) ? 'backflip' : /moon ?walk/.test(s) ? 'moonwalk' : /\bdab\b/.test(s) ? 'dab' : /robot/.test(s) ? 'robot' : /flex|muscle/.test(s) ? 'flex' : /shimmy/.test(s) ? 'shimmy' : /head ?spin/.test(s) ? 'headspin' : /guitar/.test(s) ? 'guitar' : /noodle|dance/.test(s) ? 'noodle' : ''; };
 function applyTeach(a) {
   if (a.kind === 'fact' && a.fact) { teach.facts.unshift(a.fact.slice(0, 120)); teach.facts = teach.facts.slice(0, 30); saveTeach(); }
-  else if (a.kind === 'rule' && a.say) addRule(a.when || 'anytime', a.app, a.say);
+  else if (a.kind === 'rule' && (a.say || a.move)) addRule(a.when || 'anytime', a.when === 'say' ? (a.phrase || a.app) : a.app, a.say, { move: a.move && MOVE_TXT[a.move] ? a.move : '' });
   else if ((a.kind === 'topic_on' || a.kind === 'topic_off') && a.topic in teach.topics) { teach.topics[a.topic] = a.kind === 'topic_on'; saveTeach(); }
   else if (a.kind === 'talk_more' || a.kind === 'talk_less') { const v = (dudeView && dudeView.interrupt) || 'sometimes'; setView({ interrupt: a.kind === 'talk_more' ? (v === 'rarely' ? 'sometimes' : 'often') : (v === 'often' ? 'sometimes' : 'rarely') }); }
   else if (a.kind === 'about' && a.field in teach.about && a.value) { teach.about[a.field] = a.value.slice(0, 80); saveTeach(); }
@@ -3445,6 +3576,23 @@ const CRISIS = /\b(kill myself|suicid\w*|end my life|want to die|don'?t want to 
 function localFirst(text) {
   const t = text.toLowerCase().trim(); let m;
   if (CRISIS.test(t)) { thinkState.calm = null; reply(`${N() === 'boss' ? 'Hey' : N()}, that sounds really heavy. You don't have to carry it alone. Please talk to someone you trust right now, or call a local crisis line or emergency number. I'm here, but you deserve real support.`, { emo: 'concerned', ms: 16000 }); return true; }
+  // teaching him by talking: "when I say X, say Y" / "when I say X, do a backflip"
+  if ((m = text.match(/^when i say ["“']?(.+?)["”']?,?\s+(?:you )?(say|answer|reply|tell me|do|dance)[:,]?\s+(.+)$/i))) {
+    const verb = m[2].toLowerCase(), mv = verb === 'do' || verb === 'dance' ? (moveFrom(m[3]) || 'noodle') : '';
+    addRule('say', m[1], mv ? '' : m[3], { move: mv });
+    reply(mv ? `Got it. When you say "${m[1].trim()}", I do this:` : `Got it. When you say "${m[1].trim()}", I'll say: "${m[3].trim().slice(0, 80)}"`, { emo: 'proud' });
+    if (mv) setTimeout(() => doMove(mv, false), 1400);
+    return true;
+  }
+  if (/^(learn this|teach you|let me teach you|i want to teach you|iga( ibi)?|nkwigishe)\b/.test(t)) {
+    openWin('win-pet'); $('#tab-teach').click(); ruleWhen.value = 'say'; setWhenUI(); setTimeout(() => ruleApp.focus(), 200);
+    reply("Teach me! Write what you'll say to me, then type my answer or press the mic and say it. Kinyarwanda welcome.", { emo: 'excited', ms: 9000 }); return true;
+  }
+  if (/^(learn|use|copy) my voice\b|^talk like me\b/.test(t)) { learnMyVoice(); return true; }
+  // something you taught him to answer
+  const nm = x => x.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, ' ').replace(/\s+/g, ' ').trim(), said = nm(text);
+  const hits = teach.rules.filter(r => r.when === 'say' && r.phrase && (said === nm(r.phrase) || (nm(r.phrase).length >= 4 && (' ' + said + ' ').includes(' ' + nm(r.phrase) + ' '))));
+  if (hits.length) { logReply = true; playRule(pick(hits), {}, { reply: true }); logReply = false; return true; }
   // the overthinking flow: dump it, pick one small step, check back
   const C = thinkState.calm;
   if (C && Date.now() - C.at < 15 * 6e4 && !/^(stop|cancel|never ?mind|forget it)\b/.test(t)) {
@@ -3500,7 +3648,7 @@ function renderTeach() {
   for (const [id, k] of [['abProject', 'project'], ['abWhat', 'what'], ['abLearning', 'learning'], ['abDream', 'dream']]) { const el = $('#' + id); if (el && document.activeElement !== el) el.value = A[k] || ''; }
   $('#topicChips').innerHTML = TOPICS.map(([k, lab]) => `<button class="chip${teach.topics[k] ? ' on' : ''}" type="button" data-topic="${k}" aria-pressed="${!!teach.topics[k]}">${esc(lab())}</button>`).join('');
   $('#trigChips').innerHTML = TRIGS.map(([k, lab]) => `<button class="chip${teach.triggers[k] ? ' on' : ''}" type="button" data-trig="${k}" aria-pressed="${!!teach.triggers[k]}">${esc(lab)}</button>`).join('');
-  $('#ruleList').innerHTML = teach.rules.length ? teach.rules.map((r, i) => `<li><span class="tag">${esc(WHEN_TXT[r.when] || r.when)}${r.when === 'app' ? ' ' + esc(r.app) : ''}</span><span class="txt">"${esc(r.say)}"</span><button class="x" type="button" data-rmrule="${i}" aria-label="Remove this line">&#215;</button></li>`).join('') : '<li class="empty">No lines yet. Try: When I open TikTok, he says "Ten minutes, bro."</li>';
+  $('#ruleList').innerHTML = teach.rules.length ? teach.rules.map((r, i) => `<li><span class="tag">${esc(WHEN_TXT[r.when] || r.when)}${r.when === 'app' ? ' ' + esc(r.app) : r.when === 'say' ? ' "' + esc(r.phrase) + '"' : ''}</span><span class="txt">${r.say ? '"' + esc(r.say) + '"' : ''}${r.clip ? '<span class="badge2">&#127908; your voice</span>' : ''}${r.move ? '<span class="badge2">' + esc(MOVE_TXT[r.move] || r.move) + '</span>' : ''}</span><span class="rbtns"><button class="x" type="button" data-playrule="${i}" aria-label="Play this">&#9654;</button><button class="x" type="button" data-rmrule="${i}" aria-label="Remove this">&#215;</button></span></li>`).join('') : '<li class="empty">Nothing yet. Try: when you say "Amakuru?", he answers in your voice.</li>';
   $('#factList').innerHTML = teach.facts.length ? teach.facts.map((f, i) => `<li><span class="txt">${esc(f)}</span><button class="x" type="button" data-rmfact="${i}" aria-label="Forget this">&#215;</button></li>`).join('') : '<li class="empty">Tell him things about you. He uses them when he talks to you.</li>';
   const tb = $('#tasteBox');
   if (tb) {
@@ -3518,25 +3666,126 @@ function renderLearned() {
   el.innerHTML = L.insights.map(x => `<div>${esc(x)}</div>`).join('') + (dudeView.perms.apps ? '' : '<div class="sub">Switch on "Which app you\'re using" in the Access tab so he also learns your apps and sites.</div>');
 }
 $('#win-pet').addEventListener('click', e => {
-  const tc = e.target.closest('[data-topic]'), gc = e.target.closest('[data-trig]'), rr = e.target.closest('[data-rmrule]'), rf = e.target.closest('[data-rmfact]');
+  const tc = e.target.closest('[data-topic]'), gc = e.target.closest('[data-trig]'), rr = e.target.closest('[data-rmrule]'), rf = e.target.closest('[data-rmfact]'), rp = e.target.closest('[data-playrule]');
+  if (rp) { userPing(); playRule(teach.rules[+rp.dataset.playrule], {}, { reply: true }); return; }
   if (tc) { const k = tc.dataset.topic; teach.topics[k] = !teach.topics[k]; saveTeach(); renderTeach(); userPing(); say(teach.topics[k] ? pick(['Topic unlocked.', "Ooh. Yes. I'll talk about that."]) : pick(["Okay. I won't bring it up.", 'Topic deleted from my mouth.']), { emo: teach.topics[k] ? 'excited' : 'chill', reply: true }); }
   if (gc) { const k = gc.dataset.trig; teach.triggers[k] = !teach.triggers[k]; saveTeach(); renderTeach(); userPing(); }
-  if (rr) { teach.rules.splice(+rr.dataset.rmrule, 1); saveTeach(); renderTeach(); }
+  if (rr) { const [gone] = teach.rules.splice(+rr.dataset.rmrule, 1); if (gone && gone.clip) { clipDB.del(gone.clip).catch(() => {}); clipCache.delete(gone.clip); } saveTeach(); renderTeach(); }
   if (rf) { teach.facts.splice(+rf.dataset.rmfact, 1); saveTeach(); renderTeach(); say('Forgotten. What were we talking about?', { reply: true }); }
 });
 for (const [id, k] of [['abProject', 'project'], ['abWhat', 'what'], ['abLearning', 'learning'], ['abDream', 'dream']]) {
   $('#' + id).addEventListener('change', e => { teach.about[k] = e.target.value.trim(); if (teach.interview === 0 && teach.about.project) teach.interview = 1; saveTeach(); renderTeach(); if (e.target.value.trim()) say(k === 'project' ? fill('{p}! Saved. I believe in it.') : 'Saved in my big head.', { emo: 'happy', reply: true }); });
 }
 const ruleWhen = $('#ruleWhen'), ruleApp = $('#ruleApp');
-ruleWhen.addEventListener('change', () => { $('#ruleAppWrap').hidden = ruleWhen.value !== 'app'; });
-$('#ruleForm').addEventListener('submit', e => {
-  e.preventDefault(); userPing();
-  const sayTxt = $('#ruleSay').value, w = ruleWhen.value;
-  if (w === 'app' && !ruleApp.value.trim()) { ruleApp.focus(); return; }
-  if (addRule(w, ruleApp.value, sayTxt)) { $('#ruleSay').value = ''; ruleApp.value = ''; say(pick(['Learned it.', 'New line unlocked.', "Got it. I'll say it like I mean it."]), { emo: 'proud', reply: true }); }
-});
 $('#factForm').addEventListener('submit', e => { e.preventDefault(); const v = $('#factIn').value.trim(); if (!v) return; applyTeach({ kind: 'fact', fact: v }); $('#factIn').value = ''; say('Saved in my big head.', { emo: 'happy', reply: true }); });
 bubble.addEventListener('click', e => { const b = e.target.closest('[data-fb]'); if (!b || !bubbleFb) return; const fb = bubbleFb; bubbleFb = null; bubble.querySelector('.fb').hidden = true; rateLine(fb, b.dataset.fb === 'up'); });
+/* ================= teaching him by voice (any language), and "my voice" ================= */
+const MOVE_TXT = { noodle: 'Noodle dance', backflip: 'Backflip', moonwalk: 'Moonwalk', dab: 'Dab', robot: 'Robot', flex: 'Flex', shimmy: 'Shimmy', headspin: 'Head spin', guitar: 'Air guitar' };
+let ruleClip = null, ruleRec = null;
+function setWhenUI() {
+  const w = ruleWhen.value;
+  $('#ruleAppWrap').hidden = !(w === 'app' || w === 'say');
+  $('#ruleAppLab').textContent = w === 'say' ? 'You say' : 'App or site';
+  ruleApp.placeholder = w === 'say' ? 'e.g. Amakuru?' : 'e.g. TikTok';
+}
+ruleWhen.addEventListener('change', setWhenUI); setWhenUI();
+function renderRuleClip() { $('#ruleClipBox').hidden = !ruleClip; if (ruleClip) $('#ruleClipLen').textContent = ruleClip.dur.toFixed(1) + 's'; }
+$('#ruleMic').addEventListener('click', async () => {
+  userPing();
+  const btn = $('#ruleMic');
+  if (ruleRec) { ruleRec.stop(); return; }
+  try {
+    btn.classList.add('on'); btn.title = 'Click to stop';
+    ruleRec = await micRecord(12, s => btn.setAttribute('aria-label', `Recording, ${Math.ceil(s)} seconds. Click to stop.`));
+    say("I'm listening... say it exactly how you want me to say it.", { emo: 'thinking', reply: true, ms: 12000 });
+    const clip = await ruleRec.result;
+    ruleRec = null; btn.classList.remove('on'); btn.title = 'Record it in your voice'; btn.setAttribute('aria-label', 'Record it in your voice');
+    if (clip.dur < .3 || clip.peak < .01) { say("I didn't hear anything. Is the mic on?", { emo: 'concerned', reply: true }); return; }
+    ruleClip = Object.assign({ id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, clip);
+    renderRuleClip();
+    if (!voiceOn) { voiceOn = true; renderVoice(); }
+    bubble.hidden = true; playSamples(clip.data, clip.sr);
+    if (!$('#ruleSay').value.trim()) $('#ruleSay').placeholder = 'Type what you said (it shows in his bubble)';
+  } catch (e) { ruleRec = null; btn.classList.remove('on'); say(micError(e), { emo: 'concerned', reply: true, ms: 7000 }); }
+});
+$('#ruleClipPlay').addEventListener('click', () => { if (ruleClip) playSamples(ruleClip.data, ruleClip.sr); });
+$('#ruleClipDel').addEventListener('click', () => { ruleClip = null; renderRuleClip(); $('#ruleSay').placeholder = 'He says...'; });
+$('#ruleForm').addEventListener('submit', async e => {
+  e.preventDefault(); userPing();
+  const w = ruleWhen.value, target = ruleApp.value.trim(), txt = $('#ruleSay').value.trim(), move = $('#ruleMove').value;
+  if ((w === 'app' || w === 'say') && !target) { ruleApp.focus(); return; }
+  if (!txt && !ruleClip && !move) { $('#ruleSay').focus(); say('Teach me what to say: type it, or press the mic and say it.', { emo: 'thinking', reply: true }); return; }
+  let clip = '';
+  if (ruleClip) {
+    try { await clipDB.put(ruleClip.id, { data: ruleClip.data, sr: ruleClip.sr }); clipCache.set(ruleClip.id, { data: ruleClip.data, sr: ruleClip.sr }); clip = ruleClip.id; }
+    catch (err) { say("I couldn't save the recording on this laptop.", { emo: 'concerned', reply: true }); return; }
+  }
+  addRule(w, target, txt, { clip, move });
+  const r = teach.rules[0];
+  $('#ruleSay').value = ''; $('#ruleSay').placeholder = 'He says...'; ruleApp.value = ''; $('#ruleMove').value = ''; ruleClip = null; renderRuleClip();
+  say(pick(['Learned it! Like this:', 'Got it. Watch:', 'New skill unlocked:']), { emo: 'proud', reply: true, ms: 1500 });
+  setTimeout(() => playRule(r, {}, { reply: true }), 1400);
+});
+
+/* ---- "my voice" ---- */
+const VOICE_SCRIPT = () => fill("Yo, it's me. I'm building {p}, and today we are going to make it big. I wake up, I make a plan, and I do the work. Some days are hard, but I keep going. Let's make some money and have fun doing it.");
+function renderMyVoice() {
+  const eng = voiceCfg.engine || 'windows', box = $('#myVoiceBox'), st = myVoice.status;
+  $$('#engineSeg button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.eng === eng)));
+  box.hidden = eng !== 'me';
+  for (const id of ['voicePresets', 'voiceSelWrap', 'pitchWrap']) $('#' + id).hidden = eng === 'me';   // those only change the Windows voice
+  if (box.hidden) return;
+  let msg;
+  if (!DESKTOP) msg = 'In the Windows app he learns your voice from a 15-second recording, right on your laptop.';
+  else if (!st) msg = 'Checking...';
+  else if (!st.engine) msg = 'This Dude download is missing the voice engine. Get the newest Dude.';
+  else if (st.state === 'downloading') msg = `Downloading his new vocal cords... ${Math.round(st.progress * 100)}% (one time, about 160 MB)`;
+  else if (st.state === 'loading') msg = 'Warming up your voice...';
+  else if (st.state === 'error') msg = 'Problem: ' + st.error;
+  else if (!st.hasRef) msg = 'Record 15 seconds of your voice and he talks like you. Free, and it stays on this laptop.';
+  else if (st.state === 'ready') msg = 'Ready. He talks in your voice now.';
+  else msg = st.hasPack ? 'Your voice is saved. Loading...' : 'Your voice is saved. He still needs his new vocal cords (one-time download, about 160 MB).';
+  $('#myVoiceStatus').textContent = msg;
+  $('#myVoiceRec').textContent = st && st.hasRef ? 'Record again' : 'Record my voice';
+  $('#myVoiceTest').disabled = !(st && st.hasRef && st.state === 'ready');
+  $('#myVoiceDel').hidden = !(st && st.hasRef);
+}
+async function prepareMyVoice() { if (!DESKTOP) return null; const st = await KD.voicePrepare(); myVoice.status = st; renderMyVoice(); return st; }
+function learnMyVoice() {
+  if (!DESKTOP) { say('I can learn your voice in the Windows app.', { emo: 'cheeky', reply: true }); return; }
+  if (flow && flow !== 'voice') return;
+  flow = 'voice';
+  const script = VOICE_SCRIPT();
+  say("Read the card out loud, like you're talking to me. About 15 seconds.", { emo: 'excited', reply: true, ms: 20000 });
+  showCard({ kind: 'rec', title: 'Learn my voice', script, onDone: async clip => {
+    flow = null;
+    if (!clip) { say('No problem. Maybe later.', { emo: 'chill', reply: true }); return; }
+    if (clip.dur < 6) { say('That was too short. Read the whole card, please. Try again?', { emo: 'concerned', reply: true }); return; }
+    say('Got it! Studying your voice...', { emo: 'thinking', reply: true, ms: 9000 });
+    const r = await KD.voiceSetRef(clip.data, clip.sr, script);
+    if (!r || r.error) { say((r && r.error) || 'Saving your voice failed.', { emo: 'concerned', reply: true }); return; }
+    myVoice.status = r; myVoice.cache.clear(); setVoice({ engine: 'me' }); renderMyVoice();
+    if (!r.hasPack) say("One more thing: I'm downloading my new vocal cords. About 160 MB, one time. Hold on...", { emo: 'excited', reply: true, ms: 12000 });
+    const st = await prepareMyVoice();
+    if (st && st.state === 'ready') { if (!voiceOn) { voiceOn = true; renderVoice(); } setTimeout(() => say(fill("Yo! It's me. Well... it's you. Do I sound like you, {n}?"), { emo: 'excited', reply: true, forceVoice: true }), 600); }
+    else say("My new voice didn't load: " + ((st && st.error) || 'unknown problem') + ' Try again later?', { emo: 'concerned', reply: true, ms: 9000 });
+  } });
+}
+$('#engineSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-eng]'); if (!b) return;
+  userPing(); setVoice({ engine: b.dataset.eng }); renderMyVoice();
+  if (b.dataset.eng !== 'me') { say('Windows voice. Classic.', { emo: 'cheeky', reply: true, forceVoice: true }); return; }
+  if (!DESKTOP) { say('My voice works in the Windows app.', { emo: 'cheeky', reply: true }); return; }
+  if (myVoice.status && myVoice.status.hasRef) prepareMyVoice(); else learnMyVoice();
+});
+$('#myVoiceRec').addEventListener('click', () => { userPing(); learnMyVoice(); });
+$('#myVoiceTest').addEventListener('click', () => { userPing(); say(pick([fill("Yo {n}! This is your voice. Scary, right?"), "Testing, testing. Do I sound like you yet?", fill("{p} is waiting. Let's go!")]), { emo: 'excited', reply: true, forceVoice: true }); });
+$('#myVoiceDel').addEventListener('click', async () => { userPing(); if (DESKTOP) myVoice.status = await KD.voiceForget(); myVoice.cache.clear(); setVoice({ engine: 'windows' }); renderMyVoice(); say('Deleted your recording. Back to the Windows voice.', { emo: 'chill', reply: true }); });
+if (DESKTOP) {
+  KD.onVoiceStatus(st => { myVoice.status = st; renderMyVoice(); });
+  KD.voiceStatus().then(st => { myVoice.status = st; renderMyVoice(); if (voiceCfg.engine === 'me' && st.hasRef && st.engine) prepareMyVoice(); }).catch(() => {});
+}
+renderMyVoice();
 renderTeach();
 
 lifeReady = true;
@@ -3727,6 +3976,6 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__kito = { enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard, think, morning, night, interview, missionCheck, onDudeEvent, lifeTick, rateLine, get teach() { return teach; }, get taste() { return taste; }, get day() { return day; }, get thinkState() { return thinkState; }, get flow() { return flow; }, canSpeakNow, lineFor, wordToday, _hurry() { lastReplyAt = -1e9; thinkState.bootAt -= 1e6; thinkState.lastApp = -1e9; thinkState.ruleAt = {}; } };
+window.__kito = { enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard, think, morning, night, interview, missionCheck, onDudeEvent, lifeTick, rateLine, get teach() { return teach; }, get taste() { return taste; }, get day() { return day; }, get thinkState() { return thinkState; }, get flow() { return flow; }, canSpeakNow, lineFor, wordToday, playRule, learnMyVoice, get myVoice() { return myVoice; }, playSamples, _hurry() { lastReplyAt = -1e9; thinkState.bootAt -= 1e6; thinkState.lastApp = -1e9; thinkState.ruleAt = {}; } };
 })();
 </script>

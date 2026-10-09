@@ -9,6 +9,7 @@ const settings = require('./settings');
 const files = require('./files');
 const memory = require('./memory');
 const habits = require('./habits');
+const voice = require('./voice');
 const { createBrain } = require('./brain');
 
 app.setAppUserModelId('com.dude.desktoppet');
@@ -26,7 +27,7 @@ function createWindow() {
     transparent: true, frame: false, resizable: false, movable: false, minimizable: false, maximizable: false,
     fullscreenable: false, skipTaskbar: true, hasShadow: false, alwaysOnTop: true, show: false,
     backgroundColor: '#00000000', title: 'Dude', icon: path.join(__dirname, 'icon.png'),
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false, spellcheck: false }
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false, spellcheck: false, autoplayPolicy: 'no-user-gesture-required' }
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setIgnoreMouseEvents(true, { forward: true });
@@ -127,7 +128,15 @@ ipcMain.handle('dude:folder:add', async () => {
   if (!r.canceled && r.filePaths[0]) { settings.addCustomFolder(r.filePaths[0]); afterSettings(); }
   return settings.publicView();
 });
-ipcMain.handle('dude:memory:wipe', () => { memory.wipe(); brain.reset(); return true; });
+ipcMain.handle('dude:memory:wipe', async () => { memory.wipe(); brain.reset(); await voice.forget(); return true; });
+
+/* ================= "my voice": Dude talks in your voice (see voice.js) ================= */
+const voiceEmit = () => send('dude:voiceStatus', voice.status());
+ipcMain.handle('dude:voice:status', () => voice.status());
+ipcMain.handle('dude:voice:prepare', () => voice.prepare(voiceEmit));
+ipcMain.handle('dude:voice:setRef', (e, samples, sr, text) => voice.setRef(samples, sr, text).catch(err => ({ error: String(err.message || err) })));
+ipcMain.handle('dude:voice:say', (e, text, speed) => voice.say(text, speed));
+ipcMain.handle('dude:voice:forget', () => voice.forget());
 function afterSettings() {
   const roots = settings.grantedFolders();
   files.watch(roots, onNewFile);

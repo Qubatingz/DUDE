@@ -26,3 +26,22 @@ jobs:
           path: dist/Dude/
           retention-days: 90
           compression-level: 9
+
+  # Dude's voice engine is a Windows program: check on a real Windows machine that it loads and can talk.
+  voice-check:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Dude-for-Windows
+          path: dude
+      - name: Check "My voice" on Windows
+        shell: pwsh
+        run: |
+          $env:ELECTRON_RUN_AS_NODE = "1"
+          $p = Start-Process -FilePath ".\dude\Dude.exe" -ArgumentList @("ci\voice-smoke.js", ".\dude\resources\app") -Wait -PassThru -NoNewWindow -RedirectStandardOutput out.txt -RedirectStandardError err.txt
+          Get-Content out.txt, err.txt
+          if ($p.ExitCode -ne 0) { exit 1 }
+

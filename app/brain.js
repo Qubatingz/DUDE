@@ -22,7 +22,7 @@ const TOOLS = [
   { name: 'set_reminder', description: 'Remind the user about something after a number of minutes.', input_schema: { type: 'object', properties: { text: { type: 'string' }, minutes: { type: 'number' } }, required: ['text', 'minutes'] } },
   { name: 'remember_note', description: 'Save a short note the user wants you to remember.', input_schema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } },
   { name: 'do_move', description: 'Perform an animation on screen, for fun or to celebrate.', input_schema: { type: 'object', properties: { move: { type: 'string', enum: ['dance', 'noodle', 'moonwalk', 'backflip', 'dab', 'robot', 'shimmy', 'runningman', 'guitar', 'headspin', 'flex', 'selfie', 'graffiti', 'rap', 'wave', 'sleep'] } }, required: ['move'] } },
-  { name: 'teach_dude', description: 'Save something the user teaches you about himself or about how you should behave. kind=fact: a fact about him ("I make beats at night"). kind=rule: when something happens, say a line (when=app needs the app or website name). kind=topic_on/topic_off: what you talk about by yourself. kind=talk_more/talk_less: how often you speak up by yourself. kind=about: his project, what it is, what he is learning, or his dream.', input_schema: { type: 'object', properties: { kind: { type: 'string', enum: ['fact', 'rule', 'topic_on', 'topic_off', 'talk_more', 'talk_less', 'about'] }, fact: { type: 'string' }, when: { type: 'string', enum: ['app', 'morning', 'night', 'back', 'anytime'] }, app: { type: 'string' }, say: { type: 'string' }, topic: { type: 'string', enum: ['hustle', 'english', 'roast', 'calm', 'random'] }, field: { type: 'string', enum: ['project', 'what', 'learning', 'dream'] }, value: { type: 'string' } }, required: ['kind'] } }
+  { name: 'teach_dude', description: 'Save something the user teaches you about himself or about how you should behave. kind=fact: a fact about him ("I make beats at night"). kind=rule: when something happens, say a line and/or do a move (when=app needs the app or website name; when=say needs the phrase he will say to you). kind=topic_on/topic_off: what you talk about by yourself. kind=talk_more/talk_less: how often you speak up by yourself. kind=about: his project, what it is, what he is learning, or his dream.', input_schema: { type: 'object', properties: { kind: { type: 'string', enum: ['fact', 'rule', 'topic_on', 'topic_off', 'talk_more', 'talk_less', 'about'] }, fact: { type: 'string' }, when: { type: 'string', enum: ['say', 'app', 'morning', 'night', 'back', 'win', 'anytime'] }, app: { type: 'string' }, phrase: { type: 'string' }, say: { type: 'string' }, move: { type: 'string', enum: ['noodle', 'backflip', 'moonwalk', 'dab', 'robot', 'flex', 'shimmy', 'headspin', 'guitar'] }, topic: { type: 'string', enum: ['hustle', 'english', 'roast', 'calm', 'random'] }, field: { type: 'string', enum: ['project', 'what', 'learning', 'dream'] }, value: { type: 'string' } }, required: ['kind'] } }
 ];
 const TOPIC_TEXT = {
   hustle: 'his project and money moves: hype, a practical business tip, or a push to do one small thing today',
@@ -113,7 +113,7 @@ function createBrain(d) {
       if (name === 'set_reminder') { d.emit('action', { type: 'reminder', text: String(input.text || '').slice(0, 120), minutes: Math.max(.1, Math.min(1440, +input.minutes || 5)) }); return { done: true }; }
       if (name === 'remember_note') { if (!s.perms.memory) return { error: 'memory_off' }; d.emit('action', { type: 'note', text: String(input.text || '').slice(0, 160) }); return { done: true }; }
       if (name === 'do_move') { d.emit('action', { type: 'move', move: input.move }); return { done: true }; }
-      if (name === 'teach_dude') { const t = {}; for (const k of ['kind', 'fact', 'when', 'app', 'say', 'topic', 'field', 'value']) if (input[k] != null) t[k] = String(input[k]).slice(0, 160); d.emit('action', Object.assign({ type: 'teach' }, t)); return { done: true }; }
+      if (name === 'teach_dude') { const t = {}; for (const k of ['kind', 'fact', 'when', 'app', 'phrase', 'say', 'move', 'topic', 'field', 'value']) if (input[k] != null) t[k] = String(input[k]).slice(0, 160); d.emit('action', Object.assign({ type: 'teach' }, t)); return { done: true }; }
     } catch (e) { return { error: String(e.message || e) }; }
     return { error: 'unknown_tool' };
   }
@@ -145,6 +145,7 @@ ${aboutHim(ctx, nm)}`;
     if (who.length) L.push(`- ${who.join('; ')}.`);
     if (me.facts && me.facts.length) L.push(`- Things he told you: ${me.facts.join(' | ')}`);
     if (me.notes && me.notes.length) L.push(`- Notes you saved for him: ${me.notes.join(' | ')}`);
+    if (me.taught && me.taught.length) L.push(`- Lines he taught you (his own words, often in Kinyarwanda; use them the way he does): ${me.taught.join(' | ')}`);
     if (d.habits && s0().perms.memory) { try { L.push(`- His routine (you learned it by watching): ${d.habits.brief()}`); } catch (e) {} }
     if (me.mission) L.push(`- His mission for today: "${me.mission}"${me.missionDone ? ' (done!)' : ''}.`);
     if (me.word) L.push(`- Word of the day you taught him: "${me.word}".`);

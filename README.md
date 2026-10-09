@@ -34,6 +34,8 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 - **Daily mission:** every morning he asks for the one thing you'll do today, and checks on it in the evening.
 - **English practice:** word of the day, small challenges, better ways to say things.
 - **Calms overthinking:** say "I'm overthinking" and he walks you to one small next step.
+- **Teach him yourself, in any language:** "when I say *Amakuru?*, answer *Ni meza!*" in your own recorded voice, plus a move if you like. Kinyarwanda, English, anything.
+- **My voice:** read a card for 15 seconds and Dude talks in your voice. Free, runs on your laptop (one-time 160 MB download), your recording never leaves it.
 - **Teach tab:** pick his topics and how often he talks, and teach him your own lines.
 
 ## What he can do
@@ -64,6 +66,8 @@ Dude asks before he touches anything. Access to your folders, apps and recent fi
 | `app/files.js` | File search, the check-up report, and watching for new downloads and exports. |
 | `app/memory.js` | What you worked on each day, kept on your laptop. |
 | `app/habits.js` | Learns your routine and tells Dude about moments worth reacting to. |
+| `app/voice.js` | "My voice": copies your voice from a short recording, on your laptop (sherpa-onnx). |
+| `ci/voice-smoke.js` | Build check on a real Windows machine that the voice engine loads and talks. |
 | `app/settings.js` | Permissions, allowed folders, the encrypted API key. |
 | `app/windows.ps1` | Reads where your open windows are so he can stand on them, and which app is in front so he can stay quiet. |
 | `app/listen.ps1` | Push-to-talk speech recognition using Windows' built-in recognizer. |
