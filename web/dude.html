@@ -512,8 +512,9 @@ html.desktop .studio{bottom:0}
           <button class="chip" type="button" data-say="word of the day">word of the day</button>
           <button class="chip" type="button" data-say="I'm overthinking">I'm overthinking</button>
           <button class="chip" type="button" data-say="motivate me">motivate me</button>
+          <button class="chip" type="button" data-say="what project was I working on last?">what was I working on?</button>
+          <button class="chip" type="button" data-say="show my beats">my beats</button>
           <button class="chip" type="button" data-say="how's my laptop doing?">how's my laptop?</button>
-          <button class="chip" type="button" data-say="find my music projects from this week">find my projects</button>
         </div>
         <ol class="chatlog" id="chatLog" aria-label="Conversation"></ol>
       </div>
@@ -2832,6 +2833,12 @@ function demoBrain(text) {
     showCard({ kind: 'files', title: 'Example results', note: 'Demo only. These files are made up.', items: [{ name: 'gihanga_beat_v3.flp', sub: 'Music folder · Tuesday 21:40 · 1 MB' }, { name: 'gihanga_beat_v2.flp', sub: 'Music folder · last week · 1 MB' }, { name: 'gihanga_hook.wav', sub: 'Music folder · last week · 38 MB' }], demo: true });
     return true;
   }
+  if (/\b(beats?|projects?|studio|fl studio|working on)\b/.test(t)) {
+    say('In the Windows app I keep track of your FL Studio projects. Here is what that looks like.', { emo: 'cheeky', voice: true, reply: true, ms: 6000 });
+    const d = Date.now(), day = 864e5;
+    showCard({ kind: 'studio', demo: true, report: { total: 48, thisWeek: 6, untitledCount: 7, favTempo: { bpm: 112, count: 14 }, untitled: [], unfinished: [{ name: 'night drive_v3', minutes: 195, last: d - day, tempo: 112 }], versionPiles: [{ name: 'amapiano groove v5', versions: 5, minutes: 260, last: d - 3 * day, tempo: 113 }], stale: [{ name: 'gihanga riddim', minutes: 140, last: d - 150 * day, tempo: 96 }], topSamples: [{ name: 'Log Drum', count: 11 }], backups: 63, folders: ['FL Studio projects'] } });
+    return true;
+  }
   if (/(organi[sz]e|clean ?up|report|check ?up|declutter)/.test(t)) {
     say('This is my check-up report. In the Windows app it uses your real files.', { emo: 'thinking', voice: true, reply: true, ms: 6000 });
     showCard({ kind: 'report', demo: true, report: { disk: { usedPercent: 92, free: '40 GB' }, largeCount: 37, oldDownloads: 126, duplicates: 84, duplicateWaste: '6 GB', screenshots: 210, musicProjects: 43, recommendations: ['Review 126 old downloads (18 GB).', 'Move big videos to another drive (37 files over 300 MB).', 'Look at 84 possible duplicates (about 6 GB you could free).', 'Organize 43 music projects by artist or year.'], large: [] } });
@@ -2861,17 +2868,27 @@ function showCard(c) {
       (r.recommendations.length ? `<span class="sec-label">What I'd do</span><ol class="recs">${r.recommendations.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : '<div class="card-why">Nothing to fix. Clean laptop, clean mind.</div>') +
       (r.large && r.large.length ? `<span class="sec-label">Biggest files</span><ul class="flist">${r.large.map(f => `<li><span class="fname">${esc(f.name)}</span><span class="fsub">${esc(f.sub)}</span><span class="fbtns"><button class="btn sm" type="button" data-c="show" data-id="${esc(f.id)}">Show</button></span></li>`).join('')}</ul>` : '');
   }
-  else if (c.kind === 'q') body = `<div class="card-q">${esc(c.question)}</div>${c.chips ? `<div class="chips">${c.chips.map(x => `<button class="chip" type="button" data-c="chip" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : ''}<form class="talk" data-c="qform" autocomplete="off"><input id="qIn" maxlength="120" placeholder="${esc(c.placeholder || '')}" aria-label="${esc(c.question)}" value="${esc(c.value || '')}"><button class="btn primary" type="submit">${esc(c.submit || 'Save')}</button></form><div class="card-row"><button class="btn sm" type="button" data-c="skip">Skip</button></div>`;
+  else if (c.kind === 'q') body = `<div class="card-q">${esc(c.question)}</div>${c.chips ? `<div class="chips">${c.chips.map(x => `<button class="chip" type="button" data-c="chip" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : ''}<form class="talk" data-c="qform" autocomplete="off"><input id="qIn" maxlength="120" placeholder="${esc(c.placeholder || '')}" aria-label="${esc(c.question)}" value="${esc(c.value || '')}"><button class="btn primary" type="submit">${esc(c.submit || 'Save')}</button></form><div class="card-row"><button class="btn sm" type="button" data-c="skip">Skip</button>${c.onStop ? '<button class="btn sm" type="button" data-c="stop">Stop</button>' : ''}</div>`;
+  else if (c.kind === 'projects') body = (c.note ? `<div class="card-why">${esc(c.note)}</div>` : '') + (c.items.length ? `<ul class="flist">${c.items.map((f, i) => `<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}${f.untitled ? '<span class="badge2">untitled</span>' : ''}</span><span class="fsub">${esc(f.sub || '')}</span><span class="fbtns"><button class="btn sm${i === 0 ? ' primary' : ''}" type="button" data-c="open" data-id="${esc(f.id || '')}">Open</button><button class="btn sm" type="button" data-c="rename" data-i="${i}">Rename</button></span></li>`).join('')}</ul>` : '<div class="card-why">No FL Studio projects in the folders I can see. Allow the folder where you save your beats in my Access tab.</div>');
+  else if (c.kind === 'studio') {
+    const r = c.report, sec = (t, list) => list && list.length ? `<span class="sec-label">${t}</span><ul class="flist">${list.map(p => { const it = projItem(p); return `<li><span class="fname" title="${esc(it.name)}">${esc(it.name)}</span><span class="fsub">${esc(it.sub)}</span><span class="fbtns"><button class="btn sm" type="button" data-c="open" data-id="${esc(it.id || '')}">Open</button></span></li>`; }).join('')}</ul>` : '';
+    body = `<div class="card-why">${c.demo ? 'Demo only. These projects are made up.' : 'Looked in: ' + esc((r.folders || []).join(', ')) + (c.looked === false ? '. Names only: allow "Look inside music projects" in Access for tempo, samples and time.' : '. Nothing was changed.')}</div>` +
+      `<div class="stats"><div class="stat"><b>${r.total}</b><span>projects</span></div><div class="stat"><b>${r.thisWeek}</b><span>touched this week</span></div><div class="stat"><b>${r.untitledCount}</b><span>untitled</span></div><div class="stat"><b>${r.favTempo ? r.favTempo.bpm : '\u2013'}</b><span>favorite BPM</span></div></div>` +
+      (r.untitledCount ? `<div class="card-row"><button class="btn primary" type="button" data-c="nameall">Name my ${r.untitledCount} untitled project${r.untitledCount > 1 ? 's' : ''}</button></div>` : '') +
+      sec('Unfinished: lots of work, no export', r.unfinished) + sec('Piles of versions: the newest', r.versionPiles) + sec('Old gems', r.stale) +
+      (r.topSamples && r.topSamples.length ? `<div class="card-why">Your signature sounds: ${r.topSamples.map(x => esc(x.name)).join(', ')}.</div>` : '') +
+      (r.backups ? `<div class="card-why">FL keeps ${r.backups} autosave backups. I never delete them.</div>` : '');
+  }
   else if (c.kind === 'rec') body = `<div class="card-why">Read this out loud with your normal energy. About 15 seconds, in a quiet room.</div><div class="script">"${esc(c.script)}"</div><div class="card-row"><button class="btn primary" type="button" data-c="rec">&#9679; Start recording</button><button class="btn" type="button" data-c="reccancel">Cancel</button></div>`;
   else if (c.kind === 'choice') body = `<div class="card-q">${esc(c.question)}</div><div class="card-row">${c.choices.map(([v, l, pri]) => `<button class="btn${pri ? ' primary' : ''}" type="button" data-c="pick" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
   else if (c.kind === 'name') body = `<div class="card-q">What should I call you?</div><form class="talk" data-c="nameform" autocomplete="off"><input id="nameAsk" maxlength="24" placeholder="Your name" aria-label="Your name"><button class="btn primary" type="submit">Save</button></form>`;
   else if (c.kind === 'welcome') body = c.lines.map(l => `<div>${esc(l)}</div>`).join('') + (c.items && c.items.length ? `<ul class="flist">${c.items.map(f => `<li><span class="fname">${esc(f.name)}</span><span class="fsub">Opened recently</span><span class="fbtns"><button class="btn sm primary" type="button" data-c="open" data-id="${esc(f.id)}">Continue</button></span></li>`).join('')}</ul>` : '');
   const closable = !['ask', 'name', 'q', 'choice', 'rec'].includes(c.kind);
-  cardEl.innerHTML = `<div class="card-h"><span class="card-t" id="cardTitle">${esc(c.title || (c.kind === 'ask' ? 'Can I?' : c.kind === 'name' ? 'Hey there' : petName))}</span>${closable ? '<button class="wb" type="button" data-c="close" aria-label="Close">&#215;</button>' : ''}</div><div class="card-b">${body}</div>`;
+  cardEl.innerHTML = `<div class="card-h"><span class="card-t" id="cardTitle">${esc(c.title || (c.kind === 'ask' ? 'Can I?' : c.kind === 'name' ? 'Hey there' : c.kind === 'studio' ? 'Your studio' : petName))}</span>${closable ? '<button class="wb" type="button" data-c="close" aria-label="Close">&#215;</button>' : ''}</div><div class="card-b">${body}</div>`;
   cardEl.hidden = false; cardEl.classList.remove('pop'); void cardEl.offsetWidth; cardEl.classList.add('pop');
   if (c.kind === 'name') setTimeout(() => { const i = $('#nameAsk'); if (i) i.focus(); }, 50);
   if (c.kind === 'q') setTimeout(() => { const i = $('#qIn'); if (i) i.focus(); }, 50);
-  if (c.kind === 'q' || c.kind === 'choice') cardTimer = setTimeout(() => { if (card === c && !cardEl.matches(':hover') && !cardEl.contains(document.activeElement)) { hideCard(); flow = null; } }, 180000);
+  if (c.kind === 'q' || c.kind === 'choice') cardTimer = setTimeout(() => { if (card === c && !cardEl.matches(':hover') && !cardEl.contains(document.activeElement)) { hideCard(); flow = null; } }, c.ttl || 180000);
   if (closable) cardTimer = setTimeout(() => { if (card === c && !cardEl.matches(':hover')) hideCard(); }, 75000);
 }
 cardEl.addEventListener('click', async e => {
@@ -2890,6 +2907,9 @@ cardEl.addEventListener('click', async e => {
     return;
   }
   if (act === 'reccancel') { c.cancelled = true; if (c.rec) c.rec.stop(); hideCard(); c.onDone(null); return; }
+  if (act === 'rename') { const it = c.items && c.items[+b.dataset.i]; if (it) { hideCard(); renameFlow(it); } return; }
+  if (act === 'nameall') { hideCard(); nameAll(c.report.untitled); return; }
+  if (act === 'stop') { hideCard(); if (c.onStop) c.onStop(); return; }
   if (act === 'chip') { const i = $('#qIn'); if (i) { i.value = b.dataset.v; i.focus(); } return; }
   if (act === 'skip' || act === 'pick') { hideCard(); if (c.onAnswer) c.onAnswer(act === 'pick' ? b.dataset.v : ''); return; }
   if (act === 'allow' || act === 'deny') {
@@ -2934,9 +2954,10 @@ const PERMS = [
   ['system', 'Computer health', 'Battery, processor, storage and internet. He gets sick when something is wrong.'],
   ['apps', 'Which app you\'re using', 'App names and window titles. He stays quiet when you\'re busy and remembers what you worked on.'],
   ['recent', 'Recent files', 'The files you opened lately, so he can say "want to continue?"'],
-  ['memory', 'Memory', 'Notes, reminders and what you worked on. Saved on this laptop only.']
+  ['memory', 'Memory', 'Notes, reminders and what you worked on. Saved on this laptop only.'],
+  ['projects', 'Look inside music projects', 'Tempo, time spent, samples and instruments in your FL Studio projects, so he can tell your beats apart. Read-only.']
 ];
-const DEMO_VIEW = { userName: '', mode: 'everyday', model: 'claude-haiku-5-5', interrupt: 'sometimes', dnd: false, perms: { system: true, apps: false, recent: false, memory: true }, folders: [['music', 'Music folder'], ['documents', 'Documents'], ['downloads', 'Downloads'], ['desktop', 'Desktop'], ['pictures', 'Pictures'], ['videos', 'Videos']].map(([key, label]) => ({ key, label, on: false, path: '' })), custom: [], hasKey: false };
+const DEMO_VIEW = { userName: '', mode: 'everyday', model: 'claude-haiku-5-5', interrupt: 'sometimes', dnd: false, perms: { system: true, apps: false, recent: false, memory: true, projects: false }, folders: [['flstudio', 'FL Studio projects'], ['music', 'Music folder'], ['documents', 'Documents'], ['downloads', 'Downloads'], ['desktop', 'Desktop'], ['pictures', 'Pictures'], ['videos', 'Videos']].map(([key, label]) => ({ key, label, on: false, path: '' })), custom: [], hasKey: false };
 const sw = (id, on, label) => `<button class="switch" type="button" role="switch" data-sw="${esc(id)}" aria-checked="${on}" aria-label="${esc(label)}"></button>`;
 function renderView(v) {
   dudeView = v;
@@ -3033,6 +3054,7 @@ function nameBit() { return dudeView && dudeView.userName ? ', ' + dudeView.user
 function onDudeEvent(ev) {
   if (ev.type === 'active') { lastActiveAt = performance.now(); if (pet.act === 'sleep' && pet.actDur > 1e8 && grounded()) wake(true); return; }
   if (ev.type === 'moment') { lastActiveAt = performance.now(); return onMoment(ev); }
+  if (ev.type === 'project') return onNewProject(ev);
   if (ev.type === 'focus') {
     const was = quiet; quiet = !!ev.quiet; focusInfo = ev;
     if (quiet && !was) { bubble.hidden = true; if (grounded() && ['idle', 'walk', 'look'].includes(pet.act)) setAct('sit', 8); }
@@ -3058,7 +3080,7 @@ if (DESKTOP) {
   });
   KD.onAskDone(id => { if (card && card.kind === 'ask' && card.id === id) { hideCard(); say("I'll take that as a no. All good.", { emo: 'chill', reply: true }); } });
   KD.onCard(c => showCard(Object.assign({ kind: c.type }, c)));
-  KD.onBusy(b => { clearTimeout(thinkingTimer); say(b.text === 'searching' ? pick(['Searching... act natural.', 'Digging through your files. Respectfully.', 'Looking. Give me a sec.']) : 'Checking everything. Hold still.', { emo: 'thinking', ms: 15000, reply: true }); });
+  KD.onBusy(b => { clearTimeout(thinkingTimer); say(b.text === 'searching' ? pick(['Searching... act natural.', 'Digging through your files. Respectfully.', 'Looking. Give me a sec.']) : b.text === 'studio' ? pick(['Going through your beats...', 'Opening every project. With respect.', 'Checking the studio. Hold the 808.']) : 'Checking everything. Hold still.', { emo: 'thinking', ms: 15000, reply: true }); });
   KD.onAction(a => {
     if (a.type === 'reminder') addReminder(a.text, a.minutes);
     else if (a.type === 'note') addNote(a.text);
@@ -3112,7 +3134,7 @@ async function dudeStart() {
 const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 const logicalDay = () => ymd(new Date(Date.now() - 5 * 3600e3));   // your "day" runs 5am to 5am
 const hashS = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
-const TEACH0 = { about: { project: '', what: '', learning: '', dream: '' }, facts: [], rules: [], topics: { hustle: true, english: true, roast: true, calm: true, random: true }, triggers: { apps: true, daytime: true, long: true }, interview: 0 };
+const TEACH0 = { about: { project: '', what: '', learning: '', dream: '' }, facts: [], rules: [], topics: { hustle: true, english: true, roast: true, calm: true, random: true, studio: true }, triggers: { apps: true, daytime: true, long: true }, interview: 0 };
 let teach = (() => { const t = store.get('teach', {}) || {}; return { about: Object.assign({}, TEACH0.about, t.about), facts: Array.isArray(t.facts) ? t.facts : [], rules: Array.isArray(t.rules) ? t.rules : [], topics: Object.assign({}, TEACH0.topics, t.topics), triggers: Object.assign({}, TEACH0.triggers, t.triggers), interview: t.interview || 0 }; })();
 const saveTeach = () => store.set('teach', teach);
 let taste = Object.assign({ up: {}, down: {}, topic: {}, upText: [], downText: [], recent: [], ups: 0, downs: 0 }, store.get('taste', {}) || {});
@@ -3249,8 +3271,8 @@ const MORNING = {
   early: ["You're up early! Who are you, and what did you do with {n}?", "Early bird mode! The worm doesn't stand a chance."],
   late: ["Good morning... or afternoon? We don't judge here. Much.", "Morning, {n}! Or what's left of it."]
 };
-const TOPIC_EMO = { hustle: 'excited', english: 'happy', roast: 'cheeky', calm: 'chill', random: 'cheeky', taught: 'happy' };
-const TOPICS = [['hustle', () => `${teach.about.project || 'Business'} & money moves`], ['english', () => 'English practice'], ['roast', () => 'Roasting you'], ['calm', () => 'Calm your overthinking'], ['random', () => 'Random thoughts']];
+const TOPIC_EMO = { hustle: 'excited', english: 'happy', roast: 'cheeky', calm: 'chill', random: 'cheeky', taught: 'happy', studio: 'thinking' };
+const TOPICS = [['hustle', () => `${teach.about.project || 'Business'} & money moves`], ['english', () => 'English practice'], ['roast', () => 'Roasting you'], ['calm', () => 'Calm your overthinking'], ['random', () => 'Random thoughts'], ['studio', () => 'Studio helper (FL Studio)']];
 const TRIGS = [['apps', 'When you open an app'], ['daytime', 'Morning & late night'], ['long', 'When you work too long']];
 
 /* ---- English practice ---- */
@@ -3368,6 +3390,7 @@ async function think(trigger = 'random', d = {}, o = {}) {
   }
   const topic = o.topic || (trigger === 'random' ? pickTopic() : null);
   if (trigger === 'random' && !topic) return;
+  if (topic === 'studio') return studioThought(o);   // something useful about your FL Studio projects
   if (aiOk() && trigger !== 'app' && topic !== 'taught' && !(topic === 'english' && !day.wordSaid) && (o.force || Math.random() < .6)) {
     const r = await withTimeout(KD.thought({ trigger, topic: topic || (trigger === 'binge' ? 'roast' : trigger === 'long' || trigger === 'night' ? 'calm' : 'random'), data: aiData(trigger, d) }, chatCtx()).catch(() => null), 9000);
     if (r && r.say && (o.force || o.important || canSpeakNow())) return sayThought(r.say, { key: 'ai:' + hashS(r.say), topic: topic || 'random', emo: MOODMAP[r.mood] || r.mood, reply: o.force, important: o.important });
@@ -3481,6 +3504,7 @@ function onMoment(ev) {
   if (!ready || flow) return;
   const loud = quiet && !(focusInfo && (focusInfo.dnd || focusInfo.fullscreen));   // quiet only because of a focus app
   if (ev.kind === 'app') {
+    if (/^fl studio$/i.test(ev.app) && DESKTOP && topicOn('studio') && now - thinkState.bootAt > 20000) setTimeout(onFlOpened, 5000);   // offer the project you were on
     if (now - thinkState.bootAt < 60000 || !bubble.hidden || !cardEl.hidden) return;
     const r = ruleFor('app', ev.app);
     if (r) { thinkState.lastApp = now; return playRule(r, ev, { important: loud }); }
@@ -3589,6 +3613,7 @@ function localFirst(text) {
     reply("Teach me! Write what you'll say to me, then type my answer or press the mic and say it. Kinyarwanda welcome.", { emo: 'excited', ms: 9000 }); return true;
   }
   if (/^(learn|use|copy) my voice\b|^talk like me\b/.test(t)) { learnMyVoice(); return true; }
+  if (/^undo( that| it| the rename| rename)?[.!]?$/.test(t) && DESKTOP) { KD.studioUndo().then(r => { studioCache.at = -1e9; logReply = true; say(r.error ? r.error : `Undone. "${r.was}" is "${r.name}" again.`, { emo: r.error ? 'concerned' : 'chill', reply: true }); logReply = false; }); return true; }
   // something you taught him to answer
   const nm = x => x.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, ' ').replace(/\s+/g, ' ').trim(), said = nm(text);
   const hits = teach.rules.filter(r => r.when === 'say' && r.phrase && (said === nm(r.phrase) || (nm(r.phrase).length >= 4 && (' ' + said + ' ').includes(' ' + nm(r.phrase) + ' '))));
@@ -3679,6 +3704,91 @@ for (const [id, k] of [['abProject', 'project'], ['abWhat', 'what'], ['abLearnin
 const ruleWhen = $('#ruleWhen'), ruleApp = $('#ruleApp');
 $('#factForm').addEventListener('submit', e => { e.preventDefault(); const v = $('#factIn').value.trim(); if (!v) return; applyTeach({ kind: 'fact', fact: v }); $('#factIn').value = ''; say('Saved in my big head.', { emo: 'happy', reply: true }); });
 bubble.addEventListener('click', e => { const b = e.target.closest('[data-fb]'); if (!b || !bubbleFb) return; const fb = bubbleFb; bubbleFb = null; bubble.querySelector('.fb').hidden = true; rateLine(fb, b.dataset.fb === 'up'); });
+/* ================= the studio: he keeps your FL Studio projects organized ================= */
+const fmtShort = m => { m = Math.round(m || 0); if (m < 60) return m + ' min'; const h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ' ' + r + 'm' : ''); };
+function agoTxt(ms) {
+  if (!ms) return '';
+  const d = new Date(ms), now = new Date(), day = 864e5, a = new Date(now); a.setHours(0, 0, 0, 0);
+  const diff = Math.floor((a - new Date(d).setHours(0, 0, 0, 0)) / day);
+  if (diff <= 0) return 'today'; if (diff === 1) return 'yesterday'; if (diff < 7) return d.toLocaleDateString('en-US', { weekday: 'long' });
+  if (diff < 60) return Math.round(diff / 7) + ' weeks ago'; return Math.round(diff / 30) + ' months ago';
+}
+const projItem = p => ({ id: p.id, name: p.name, untitled: p.untitled, suggest: p.suggest || '', sub: [p.tempo ? Math.round(p.tempo) + ' BPM' : '', p.minutes ? fmtShort(p.minutes) + ' of work' : '', agoTxt(p.last), p.exports && p.exports.length ? 'exported' : '', p.versions > 1 ? p.versions + ' versions' : ''].filter(Boolean).join(' · ') });
+let studioCache = { at: -1e9, data: null };
+async function studioInfo(fresh) {
+  if (!DESKTOP) return null;
+  if (!fresh && performance.now() - studioCache.at < 15 * 6e4) return studioCache.data;
+  const r = await KD.studioReport().catch(() => null);
+  studioCache = { at: performance.now(), data: r && !r.off && r.report && r.report.total ? r : null };
+  return studioCache.data;
+}
+/* give a project a name you'll remember (only when you click Rename) */
+function renameFlow(item, then) {
+  if (!DESKTOP) { say('In the Windows app I rename it for you.', { emo: 'cheeky', reply: true }); return; }
+  flow = 'rename';
+  say(item.untitled ? `"${item.name}" tells you nothing. How about "${item.suggest || 'something'}"?` : `What should "${item.name}" be called?`, { emo: 'thinking', reply: true, ms: 60000 });
+  showCard({ kind: 'q', title: 'Name this project', question: `New name for "${item.name}"`, placeholder: 'e.g. Night drive 140bpm', value: item.suggest || item.name, submit: 'Rename', onStop: then ? () => { flow = null; say('Okay, we stop here.', { emo: 'chill', reply: true }); } : null, onAnswer: async v => {
+    flow = null;
+    let ok = false;
+    if (v && v !== item.name) {
+      const r = await KD.studioRename(item.id, v);
+      if (r.error === 'open') say(`"${item.name}" is open in FL Studio right now, so I won't touch it. I copied the name: in FL press Ctrl+Shift+S (Save as) and paste it.`, { emo: 'thinking', reply: true, ms: 11000 });
+      else if (r.error) say(r.error, { emo: 'concerned', reply: true, ms: 6000 });
+      else { ok = true; studioCache.at = -1e9; say(`Done! "${r.from}" is now "${r.name}". Say "undo" if you don't like it.`, { emo: 'proud', reply: true, ms: 6000 }); stars(pet.x, pet.y - H, 8); }
+    }
+    if (then) setTimeout(() => then(ok), ok ? 2400 : 300);
+  } });
+}
+function nameAll(list) {
+  list = (list || []).filter(p => p.id);
+  let i = 0, done = 0;
+  const next = ok => { if (ok) done++; if (i >= list.length) { if (done) say(`${done} project${done > 1 ? 's' : ''} named. Now you can actually find your beats.`, { emo: 'excited', reply: true }); return; } renameFlow(list[i++], next); };
+  next(false);
+}
+/* a useful thing he noticed in your studio */
+async function studioThought(o = {}) {
+  const d = await studioInfo();
+  if (!d) {
+    if (!DESKTOP || day.studioAsk || !canSpeakNow()) return;
+    day.studioAsk = 1; saveDay();
+    say(fill('{n}, want me to keep track of your FL Studio projects? You never forget a beat name again.'), { emo: 'excited', voice: true, reply: o.force });
+    showCard({ kind: 'choice', title: 'Studio helper', ttl: 60000, question: 'I find your projects, remember what you worked on, and name the untitled ones. I ask before I look.', choices: [['yes', 'Yes, do it', true], ['later', 'Later']], onAnswer: v => { if (v === 'yes') talk('show my beats'); } });
+    return;
+  }
+  const R = d.report, ideas = [];
+  if (R.untitledCount) ideas.push(['untitled', 3, () => { sayThought(`You have ${R.untitledCount} untitled project${R.untitledCount > 1 ? 's' : ''}. Future you won't know which is which. Want me to name them?`, { key: 'studio:untitled', topic: 'studio', reply: o.force }); showCard({ kind: 'choice', title: 'Untitled projects', ttl: 90000, question: `I already have names ready, like "${R.untitled[0].suggest}".`, choices: [['go', 'Name them', true], ['later', 'Later']], onAnswer: v => { if (v === 'go') nameAll(R.untitled); } }); }]);
+  if (R.unfinished[0]) { const p = R.unfinished[0]; ideas.push(['unfinished', 3, () => { sayThought(`"${p.name}" has ${fmtShort(p.minutes)} of work and no export yet. Finish it today?`, { key: 'studio:unfinished:' + p.name, topic: 'studio', reply: o.force }); showCard({ kind: 'projects', title: 'Almost there', items: [projItem(p)] }); }]); }
+  if (R.versionPiles[0]) { const p = R.versionPiles[0]; ideas.push(['versions', 2, () => { sayThought(`You have ${p.versions} versions of "${p.name}". The newest is this one. That's the real one, right?`, { key: 'studio:versions:' + p.name, topic: 'studio', reply: o.force }); showCard({ kind: 'projects', title: 'The newest version', items: [projItem(p)] }); }]); }
+  if (R.stale[0]) { const p = R.stale[0]; ideas.push(['stale', 2, () => { sayThought(`Remember "${p.name}"? ${fmtShort(p.minutes)} of work, ${agoTxt(p.last)}. Old gem. Want to hear it again?`, { key: 'studio:stale:' + p.name, topic: 'studio', reply: o.force }); showCard({ kind: 'projects', title: 'An old gem', items: [projItem(p)] }); }]); }
+  if (R.mostWorked[0]) { const p = R.mostWorked[0]; ideas.push(['most', 1, () => sayThought(`Your most-worked beat is "${p.name}": ${fmtShort(p.minutes)}. That one is special. Did you release it?`, { key: 'studio:most', topic: 'studio', reply: o.force })]); }
+  if (R.favTempo && R.favTempo.count >= 3) ideas.push(['tempo', 1, () => sayThought(`Fun fact: your favorite tempo is ${R.favTempo.bpm} BPM. ${R.favTempo.count} projects. Try something different today?`, { key: 'studio:tempo', topic: 'studio', reply: o.force })]);
+  if (R.topSamples[0] && R.topSamples[0].count >= 3) ideas.push(['sample', 1, () => sayThought(`Your signature sound: "${R.topSamples[0].name}". It's in ${R.topSamples[0].count} projects. People will know it's you.`, { key: 'studio:sample', topic: 'studio', reply: o.force })]);
+  if (R.backups > 30) ideas.push(['backups', .5, () => sayThought(`FL Studio is keeping ${R.backups} autosave backups. I won't delete anything, but that's a lot of "just in case".`, { key: 'studio:backups', topic: 'studio', reply: o.force })]);
+  const fresh = ideas.filter(([k]) => !taste.recent.some(x => x.startsWith('studio:' + k)) && !taste.down['studio:' + k]);
+  const pool = (fresh.length ? fresh : ideas).filter(([k]) => !taste.down['studio:' + k]);
+  if (pool.length) wpick(pool.map(x => [x, x[1]]))[2]();
+}
+/* FL Studio just opened: offer the project you were on */
+async function onFlOpened() {
+  const c = await KD.studioCurrent().catch(() => null);
+  if (!c || c.off || !c.last || !c.currentUntitled || !cardEl.hidden || flow) return;
+  const p = c.last;
+  say(`Last time you were on "${p.name}"${p.minutes ? ` (${fmtShort(p.minutes)})` : ''}, ${agoTxt(p.last)}. Want it?`, { emo: 'happy', voice: true, important: true, ms: 9000 });
+  showCard({ kind: 'projects', title: 'Pick up where you stopped?', items: [projItem(p)] });
+}
+/* you saved a new project */
+function onNewProject(ev) {
+  studioCache.at = -1e9;
+  if (!ev.untitled || flow || !cardEl.hidden) return;
+  // it's open in FL right now, so the safe way is "Save as" in FL with a good name
+  say(`New project saved as "${ev.name}". That name tells future you nothing. How about "${ev.suggest}"?`, { emo: 'thinking', voice: true, important: true, ms: 12000 });
+  showCard({ kind: 'choice', title: 'Name it now', ttl: 120000, question: `In FL Studio press Ctrl+Shift+S (Save as) and paste: "${ev.suggest}"`, choices: [['copy', 'Copy the name', true], ['later', 'Later']], onAnswer: v => {
+    if (v !== 'copy') return;
+    KD.copy(ev.suggest);
+    say('Copied! Ctrl+Shift+S in FL, then Ctrl+V. Done.', { emo: 'proud', reply: true });
+  } });
+}
+
 /* ================= teaching him by voice (any language), and "my voice" ================= */
 const MOVE_TXT = { noodle: 'Noodle dance', backflip: 'Backflip', moonwalk: 'Moonwalk', dab: 'Dab', robot: 'Robot', flex: 'Flex', shimmy: 'Shimmy', headspin: 'Head spin', guitar: 'Air guitar' };
 let ruleClip = null, ruleRec = null;
@@ -3976,6 +4086,6 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__kito = { enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard, think, morning, night, interview, missionCheck, onDudeEvent, lifeTick, rateLine, get teach() { return teach; }, get taste() { return taste; }, get day() { return day; }, get thinkState() { return thinkState; }, get flow() { return flow; }, canSpeakNow, lineFor, wordToday, playRule, learnMyVoice, get myVoice() { return myVoice; }, playSamples, _hurry() { lastReplyAt = -1e9; thinkState.bootAt -= 1e6; thinkState.lastApp = -1e9; thinkState.ruleAt = {}; } };
+window.__kito = { enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard, think, morning, night, interview, missionCheck, onDudeEvent, lifeTick, rateLine, get teach() { return teach; }, get taste() { return taste; }, get day() { return day; }, get thinkState() { return thinkState; }, get flow() { return flow; }, canSpeakNow, lineFor, wordToday, playRule, studioThought, onFlOpened, renameFlow, nameAll, learnMyVoice, get myVoice() { return myVoice; }, playSamples, _hurry() { lastReplyAt = -1e9; thinkState.bootAt -= 1e6; thinkState.lastApp = -1e9; thinkState.ruleAt = {}; } };
 })();
 </script>

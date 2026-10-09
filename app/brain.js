@@ -22,6 +22,9 @@ const TOOLS = [
   { name: 'set_reminder', description: 'Remind the user about something after a number of minutes.', input_schema: { type: 'object', properties: { text: { type: 'string' }, minutes: { type: 'number' } }, required: ['text', 'minutes'] } },
   { name: 'remember_note', description: 'Save a short note the user wants you to remember.', input_schema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } },
   { name: 'do_move', description: 'Perform an animation on screen, for fun or to celebrate.', input_schema: { type: 'object', properties: { move: { type: 'string', enum: ['dance', 'noodle', 'moonwalk', 'backflip', 'dab', 'robot', 'shimmy', 'runningman', 'guitar', 'headspin', 'flex', 'selfie', 'graffiti', 'rap', 'wave', 'sleep'] } }, required: ['move'] } },
+  { name: 'music_projects', description: 'Find his FL Studio projects (.flp) by anything he remembers: part of the name, a sample, an instrument, a pattern name, the tempo ("140 bpm"), or when he worked on it. Also lists the most recent, the most worked-on, the untitled ones, or the unfinished ones (lots of work, no export). Shows them as a clickable list with Open, Show and Rename. Asks permission for folders and for looking inside projects by itself.', input_schema: { type: 'object', properties: { query: { type: 'string', description: 'Words he remembers, e.g. "log drum", "amapiano", "140 bpm". Empty = all.' }, when: { type: 'string', description: 'Optional: today, yesterday, this week, last week, a weekday, "3 days".' }, sort: { type: 'string', enum: ['recent', 'worked', 'untitled', 'unfinished'] } } } },
+  { name: 'studio_report', description: 'Overview of his FL Studio projects: how many, untitled ones, piles of versions, unfinished beats with lots of work, old forgotten projects, favorite tempo, most-used samples and instruments, autosave backups. Shown as a card with buttons.', input_schema: { type: 'object', properties: {} } },
+  { name: 'rename_project', description: 'Rename one FL Studio project (by its id from the latest project list) so he can find it later. Only after he agreed to a name. Dude asks him to confirm, renames it in its own folder, and he can say "undo".', input_schema: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string', description: 'New name, without .flp' } }, required: ['id', 'name'] } },
   { name: 'teach_dude', description: 'Save something the user teaches you about himself or about how you should behave. kind=fact: a fact about him ("I make beats at night"). kind=rule: when something happens, say a line and/or do a move (when=app needs the app or website name; when=say needs the phrase he will say to you). kind=topic_on/topic_off: what you talk about by yourself. kind=talk_more/talk_less: how often you speak up by yourself. kind=about: his project, what it is, what he is learning, or his dream.', input_schema: { type: 'object', properties: { kind: { type: 'string', enum: ['fact', 'rule', 'topic_on', 'topic_off', 'talk_more', 'talk_less', 'about'] }, fact: { type: 'string' }, when: { type: 'string', enum: ['say', 'app', 'morning', 'night', 'back', 'win', 'anytime'] }, app: { type: 'string' }, phrase: { type: 'string' }, say: { type: 'string' }, move: { type: 'string', enum: ['noodle', 'backflip', 'moonwalk', 'dab', 'robot', 'flex', 'shimmy', 'headspin', 'guitar'] }, topic: { type: 'string', enum: ['hustle', 'english', 'roast', 'calm', 'random'] }, field: { type: 'string', enum: ['project', 'what', 'learning', 'dream'] }, value: { type: 'string' } }, required: ['kind'] } }
 ];
 const TOPIC_TEXT = {
@@ -113,10 +116,62 @@ function createBrain(d) {
       if (name === 'set_reminder') { d.emit('action', { type: 'reminder', text: String(input.text || '').slice(0, 120), minutes: Math.max(.1, Math.min(1440, +input.minutes || 5)) }); return { done: true }; }
       if (name === 'remember_note') { if (!s.perms.memory) return { error: 'memory_off' }; d.emit('action', { type: 'note', text: String(input.text || '').slice(0, 160) }); return { done: true }; }
       if (name === 'do_move') { d.emit('action', { type: 'move', move: input.move }); return { done: true }; }
+      if (name === 'music_projects' || name === 'studio_report') {
+        const got = await studioData(name === 'studio_report' ? 'report' : 'list', input);
+        if (got.error) return got;
+        if (name === 'studio_report') { d.emit('card', { type: 'studio', report: got.report, looked: got.looked }); return got.report; }
+        d.emit('card', { type: 'projects', title: got.items.length ? (input.sort === 'untitled' ? 'Untitled projects' : `Found ${got.items.length} project${got.items.length > 1 ? 's' : ''}`) : 'No projects found', note: got.note, items: got.items });
+        return { count: got.items.length, looked_inside: got.looked, projects: got.items.map(x => ({ id: x.id, name: x.name, tempo: x.tempo, worked: x.worked, last: x.when, has_export: x.exported, untitled: x.untitled, suggested_name: x.suggest, vibe: x.vibe })) };
+      }
+      if (name === 'rename_project') {
+        const f = results.get(input.id);
+        if (!f || !/\.flp$/i.test(f.path)) return { error: 'unknown_id', note: 'Use an id from the latest project list.' };
+        const nm = String(input.name || '').trim();
+        if (d.openInFl && d.openInFl(f.path)) return { error: 'open_in_fl_studio', note: 'It is open in FL Studio right now. Tell him to use File > Save as (Ctrl+Shift+S) in FL with the new name, or close it first.' };
+        const ok = await d.ask('rename', `Rename "${f.name.replace(/\.flp$/i, '')}" to "${nm}"?`, 'Only the name changes, in the same folder. Say "undo" to change it back.');
+        if (!ok) return { error: 'he_said_no' };
+        const r = await d.studio.rename(f.path, nm, d.settings.grantedFolders());
+        results.set(input.id, Object.assign({}, f, { path: r.path, name: r.name + '.flp' }));
+        return { done: true, from: r.from, to: r.name };
+      }
       if (name === 'teach_dude') { const t = {}; for (const k of ['kind', 'fact', 'when', 'app', 'phrase', 'say', 'move', 'topic', 'field', 'value']) if (input[k] != null) t[k] = String(input[k]).slice(0, 160); d.emit('action', Object.assign({ type: 'teach' }, t)); return { done: true }; }
     } catch (e) { return { error: String(e.message || e) }; }
     return { error: 'unknown_tool' };
   }
+
+  /* ---------- the studio: his FL Studio projects ---------- */
+  const FL_DIRS = ['flstudio', 'music', 'documents', 'desktop'];
+  async function studioData(mode, input = {}) {
+    let roots = d.settings.grantedFolders();
+    if (!roots.length) {
+      const fl = d.settings.folderInfo('flstudio'), first = fl && require('fs').existsSync(fl.path) ? 'flstudio' : 'music';
+      if (!(await needFolder(first, first === 'flstudio' ? 'That is where FL Studio saves projects. I only read names, dates and sizes.' : undefined))) return { error: 'permission_denied', note: 'He said not now.' };
+      roots = d.settings.grantedFolders();
+    }
+    let look = d.settings.get().perms.projects;
+    if (!look) {
+      look = await d.ask('projects', 'Can I look inside your FL Studio projects?', 'Read-only: tempo, time spent, samples, instruments and pattern names. That is how I tell your beats apart. I never change them.');
+      if (look) d.settings.grantPerm('projects');
+    }
+    d.emit('busy', { text: 'studio' });
+    const L = await d.studio.list(roots, d.files, d.memory, { look });
+    const note = `Looked in: ${L.roots.join(', ')}`;
+    if (mode === 'report') {
+      const rep = d.studio.report(L);
+      const ids = keep(rep.untitled.concat(rep.unfinished, rep.versionPiles, rep.stale, rep.mostWorked).map(p => ({ path: p.path, name: p.name + '.flp' })));
+      const idOf = p => (ids.find(x => x.path === p.path) || {}).id;
+      for (const k of ['untitled', 'unfinished', 'versionPiles', 'stale', 'mostWorked']) rep[k] = rep[k].map(p => Object.assign({ id: idOf(p) }, p));
+      return { report: rep, note, looked: look };
+    }
+    let list = L.projects;
+    if (input.sort === 'untitled') list = list.filter(p => p.untitled);
+    else if (input.sort === 'unfinished') list = list.filter(p => p.minutes >= 45 && !p.exports.length);
+    else if (input.sort === 'worked') list = list.slice().sort((a, b) => b.minutes - a.minutes);
+    const found = d.studio.search(list, input.query || '', { when: d.files.timeWindow(input.when || '') });
+    const kept = keep(found.map(p => ({ path: p.path, name: p.name + '.flp' })));
+    return { looked: look, note, items: found.map((p, i) => ({ id: kept[i].id, name: p.name, sub: projSub(p), tempo: p.info ? p.info.tempo : 0, worked: p.minutes ? d.memory.fmtDur(p.minutes * 60) : '', when: rel(p.last), exported: p.exports.length > 0, untitled: p.untitled, suggest: p.suggest, vibe: p.info ? (p.info.patterns.concat(p.info.samples)[0] || '') : '' })) };
+  }
+  function projSub(p) { return [p.info && p.info.tempo ? Math.round(p.info.tempo) + ' BPM' : '', p.minutes ? d.memory.fmtDur(p.minutes * 60) + ' of work' : '', rel(p.last), p.exports.length ? 'exported' : '', p.versions > 1 ? p.versions + ' versions' : ''].filter(Boolean).join(' · '); }
 
   /* ---------- Claude ---------- */
   function system(ctx) {
@@ -133,6 +188,7 @@ How to answer:
 - Permission comes first. You can only see what the user allowed. The tools ask for permission themselves; if a tool says permission_denied, accept it kindly and offer another way.
 - You can't delete, move or rename files. Never pretend you did something you didn't.
 - When a search finds files, the app shows them as a clickable list, so just say what you found in a few words and offer to open the best match.
+- You are also his studio assistant. He makes beats in FL Studio and forgets project names. Use music_projects to find a project by anything he remembers (a sample, an instrument, the tempo, when), and studio_report for an overview. Suggest clear names for untitled projects; rename only with rename_project after he agrees.
 - Use ${nm === 'the user' ? 'their name' : nm} now and then, not every message.
 
 Right now: ${new Date().toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'long' })}. Folders you may search: ${allowed.length ? allowed.join(', ') : 'none yet'}. App access: ${s.perms.apps ? 'on' : 'off'}. Memory: ${s.perms.memory ? 'on' : 'off'}.${ctx.focusApp ? ' App in front: ' + ctx.focusApp + '.' : ''}${ctx.sick ? ' The computer has a problem right now: ' + ctx.sick + '.' : ''}
@@ -218,6 +274,33 @@ ${learning ? `- ${nm} is learning English. Use simple words. When he practices (
       if (f) { const err = await d.open(f.path, 'open'); return err ? { say: `Hmm, Windows wouldn't open "${f.name}".`, mood: 'concerned' } : { say: `Opening "${f.name}". Let's work.`, mood: 'excited' }; }
     }
     if (/^(show|show me)( it)? in (the )?folder|^show it$/.test(t) && results.size) { const f = results.get('f1'); await d.open(f.path, 'show'); return { say: 'There it is, in its natural habitat.', mood: 'smug' }; }
+    // the studio: FL Studio projects (the tools show the cards)
+    const noFolder = { say: 'No problem. Give me the folder where you save your beats in my Access tab, and I will track them.', mood: 'chill' };
+    if (/(what|which) (project|beat|song|track)\b.*\b(working on|was i|did i (make|work)|last)|\blast (project|beat)\b|where did i stop\b.*\b(fl|beat|project)|my (last|latest) (beat|project)/.test(t)) {
+      const r = await tool('music_projects', { when: t });
+      if (r.error) return noFolder;
+      if (!r.count) return { say: "I don't see any FL Studio projects in the folders you allowed yet.", mood: 'concerned' };
+      const p = r.projects[0];
+      return { say: `Your latest is "${p.name}"${p.worked ? `, ${p.worked} of work` : ''}, ${p.last}. Want me to open it?`, mood: 'happy' };
+    }
+    if (/\b(name|rename)\b.*\buntitled\b|untitled (projects|beats)/.test(t)) {
+      const r = await tool('music_projects', { sort: 'untitled' });
+      if (r.error) return noFolder;
+      return { say: r.count ? `You have ${r.count} untitled project${r.count > 1 ? 's' : ''}. Click Rename on each one. I already have names ready.` : 'No untitled projects! Look at you, Mr. Organized.', mood: r.count ? 'cheeky' : 'proud' };
+    }
+    if (/\b(studio|beats?|fl ?studio|music) (report|check ?up|overview)|organi[sz]e (my )?(beats|projects|music|fl|studio)|(how many|show( me)?|list) (my )?(beats|projects|fl projects)|my (beats|projects)\b/.test(t)) {
+      const R = await tool('studio_report');
+      if (R.error) return noFolder;
+      return { say: !R.total ? "I don't see any FL Studio projects yet. Did you allow the folder where you save them?" : `${R.total} projects. ${R.untitledCount ? `${R.untitledCount} are untitled, I can name them. ` : ''}${R.unfinished[0] ? `"${R.unfinished[0].name}" has lots of work but no export.` : 'Look at the card.'}`, mood: 'thinking' };
+    }
+    if (/\b(find|where'?s|where is|search for|look for|show me)\b/.test(t) && /\b(beat|project|song|track|bpm|sample)s?\b/.test(t)) {
+      const q = t.replace(/^.*?\b(find|where'?s|where is|search for|look for|show me)\b\s*/, '').replace(/\?$/, '');
+      const r = await tool('music_projects', { query: q, when: t });
+      if (r.error) return noFolder;
+      if (!r.count) return { say: `I looked inside your projects and found nothing like "${q}". Try a sample name, an instrument or the tempo.`, mood: 'concerned' };
+      const p = r.projects[0];
+      return { say: `Found it: "${p.name}"${p.tempo ? `, ${Math.round(p.tempo)} BPM` : ''}${p.worked ? `, ${p.worked} of work` : ''}. Want me to open it?`, mood: 'cheeky' };
+    }
     if (/\b(find|search|look for|where('?s| is| are| did i (put|save))|locate|show me my|open my)\b/.test(t)) {
       const kind = d.files.guessKind(t);
       const q = t.replace(/^.*?\b(find|search for|search|look for|where('?s| is| are| did i (put|save))|locate|show me my|show me|open my)\b\s*/, '').replace(/\?$/, '');

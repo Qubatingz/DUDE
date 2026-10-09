@@ -33,6 +33,19 @@ HE GETS TO KNOW YOU
 - If you allow "Which app you're using", he learns your routine on this laptop:
   when you start, your busiest hour, the apps and sites you live in, late nights.
 
+STUDIO HELPER (FL Studio)
+- He keeps track of all your FL Studio projects, so you never forget a name again.
+- "show my beats": a studio report with untitled projects, unfinished beats (lots of
+  work, no export), piles of versions, old gems and your favorite BPM.
+- "what was I working on?": your latest project and how long you worked on it.
+- "find the beat with the log drum": he looks INSIDE projects (samples, instruments,
+  pattern names, tempo like "140 bpm").
+- When you open FL Studio, he offers the project you were on last.
+- When you save an "Untitled" project, he suggests a real name, like "112bpm Log Drum Oct 9".
+  He renames only when you click Rename, and "undo" changes it back.
+  He never moves or deletes your projects.
+- He asks first: for the FL Studio projects folder, and to "Look inside music projects".
+
 TEACH HIM YOURSELF (any language, in your voice)
 - Teach tab > "Teach him something": pick WHEN (I say..., I open an app, every morning,
   late at night, I come back, I finish something, anytime), then type what he says,
@@ -57,7 +70,9 @@ The key stays on this laptop, encrypted. You pay Anthropic per use.
 
 PRIVACY: HE ASKS FIRST
 - Access tab: switch on/off what he can see (apps, recent files, memory, folders).
-- In folders he only reads file NAMES, sizes and dates. He never deletes or moves anything.
+- In folders he only reads file NAMES, sizes and dates (and, if you allow it, what's inside
+  your FL Studio projects). He never deletes or moves anything. He renames a project only
+  when you click Rename.
 - He goes quiet by himself in full-screen apps, music software and video calls.
 - Memory tab > Forget everything wipes his memory, his routine notes, what you taught him
   and your voice recordings.

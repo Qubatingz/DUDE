@@ -23,7 +23,7 @@ function friendly(exe) {
 
 const file = () => path.join(app.getPath('userData'), 'dude-memory.json');
 let M = null;
-function load() { try { M = JSON.parse(fs.readFileSync(file(), 'utf8')); } catch (e) { M = {}; } M.days = M.days || {}; M.opened = M.opened || []; M.routine = M.routine || {}; return M; }
+function load() { try { M = JSON.parse(fs.readFileSync(file(), 'utf8')); } catch (e) { M = {}; } M.days = M.days || {}; M.opened = M.opened || []; M.routine = M.routine || {}; M.proj = M.proj || {}; return M; }
 function get() { return M || load(); }
 let dirty = false;
 function save() { try { fs.writeFileSync(file(), JSON.stringify(M)); dirty = false; } catch (e) {} }
@@ -83,6 +83,16 @@ function topApps(n) {
   return Object.entries(tot).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name, s]) => ({ name, hours: s / 3600 }));
 }
 
+/* how long each FL Studio project was open in front of you (from FL's window title) */
+function trackProject(name, secs) {
+  const k = String(name || '').toLowerCase().trim(); if (!k) return;
+  const m = get(), r = m.proj[k] || (m.proj[k] = { name, secs: 0, last: 0 });
+  r.secs += secs; r.last = Date.now(); r.name = name;
+  const keys = Object.keys(m.proj); if (keys.length > 800) { keys.sort((a, b) => m.proj[a].last - m.proj[b].last); for (const x of keys.slice(0, 100)) delete m.proj[x]; }
+  dirty = true;
+}
+function projectTime() { return get().proj; }
+
 function fmtDur(s) { const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return h ? `${h}h ${m}m` : `${m} min`; }
 
 /* the most recent day before today that has something in it */
@@ -121,6 +131,6 @@ function recentFiles(limit = 6) {
   return out;
 }
 
-function wipe() { M = { days: {}, opened: [], routine: {} }; save(); }
+function wipe() { M = { days: {}, opened: [], routine: {}, proj: {} }; save(); }
 
-module.exports = { today, logicalToday, friendly, trackApp, noteOpened, noteTalk, lastDay, summary, recentFiles, wipe, fmtDur, trackPresence, trackSite, routineDays, routineToday, markPattern, topApps, save: () => dirty && save() };
+module.exports = { today, logicalToday, friendly, trackApp, noteOpened, noteTalk, lastDay, summary, recentFiles, wipe, fmtDur, trackPresence, trackSite, routineDays, routineToday, markPattern, topApps, trackProject, projectTime, save: () => dirty && save() };

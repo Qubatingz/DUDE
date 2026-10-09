@@ -1,6 +1,6 @@
 // Dude — an AI desktop companion for Windows.
 // One transparent, click-through window covers the screen; only Dude himself (and his panels/cards) catch the mouse.
-const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage, globalShortcut, shell, dialog, net, powerMonitor } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage, globalShortcut, shell, dialog, net, powerMonitor, clipboard } = require('electron');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
@@ -10,6 +10,8 @@ const files = require('./files');
 const memory = require('./memory');
 const habits = require('./habits');
 const voice = require('./voice');
+const studio = require('./studio');
+const { readFlp } = require('./flp');
 const { createBrain } = require('./brain');
 
 app.setAppUserModelId('com.dude.desktoppet');
@@ -107,7 +109,7 @@ async function openPath(p, how) {
 }
 
 /* ================= the brain ================= */
-const brain = createBrain({ settings, files, memory, habits, status, ask, open: openPath, net, emit: (type, payload) => send('dude:' + type, payload) });
+const brain = createBrain({ settings, files, memory, habits, studio, openInFl: p => openInFl(p), status, ask, open: openPath, net, emit: (type, payload) => send('dude:' + type, payload) });
 ipcMain.handle('dude:chat', (e, text, ctx) => brain.chat(String(text || '').slice(0, 600), ctx || {}));
 ipcMain.handle('dude:thought', (e, req, ctx) => brain.thought(req || {}, ctx || {}));
 ipcMain.handle('dude:habits', () => settings.get().perms.memory ? habits.learned() : { off: true, insights: [] });
@@ -115,7 +117,10 @@ ipcMain.handle('dude:open', async (e, a) => { const f = brain.results.get(a && a
 
 /* ================= settings & permissions ================= */
 ipcMain.handle('dude:settings', () => settings.publicView());
-ipcMain.handle('dude:settings:set', (e, patch) => { settings.apply(patch || {}); afterSettings(); return settings.publicView(); });
+ipcMain.handle('dude:settings:set', (e, patch) => { settings.apply(patch || {}); return settings.publicView(); });
+// any change (also a "yes" to "Can I search your folder?") starts watching new folders and updates his panel
+let settingsTimer = 0;
+settings.onChange(() => { clearTimeout(settingsTimer); settingsTimer = setTimeout(() => { afterSettings(); send('dude:settingsChanged', settings.publicView()); }, 50); });
 ipcMain.handle('dude:key', async (e, key) => {
   key = String(key || '').trim();
   if (!key) { settings.setKey(''); brain.reset(); return { ok: true, view: settings.publicView() }; }
@@ -128,7 +133,46 @@ ipcMain.handle('dude:folder:add', async () => {
   if (!r.canceled && r.filePaths[0]) { settings.addCustomFolder(r.filePaths[0]); afterSettings(); }
   return settings.publicView();
 });
-ipcMain.handle('dude:memory:wipe', async () => { memory.wipe(); brain.reset(); await voice.forget(); return true; });
+ipcMain.handle('dude:memory:wipe', async () => { memory.wipe(); studio.forget(); brain.reset(); await voice.forget(); return true; });
+
+/* ================= the studio: FL Studio projects (see studio.js) ================= */
+// Dude's own suggestions come through here; they never ask for new permissions (the brain does that).
+async function studioList() {
+  const s = settings.get(), roots = settings.grantedFolders();
+  if (!roots.length) return null;
+  return studio.list(roots, files, memory, { look: s.perms.projects });
+}
+const keepOne = p => p && Object.assign({ id: brain.keep([{ path: p.path, name: p.name + '.flp' }])[0].id }, p);
+ipcMain.handle('dude:studio:report', async () => {
+  const L = await studioList(); if (!L) return { off: true };
+  const rep = studio.report(L);
+  const all = rep.untitled.concat(rep.unfinished, rep.versionPiles, rep.stale, rep.mostWorked);
+  const ids = brain.keep(all.map(p => ({ path: p.path, name: p.name + '.flp' })));
+  for (const k of ['untitled', 'unfinished', 'versionPiles', 'stale', 'mostWorked']) rep[k] = rep[k].map(p => Object.assign({ id: (ids.find(x => x.path === p.path) || {}).id }, p));
+  return { report: rep, looked: settings.get().perms.projects };
+});
+ipcMain.handle('dude:studio:current', async () => {
+  const L = await studioList(); if (!L) return { off: true };
+  const cur = /^fl(64)?$/i.test(focus.exe) ? studio.titleProject(focus.title) : '';
+  const last = L.projects[0];   // the one you touched most recently
+  return { current: cur, currentUntitled: !cur || studio.isUntitled(cur), last: last ? keepOne(studio.brief(last)) : null };
+});
+// renaming a project while FL Studio has it open would make FL save the old name again on Ctrl+S
+function openInFl(file) {
+  const name = path.basename(file, path.extname(file)).toLowerCase();
+  if (/^fl(64)?$/i.test(focus.exe) && studio.titleProject(focus.title).toLowerCase() === name) return true;
+  const seen = memory.projectTime()[name];
+  return !!seen && Date.now() - seen.last < 90e3;
+}
+ipcMain.handle('dude:copy', async (e, text) => { await clipboard.writeText(String(text || '').slice(0, 200)); return true; });
+ipcMain.handle('dude:studio:rename', async (e, id, name) => {
+  const f = brain.results.get(id);
+  if (!f) return { error: 'That list is old. Ask me again.' };
+  if (openInFl(f.path)) { await clipboard.writeText(String(name || '')); return { error: 'open', name }; }
+  try { const r = await studio.rename(f.path, name, settings.grantedFolders()); brain.results.set(id, { path: r.path, name: r.name + '.flp' }); return r; }
+  catch (err) { return { error: String(err.message || err) }; }
+});
+ipcMain.handle('dude:studio:undo', async () => { try { return await studio.undo(); } catch (err) { return { error: String(err.message || err) }; } });
 
 /* ================= "my voice": Dude talks in your voice (see voice.js) ================= */
 const voiceEmit = () => send('dude:voiceStatus', voice.status());
@@ -139,6 +183,7 @@ ipcMain.handle('dude:voice:say', (e, text, speed) => voice.say(text, speed));
 ipcMain.handle('dude:voice:forget', () => voice.forget());
 function afterSettings() {
   const roots = settings.grantedFolders();
+  if (process.env.DUDE_DEBUG) console.log('[watch]', roots.map(r => r.path).join(' | '));
   files.watch(roots, onNewFile);
   for (const r of roots) files.getIndex(r.path).catch(() => {});
   pushFocus(true);
@@ -147,6 +192,15 @@ function afterSettings() {
 /* new files in allowed folders: warn about programs in Downloads, celebrate new exports */
 let lastCheer = 0;
 function onNewFile(f) {
+  if (process.env.DUDE_DEBUG) console.log('[newfile]', f.path, f.ext);
+  if (f.ext === 'flp' && studio.justTouched(f.path)) return;   // Dude renamed it himself
+  if (f.ext === 'flp' && !/[\\/]backup[\\/]|\((autosave|overwrite)\)/i.test(f.path)) {
+    const name = path.basename(f.path, path.extname(f.path));
+    let info = null; if (settings.get().perms.projects) { try { info = readFlp(f.path); } catch (e) {} }
+    const id = brain.keep([{ path: f.path, name: f.name }])[0].id;
+    send('dude:event', { type: 'project', id, name, untitled: studio.isUntitled(name), suggest: studio.suggestName({ created: Date.now(), mtime: Date.now(), info }) });
+    return;
+  }
   if (f.root.key === 'downloads' && f.kind === 'program') send('dude:event', { type: 'suspicious', name: f.name });
   else if ((f.kind === 'audio' || f.kind === 'video') && f.root.key !== 'downloads' && f.size > 200e3 && Date.now() - lastCheer > 120000) { lastCheer = Date.now(); send('dude:event', { type: 'export', name: f.name }); }
 }
@@ -240,7 +294,10 @@ setInterval(() => {
   let idle = 0; try { idle = powerMonitor.getSystemIdleTime(); } catch (e) {}
   const app = focus.exe ? (focus.app || memory.friendly(focus.exe)) : '';
   try { habitRun.tick({ idle, app: s.perms.apps ? app : '', title: s.perms.apps ? focus.title : '', appsOn: s.perms.apps, memoryOn: s.perms.memory }); } catch (e) {}
-  if (s.perms.apps && s.perms.memory && focus.exe && idle <= 120) memory.trackApp(focus.exe, focus.title, 5);
+  if (s.perms.apps && s.perms.memory && focus.exe && idle <= 120) {
+    memory.trackApp(focus.exe, focus.title, 5);
+    if (/^fl(64)?$/i.test(focus.exe)) { const proj = studio.titleProject(focus.title); if (proj) memory.trackProject(proj, 5); }
+  }
 }, 5000);
 
 /* ================= tray ================= */

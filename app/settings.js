@@ -10,7 +10,8 @@ const FOLDERS = {
   downloads: { label: 'Downloads', getPath: () => app.getPath('downloads') },
   desktop: { label: 'Desktop', getPath: () => app.getPath('desktop') },
   pictures: { label: 'Pictures', getPath: () => app.getPath('pictures') },
-  videos: { label: 'Videos', getPath: () => app.getPath('videos') }
+  videos: { label: 'Videos', getPath: () => app.getPath('videos') },
+  flstudio: { label: 'FL Studio projects', getPath: () => path.join(app.getPath('documents'), 'Image-Line', 'FL Studio', 'Projects') }
 };
 
 const DEFAULTS = {
@@ -25,7 +26,8 @@ const DEFAULTS = {
     apps: false,               // which app is in front (names + window titles)
     recent: false,             // Windows "recent files" list
     memory: true,              // notes, reminders, what you worked on
-    folders: { music: false, documents: false, downloads: false, desktop: false, pictures: false, videos: false },
+    projects: false,           // look inside music projects (tempo, time spent, samples), read-only
+    folders: { music: false, documents: false, downloads: false, desktop: false, pictures: false, videos: false, flstudio: false },
     custom: []                 // extra folders you added: [{ path, label }]
   },
   keyEnc: ''
@@ -45,7 +47,9 @@ function load() {
   return S;
 }
 function get() { return S || load(); }
-function save() { try { fs.mkdirSync(path.dirname(file()), { recursive: true }); fs.writeFileSync(file(), JSON.stringify(S, null, 2)); } catch (e) {} }
+const listeners = [];
+function onChange(fn) { listeners.push(fn); }
+function save() { try { fs.mkdirSync(path.dirname(file()), { recursive: true }); fs.writeFileSync(file(), JSON.stringify(S, null, 2)); } catch (e) {} for (const fn of listeners) { try { fn(); } catch (e) {} } }
 
 function setKey(key) {
   key = (key || '').trim();
@@ -81,7 +85,7 @@ function publicView() {
   const folders = Object.keys(FOLDERS).map(k => ({ key: k, label: FOLDERS[k].label, on: !!s.perms.folders[k], path: (() => { try { return FOLDERS[k].getPath(); } catch (e) { return ''; } })() }));
   return {
     userName: s.userName, onboarded: s.onboarded, mode: s.mode, model: s.model, interrupt: s.interrupt, dnd: s.dnd,
-    perms: { system: s.perms.system, apps: s.perms.apps, recent: s.perms.recent, memory: s.perms.memory },
+    perms: { system: s.perms.system, apps: s.perms.apps, recent: s.perms.recent, memory: s.perms.memory, projects: s.perms.projects },
     folders, custom: s.perms.custom.map(c => ({ path: c.path, label: c.label })), hasKey: !!getKey()
   };
 }
@@ -90,7 +94,7 @@ function apply(patch) {
   const s = get();
   for (const k of ['userName', 'mode', 'model', 'interrupt']) if (typeof patch[k] === 'string') s[k] = patch[k].slice(0, 40);
   for (const k of ['onboarded', 'dnd']) if (typeof patch[k] === 'boolean') s[k] = patch[k];
-  if (patch.perms) for (const k of ['system', 'apps', 'recent', 'memory']) if (typeof patch.perms[k] === 'boolean') s.perms[k] = patch.perms[k];
+  if (patch.perms) for (const k of ['system', 'apps', 'recent', 'memory', 'projects']) if (typeof patch.perms[k] === 'boolean') s.perms[k] = patch.perms[k];
   if (patch.folders) for (const k in patch.folders) if (k in s.perms.folders) s.perms.folders[k] = !!patch.folders[k];
   if (patch.removeCustom) s.perms.custom = s.perms.custom.filter(c => c.path !== patch.removeCustom);
   save();
@@ -101,5 +105,6 @@ function addCustomFolder(p) {
   save();
 }
 function grantFolder(key) { const s = get(); if (key in s.perms.folders) { s.perms.folders[key] = true; save(); } }
+function grantPerm(key) { const s = get(); if (key in s.perms && typeof s.perms[key] === 'boolean') { s.perms[key] = true; save(); } }
 
-module.exports = { FOLDERS, load, get, save, setKey, getKey, grantedFolders, folderInfo, publicView, apply, addCustomFolder, grantFolder };
+module.exports = { FOLDERS, load, get, save, onChange, setKey, getKey, grantedFolders, folderInfo, publicView, apply, addCustomFolder, grantFolder, grantPerm };

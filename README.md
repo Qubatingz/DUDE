@@ -34,6 +34,7 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 - **Daily mission:** every morning he asks for the one thing you'll do today, and checks on it in the evening.
 - **English practice:** word of the day, small challenges, better ways to say things.
 - **Calms overthinking:** say "I'm overthinking" and he walks you to one small next step.
+- **Studio helper for FL Studio:** knows every project, how long you worked on each, which ones are untitled, unfinished (no export) or piled up in versions. "What was I working on?", "find the beat with the log drum", and a real name for every "Untitled" project. Renames only when you click Rename (with undo), never moves or deletes.
 - **Teach him yourself, in any language:** "when I say *Amakuru?*, answer *Ni meza!*" in your own recorded voice, plus a move if you like. Kinyarwanda, English, anything.
 - **My voice:** read a card for 15 seconds and Dude talks in your voice. Free, runs on your laptop (one-time 160 MB download), your recording never leaves it.
 - **Teach tab:** pick his topics and how often he talks, and teach him your own lines.
@@ -54,7 +55,7 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 
 ## Privacy
 
-Dude asks before he touches anything. Access to your folders, apps and recent files is off until you turn it on in the **Access** tab, and if he needs a folder you haven't allowed, he asks first. He only reads file names, sizes and dates, never what is inside your files. He never moves or deletes anything. His memory stays on your laptop and **Forget everything** wipes it. Your API key is encrypted with Windows' own protection and only goes to Claude.
+Dude asks before he touches anything. Access to your folders, apps and recent files is off until you turn it on in the **Access** tab, and if he needs a folder you haven't allowed, he asks first. He only reads file names, sizes and dates, never what is inside your files, except your FL Studio projects if you allow "Look inside music projects" (tempo, time spent, samples, read-only). He never moves or deletes anything, and renames a project only when you click Rename. His memory stays on your laptop and **Forget everything** wipes it. Your API key is encrypted with Windows' own protection and only goes to Claude.
 
 ## Project layout
 
@@ -66,6 +67,7 @@ Dude asks before he touches anything. Access to your folders, apps and recent fi
 | `app/files.js` | File search, the check-up report, and watching for new downloads and exports. |
 | `app/memory.js` | What you worked on each day, kept on your laptop. |
 | `app/habits.js` | Learns your routine and tells Dude about moments worth reacting to. |
+| `app/studio.js`, `app/flp.js` | The studio helper: finds and reads FL Studio projects (read-only), reports, renames with undo. |
 | `app/voice.js` | "My voice": copies your voice from a short recording, on your laptop (sherpa-onnx). |
 | `ci/voice-smoke.js` | Build check on a real Windows machine that the voice engine loads and talks. |
 | `app/settings.js` | Permissions, allowed folders, the encrypted API key. |

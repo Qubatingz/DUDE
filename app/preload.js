@@ -18,6 +18,12 @@ contextBridge.exposeInMainWorld('kitoDesktop', {
   voiceSay: (text, speed) => ipcRenderer.invoke('dude:voice:say', text, speed),
   voiceForget: () => ipcRenderer.invoke('dude:voice:forget'),
   onVoiceStatus: on('dude:voiceStatus'),
+  // the studio (FL Studio projects)
+  studioReport: () => ipcRenderer.invoke('dude:studio:report'),
+  studioCurrent: () => ipcRenderer.invoke('dude:studio:current'),
+  studioRename: (id, name) => ipcRenderer.invoke('dude:studio:rename', id, name),
+  studioUndo: () => ipcRenderer.invoke('dude:studio:undo'),
+  copy: text => ipcRenderer.invoke('dude:copy', text),
   open: (id, how) => ipcRenderer.invoke('dude:open', { id, how }),
   settings: () => ipcRenderer.invoke('dude:settings'),
   setSettings: patch => ipcRenderer.invoke('dude:settings:set', patch),
