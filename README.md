@@ -41,7 +41,7 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 
 ## What he can do
 
-- **Painted Dude:** his main look is a real painted character, animated from AI video clips (Chill, Talk, Wave and Sip so far; Groove, Sleep and Walk coming). Switch to the cartoon look, with a new outfit every day, in the control panel.
+- **Painted Dude:** his main look is a real painted character, animated from AI video clips (Chill, Talk, Wave, Sip and Groove so far; Sleep and Walk coming). Switch to the cartoon look, with a new outfit every day, in the control panel.
 - **Acting:** lip-synced talking, hand gestures that match his words, 20+ facial expressions, blinking, head movement, idle fidgets.
 - **Rubber-hose body:** a bendy torso and noodle arms and legs. Try the **Noodle groove** dance.
 - **A new outfit every day of the week:** hoodie Monday, tracksuit Tuesday, the original green beanie on Wednesday, and more.
