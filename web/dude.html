@@ -2398,7 +2398,7 @@ function groundUpdate(dt) {
     if (!w || !w.classList.contains('win')) setAct('idle', 1);
     else { const max = deskW - w.offsetWidth; let nl = w.offsetLeft + pet.surfDir * Math.max(2, 150 * dt); if (nl < 0 || nl > max) { nl = clamp(nl, 0, max); setAct('idle', 1.4); } w.style.left = nl + 'px'; pet.dir = pet.surfDir; }
   } else if (a === 'sleep') {
-    pet.zzT += dt; if (pet.zzT > 1.2) { pet.zzT = 0; zzz(pet.x + pet.dir * 10 * S, pet.y - (G - 30) * S + 58 * S); }
+    pet.zzT += dt; if (pet.zzT > 1.2) { pet.zzT = 0; zzz(painted ? pet.x + 16 * S : pet.x + pet.dir * 10 * S, painted ? pet.y - 186 * S : pet.y - (G - 30) * S + 58 * S); }
     if (pet.actDur < 1e8 && pet.actT > pet.actDur) wake(true);
   } else if (a === 'sneeze') {
     if (!pet.sneezed && pet.actT > .5) { pet.sneezed = true; say('ACHOO!', { ms: 1300 }); drops(pet.x + pet.dir * 18 * S, pet.y - H * .58, pet.dir); }
@@ -3926,7 +3926,7 @@ lifeReady = true;
    feet at y=480. Every clip starts and ends in the same calm pose, so they cut into each other cleanly.
    A clip that isn't made yet falls back to Chill plus a little motion, so new clips just drop in. */
 const PAINT_ZOOM = 1.3, PF = { w: 260, h: 500, dude: 420, foot: 480 };
-const CLIPS = { chill: {}, talk: {}, wave: { once: true }, sip: { once: true }, groove: {}, sleep: { loopFrom: 2.4 }, walk: { facing: 1 } };
+const CLIPS = { chill: {}, talk: {}, wave: { once: true }, sip: { once: true }, groove: {}, sleep: { loopFrom: 43 / 24 }, walk: { facing: 1 } };
 const FALLBACK = { talk: 'chill', wave: 'talk', sip: 'chill', groove: 'chill', sleep: 'chill', walk: 'groove' };   // until there's a walk clip, he steps in place (groove) while he moves
 const PAINT_VIBE = ["Sunday. I'm on airplane mode.", 'Monday. Please speak slowly.', 'Tuesday. Nobody can catch me today.', 'Wednesday. Halfway to the weekend, bro.', 'Thursday. Meetings all day. I AM the meeting.', "It's FRIDAY! Work is cancelled. (It's not.)", 'Saturday. Matcha first, then we create.'];
 const paintEl = $('#petPaint'), paintVid = {};
@@ -3937,6 +3937,7 @@ for (const name in CLIPS) {
   v.setAttribute('aria-hidden', 'true');
   v.addEventListener('loadeddata', () => { def.ok = true; if (name === 'chill') paintReady(); }, { once: true });
   v.addEventListener('error', () => { def.ok = false; v.remove(); if (name === 'chill') paintReady(); }, { once: true });
+  if (def.loopFrom) v.addEventListener('ended', () => { v.currentTime = def.loopFrom; if (paintCur === name) v.play().catch(() => {}); });
   if (def.once) v.addEventListener('ended', () => { if (name === 'sip') { paintSip = false; paintNextSip = performance.now() / 1000 + rand(35, 80); } });
   v.src = 'sprites/' + name + '.webm';
   paintEl.appendChild(v); paintVid[name] = v;
@@ -3994,9 +3995,9 @@ function paintFrame(dt, t, m, a, dv) {
     paintCur = use;
   }
   const frozen = want === 'sleep' && use !== 'sleep';   // no sleep clip yet: he holds still and breathes
+  if (def.loopFrom && v.duration && (v.ended || v.currentTime >= v.duration - .07)) v.currentTime = def.loopFrom;   // skip the intro on repeat
   if (frozen) { if (!v.paused) v.pause(); }
   else if (v.paused && !(def.once && v.ended)) { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); }
-  if (def.loopFrom && v.duration && v.currentTime >= v.duration - .06) v.currentTime = def.loopFrom;
   // a bit of hand-made motion on top, for the moves that don't have their own clip yet
   let ty = 0, r = 0, sy = 1;
   if (want === 'walk' && use === 'chill') { ty = -Math.abs(Math.sin(pet.ph)) * (pet.run ? 7 : 4) * S; r = Math.sin(pet.ph) * (pet.run ? 3 : 1.8); }
