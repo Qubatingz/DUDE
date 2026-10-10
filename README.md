@@ -41,6 +41,7 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 
 ## What he can do
 
+- **Painted Dude:** his main look is a real painted character, animated from AI video clips (Chill, Talk, Wave so far; Sip, Groove, Sleep and Walk coming). Switch to the cartoon look, with a new outfit every day, in the control panel.
 - **Acting:** lip-synced talking, hand gestures that match his words, 20+ facial expressions, blinking, head movement, idle fidgets.
 - **Rubber-hose body:** a bendy torso and noodle arms and legs. Try the **Noodle groove** dance.
 - **A new outfit every day of the week:** hoodie Monday, tracksuit Tuesday, the original green beanie on Wednesday, and more.
@@ -62,6 +63,7 @@ Dude asks before he touches anything. Access to your folders, apps and recent fi
 | Path | What it is |
 | --- | --- |
 | `web/dude.html` | The whole character: drawing, animation, face, personality, control panel. Also runs in a normal browser as a demo. |
+| `app/sprites/` | The painted Dude: one transparent video per move (`chill.webm`, `talk.webm`, `wave.webm`...), 260x500, Dude 420px tall with his feet at y=480. Every clip starts and ends in the same calm pose. A missing clip falls back to Chill, so a new move is just a new file here. |
 | `app/main.js` | Windows app: transparent always-on-top window, tray menu, shortcuts, health stats, permissions. |
 | `app/brain.js` | The AI brain: talks to Claude and gives it tools (search files, report, reminders, moves). |
 | `app/files.js` | File search, the check-up report, and watching for new downloads and exports. |

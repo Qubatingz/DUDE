@@ -213,6 +213,10 @@ body{height:100%;margin:0;padding-inline:16px;padding-block:16px;background:var(
 .pet:focus-visible .rot{outline:2px dashed var(--folder);outline-offset:4px;border-radius:10px}
 .pet .rot{transform-origin:50% 95%}
 .pet svg{display:block;overflow:visible}
+.pet .paint{position:relative;overflow:visible}
+.pet .paint video{position:absolute;display:block;opacity:0;pointer-events:none;transition:opacity .18s linear}
+.pet .paint video.on{opacity:1}
+.pet.painted svg#petSvg{display:none}
 .ol{fill:none;stroke:var(--outline)}
 .ol-s{stroke:var(--outline);stroke-width:1.8}
 .ol-s1{stroke:var(--outline);stroke-width:1.2}
@@ -293,6 +297,8 @@ body{height:100%;margin:0;padding-inline:16px;padding-block:16px;background:var(
 .start{flex:none;height:38px;display:flex;align-items:center;gap:6px;padding:0 12px 0 6px;border-radius:10px;border:0;background:rgba(255,255,255,.08);color:var(--on-glass);cursor:pointer;font:16px/1 var(--font-display)}
 .start:hover{background:rgba(255,255,255,.14)}
 .start .mini{width:26px;height:32px}
+.mini-p{display:none;object-fit:cover;border-radius:50%;background:#efe9dd;height:auto;aspect-ratio:1}
+.painted-ui .mini-p{display:block}.painted-ui svg.mini{display:none}
 .studio-btn{flex:none;height:38px;display:flex;align-items:center;gap:6px;padding:0 12px;border-radius:10px;border:0;background:var(--folder);color:#3a1d05;font:700 13px var(--font-ui);cursor:pointer}
 .studio-btn svg{width:16px;height:16px}
 .studio-btn.on{background:rgba(255,255,255,.14);color:var(--on-glass)}
@@ -485,7 +491,7 @@ html.desktop .studio{bottom:0}
     </div>
     <div class="win-body ctrl" data-pane="home" role="tabpanel" aria-labelledby="tab-home">
       <div class="ctrl-head">
-        <svg class="mini" viewBox="20 2 80 102" aria-hidden="true"><use href="#gHead"/></svg>
+        <svg class="mini" viewBox="20 2 80 102" aria-hidden="true"><use href="#gHead"/></svg><img class="mini mini-p" src="sprites/face.png" alt="">
         <div class="name-wrap">
           <label class="lab" for="petName">His name</label>
           <input class="name-in" id="petName" maxlength="14" value="Dude" autocomplete="off" spellcheck="false">
@@ -496,6 +502,11 @@ html.desktop .studio{bottom:0}
       <div class="drip">
         <div class="drip-txt"><span class="lab" id="dripDay">Today's drip</span><div class="drip-name" id="dripName">Original Drip</div></div>
         <button class="btn sm primary" type="button" id="openStudio2">Open Studio</button>
+      </div>
+
+      <div class="sec" id="lookSec" hidden>
+        <span class="sec-label" id="lookLabel">Switch his look</span>
+        <div class="seg" id="lookSeg" role="radiogroup" aria-labelledby="lookLabel"><button type="button" role="radio" data-look="painted">Painted</button><button type="button" role="radio" data-look="cartoon">Cartoon, new outfit daily</button></div>
       </div>
 
       <p class="tip">Drag him and throw him. Click any empty spot and he runs there. A new outfit every day of the week.</p>
@@ -941,6 +952,8 @@ html.desktop .studio{bottom:0}
      </g>
      </g>
     </svg>
+    <!-- the painted Dude: real painted clips (sprites/*.webm), used when his look is "Painted" -->
+    <div class="paint" id="petPaint" hidden></div>
    </div>
   </div>
 
@@ -960,7 +973,7 @@ html.desktop .studio{bottom:0}
 
   <nav class="taskbar" id="taskbar" aria-label="Taskbar">
     <button class="start" id="startBtn" type="button" aria-label="Call the pet">
-      <svg class="mini" viewBox="20 2 80 102" aria-hidden="true"><use href="#gHead"/></svg><span class="nm petName">Dude</span>
+      <svg class="mini" viewBox="20 2 80 102" aria-hidden="true"><use href="#gHead"/></svg><img class="mini mini-p" src="sprites/face.png" alt=""><span class="nm petName">Dude</span>
     </button>
     <button class="studio-btn" id="studioBtn" type="button" aria-pressed="false">
       <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.2l1.9 4.1 4.5.5-3.3 3.1.9 4.4L8 11.1l-4 2.2.9-4.4L1.6 5.8l4.5-.5z"/></svg><span class="sbl">Studio</span>
@@ -1412,14 +1425,16 @@ function paintFace(f, gx, gy, bl, turn, pitch, hatA, wavy, t) {
 function faceStatic(expr) { paintFace(Object.assign({}, FACE0, EXPR[expr] || {}), .1, .1, 0, 0, 0, 0, false, 0); }
 
 /* ================= geometry ================= */
-let deskW = 0, deskH = 0, floorY = 0, S = .8, W = 96, H = 169, studio = false;
+let deskW = 0, deskH = 0, floorY = 0, S = .8, W = 96, H = 169, studio = false, painted = false;
 function measure() {
   deskW = desk.clientWidth; deskH = desk.clientHeight;
   floorY = deskH - $('#taskbar').offsetHeight;
   if (studio) S = clamp(stageEl.clientHeight * .58 / G, .45, 1.2);
   else S = DESKTOP ? 1 : deskW < 640 ? .6 : .92;
+  if (painted) S *= PAINT_ZOOM;   // the painted Dude is slim and detailed, so he stands a bit taller
   W = 120 * S; H = G * S;
   petSvg.style.width = W + 'px'; petSvg.style.height = (222 * S) + 'px';
+  if (painted) sizePaint();
 }
 const wins = $$('.win'), iconEls = $$('.icon');
 let PL = [], realPL = [];
@@ -1774,6 +1789,8 @@ function applyLook() {
   $('#therm').setAttribute('display', sick ? 'inline' : 'none');
   $('#bags').setAttribute('display', sick ? 'inline' : 'none');
   $('#sweat').setAttribute('display', hot ? 'inline' : 'none');
+  // the painted Dude can't change skin colour, so the whole painting gets a sick tint
+  paintEl.style.filter = !painted ? '' : hot ? 'sepia(.45) saturate(1.7) hue-rotate(-28deg)' : sick ? 'sepia(.35) hue-rotate(38deg) saturate(.7) brightness(.95)' : '';
 }
 function setProb(k, val, src = 'sim') {
   const wasK = on(k); PROB[k][src] = val; const nowK = on(k);
@@ -1883,7 +1900,9 @@ const pet = { x: 0, y: 0, vx: 0, vy: 0, dir: 1, mode: 'spawn', act: 'idle', actT
 const mouse = { x: 0, y: 0, seen: false };
 const grounded = () => pet.mode === 'ground';
 function userPing() { pet.lastUser = performance.now(); }
-function setAct(a, dur) { pet.act = a; pet.actT = 0; pet.actDur = dur; pet.sneezed = false; if (a !== 'walk') { pet.after = null; pet.edgeLine = false; } }
+function setAct(a, dur) {
+  if (a === 'wave' && painted && CLIPS.wave.ok && paintVid.wave.duration) dur = Math.max(dur, paintVid.wave.duration);   // let the painted wave finish
+  pet.act = a; pet.actT = 0; pet.actDur = dur; pet.sneezed = false; if (a !== 'walk') { pet.after = null; pet.edgeLine = false; } }
 function wake(quiet) { if (pet.act === 'sleep' && grounded()) { setAct('idle', 1.2); if (!quiet) say(pick(L.wake), { voice: true }); } }
 const sickF = () => isSick() ? (on('battery') ? .4 : .55) : 1;
 function randX(P) { const m = W * .35; const lo = Math.max(P.left + m, m), hi = Math.min(P.right - m, deskW - m); return lo > hi ? (lo + hi) / 2 : rand(lo, hi); }
@@ -2105,6 +2124,7 @@ $$('[data-say]').forEach(b => b.addEventListener('click', () => talk(b.dataset.s
 let drag = null;
 petEl.addEventListener('pointerdown', e => {
   if (pet.mode === 'trash' || pet.mode === 'spawn') return;
+  if (!paintHit(e.clientX, e.clientY)) return;   // clicked next to the painted Dude, not on him
   e.preventDefault(); e.stopPropagation(); userPing();
   try { petEl.setPointerCapture(e.pointerId); } catch (err) {}
   const r = desk.getBoundingClientRect();
@@ -2155,7 +2175,7 @@ petEl.addEventListener('pointerleave', () => { perf.hoverAt = 0; });
 desk.addEventListener('pointerleave', () => { mouse.seen = false; });
 desk.addEventListener('pointerdown', e => {
   userPing();
-  if (studio || e.target.closest('.win,.icons,.taskbar,.pet,.studio,.errbox')) return;
+  if (studio || e.target.closest('.win,.icons,.taskbar,.studio,.errbox') || onPet(e)) return;
   const r = desk.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
   ring(x, y);
   let best = null;
@@ -2182,6 +2202,7 @@ function renderDrip() {
   $('#stDay').textContent = o.day + (today ? ' · today' : ' · preview');
   $('#stName').textContent = o.name; $('#stVibe').textContent = o.vibe;
   $('#backToday').disabled = today;
+  if (painted) { $('#dripDay').textContent = "Today's look"; $('#dripName').textContent = 'Painted Dude, matcha in hand'; }
 }
 function applyOutfit(i, announce) {
   outfitIdx = i; const o = outfit(), v = varsFor(o), st = document.documentElement.style;
@@ -2206,15 +2227,15 @@ function renderDays() {
     const ds = document.createElement('span'); ds.className = 'ds'; ds.textContent = o.name;
     b.append(svg, dn, ds);
     if (i === todayIdx) { const td = document.createElement('span'); td.className = 'td'; td.textContent = 'Today'; b.appendChild(td); }
-    b.addEventListener('click', () => { userPing(); applyOutfit(i, true); renderDays(); });
+    b.addEventListener('click', () => { userPing(); if (painted) setLook('cartoon', true, true); applyOutfit(i, true); renderDays(); });
     box.appendChild(b);
   }
   const r = document.createElement('button'); r.type = 'button'; r.className = 'day';
   r.innerHTML = '<span class="dice" aria-hidden="true">?</span><span class="dn">Random</span><span class="ds">Surprise drip</span>';
-  r.addEventListener('click', () => { userPing(); let i; do { i = Math.random() * 7 | 0; } while (i === outfitIdx); applyOutfit(i, true); renderDays(); });
+  r.addEventListener('click', () => { userPing(); if (painted) setLook('cartoon', true, true); let i; do { i = Math.random() * 7 | 0; } while (i === outfitIdx); applyOutfit(i, true); renderDays(); });
   box.appendChild(r);
 }
-$('#backToday').addEventListener('click', () => { userPing(); applyOutfit(todayIdx, true); renderDays(); });
+$('#backToday').addEventListener('click', () => { userPing(); if (painted) setLook('cartoon', true, true); applyOutfit(todayIdx, true); renderDays(); });
 for (const cat of ['dance', 'trick', 'creative']) {
   const box = $(`.spanel [data-cat="${cat}"]`);
   for (const id in MV) if (MV[id].cat === cat) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = MV[id].name; b.title = MV[id].name; b.addEventListener('click', () => doMove(id)); box.appendChild(b); }
@@ -2240,7 +2261,7 @@ function exitStudio() {
 studioBtn.addEventListener('click', () => { userPing(); studio ? exitStudio() : enterStudio(); });
 $('#openStudio2').addEventListener('click', () => { userPing(); enterStudio(); });
 $('#closeStudio').addEventListener('click', () => { userPing(); exitStudio(); });
-petEl.addEventListener('contextmenu', e => { e.preventDefault(); if (!studio) openWin('win-pet'); });
+petEl.addEventListener('contextmenu', e => { e.preventDefault(); if (!studio && paintHit(e.clientX, e.clientY)) openWin('win-pet'); });
 
 /* ================= desktop app bridge ================= */
 if (DESKTOP) {
@@ -2248,8 +2269,8 @@ if (DESKTOP) {
   const setThrough = v => { if (v !== through) { through = v; KD.setClickThrough(v); } };
   addEventListener('mousemove', e => {
     if (drag) { setThrough(false); return; }
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    setThrough(!(el && el.closest('.pet,.win,.studio,.errbox,.card,.fb')));
+    const el = document.elementFromPoint(e.clientX, e.clientY), hit = el && el.closest('.pet,.win,.studio,.errbox,.card,.fb');
+    setThrough(!(hit && (hit !== petEl || paintHit(e.clientX, e.clientY))));
   });
   KD.onWindows(list => setRealWindows(list));
   KD.onCommand(c => {
@@ -2402,8 +2423,8 @@ function update(dt) {
       if (pet.spawnT >= .9) {
         ready = true; land(pet.plat, 0); setAct('idle', 3.2);
         const o = outfit(), lastDay = store.get('lastDay', null);
-        say(`It's ${o.day}! ${o.name} day.`, { voice: true });
-        setTimeout(() => { if (grounded() && bubble.hidden) say(lastDay && lastDay !== o.day ? 'New day, new drip. You like it?' : o.vibe); }, 3600);
+        say(painted ? `It's ${o.day}! Matcha in hand. Let's go.` : `It's ${o.day}! ${o.name} day.`, { voice: true });
+        setTimeout(() => { if (grounded() && bubble.hidden) say(painted ? PAINT_VIBE[outfitIdx] : lastDay && lastDay !== o.day ? 'New day, new drip. You like it?' : o.vibe); }, 3600);
         store.set('lastDay', o.day);
       }
       break;
@@ -3900,6 +3921,108 @@ renderTeach();
 
 lifeReady = true;
 
+/* ================= the painted Dude ================= */
+/* Real painted clips (image-to-video, blue screen removed) in sprites/<name>.webm: 260x500, Dude 420px tall,
+   feet at y=480. Every clip starts and ends in the same calm pose, so they cut into each other cleanly.
+   A clip that isn't made yet falls back to Chill plus a little motion, so new clips just drop in. */
+const PAINT_ZOOM = 1.3, PF = { w: 260, h: 500, dude: 420, foot: 480 };
+const CLIPS = { chill: {}, talk: {}, wave: { once: true }, sip: { once: true }, groove: {}, sleep: { loopFrom: 2.4 }, walk: { facing: 1 } };
+const FALLBACK = { talk: 'chill', wave: 'talk', sip: 'chill', groove: 'chill', sleep: 'chill', walk: 'chill' };
+const PAINT_VIBE = ["Sunday. I'm on airplane mode.", 'Monday. Please speak slowly.', 'Tuesday. Nobody can catch me today.', 'Wednesday. Halfway to the weekend, bro.', 'Thursday. Meetings all day. I AM the meeting.', "It's FRIDAY! Work is cancelled. (It's not.)", 'Saturday. Matcha first, then we create.'];
+const paintEl = $('#petPaint'), paintVid = {};
+let paintCur = '', paintScale = 1, paintZ = 1, paintFlip = 1, paintSip = false, paintNextSip = 0;
+for (const name in CLIPS) {
+  const v = document.createElement('video'), def = CLIPS[name];
+  v.muted = true; v.playsInline = true; v.preload = 'auto'; v.loop = !(def.once || def.loopFrom); v.disablePictureInPicture = true;
+  v.setAttribute('aria-hidden', 'true');
+  v.addEventListener('loadeddata', () => { def.ok = true; if (name === 'chill') paintReady(); }, { once: true });
+  v.addEventListener('error', () => { def.ok = false; v.remove(); if (name === 'chill') paintReady(); }, { once: true });
+  if (def.once) v.addEventListener('ended', () => { if (name === 'sip') { paintSip = false; paintNextSip = performance.now() / 1000 + rand(35, 80); } });
+  v.src = 'sprites/' + name + '.webm';
+  paintEl.appendChild(v); paintVid[name] = v;
+}
+function paintReady() {
+  const ok = !!CLIPS.chill.ok;
+  $('#lookSec').hidden = !ok;
+  setLook(ok ? store.get('look', 'painted') : 'cartoon', false, true);
+}
+function setLook(l, save, quiet) {
+  const want = l === 'painted' && !!CLIPS.chill.ok;
+  $$('#lookSeg button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.look === (want ? 'painted' : 'cartoon'))));
+  if (save) store.set('look', want ? 'painted' : 'cartoon');
+  if (want === painted) return;
+  painted = want; paintEl.hidden = !painted; petEl.classList.toggle('painted', painted);
+  document.documentElement.classList.toggle('painted-ui', painted);
+  for (const n in paintVid) { paintVid[n].classList.remove('on'); paintVid[n].pause(); }
+  paintCur = ''; paintSip = false; paintNextSip = performance.now() / 1000 + rand(20, 40);
+  measure(); PL = plats();
+  if (pet.mode === 'ground') { const P = findPlat(pet.plat); if (P) pet.y = P.top; }
+  applyLook(); renderDrip();
+  if (!quiet && ready) { pet.squash = .7; stars(pet.x, pet.y - H * .55, 12); say(painted ? 'Painted me. Look at the detail. Museum quality.' : 'Cartoon me. New fit every day.', { voice: true }); }
+}
+$('#lookSeg').addEventListener('click', e => { const b = e.target.closest('button[data-look]'); if (!b) return; userPing(); setLook(b.dataset.look, true); });
+function sizePaint() {
+  paintEl.style.width = W + 'px'; paintEl.style.height = (222 * S) + 'px';
+  paintScale = 200 * S / PF.dude;   // cap to shoes = 200 units, like the cartoon Dude (S already has the zoom)
+  const vw = PF.w * paintScale, vh = PF.h * paintScale, left = W / 2 - vw / 2, top = G * S - PF.foot * paintScale;
+  for (const n in paintVid) Object.assign(paintVid[n].style, { width: vw + 'px', height: vh + 'px', left: left + 'px', top: top + 'px' });
+}
+function paintWant(m, a) {
+  const talking = !!(perf.talk && !perf.talk.ended);
+  if (m !== 'ground') return talking ? 'talk' : 'chill';
+  if (a === 'sleep') return 'sleep';
+  if (a === 'walk') return 'walk';
+  if (a === 'wave') return 'wave';
+  if (playing || a === 'dance' || (a === 'move' && MV[pet.move] && MV[pet.move].cat === 'dance')) return 'groove';
+  if (talking) return 'talk';
+  return paintSip ? 'sip' : 'chill';
+}
+function paintFrame(dt, t, m, a, dv) {
+  const want = paintWant(m, a);
+  let use = want; while (!CLIPS[use].ok && FALLBACK[use]) use = FALLBACK[use];
+  if (!CLIPS[use].ok) return;
+  if (want === 'sip' && use !== 'sip') paintSip = false;
+  // now and then, when he's just standing there, he sips his matcha
+  if (want === 'chill' && m === 'ground' && a === 'idle' && CLIPS.sip.ok && t > paintNextSip) { if (paintNextSip) paintSip = true; else paintNextSip = t + rand(20, 40); }
+  const v = paintVid[use], def = CLIPS[use];
+  if (use !== paintCur) {
+    const ov = paintVid[paintCur];
+    try { v.currentTime = 0; } catch (e) {}
+    v.style.zIndex = ++paintZ; v.classList.add('on');
+    if (ov) setTimeout(() => { if (paintVid[paintCur] !== ov) { ov.classList.remove('on'); ov.pause(); } }, 200);
+    paintCur = use;
+  }
+  const frozen = want === 'sleep' && use !== 'sleep';   // no sleep clip yet: he holds still and breathes
+  if (frozen) { if (!v.paused) v.pause(); }
+  else if (v.paused && !(def.once && v.ended)) { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); }
+  if (def.loopFrom && v.duration && v.currentTime >= v.duration - .06) v.currentTime = def.loopFrom;
+  // a bit of hand-made motion on top, for the moves that don't have their own clip yet
+  let ty = 0, r = 0, sy = 1;
+  if (want === 'walk' && use !== 'walk') { ty = -Math.abs(Math.sin(pet.ph)) * (pet.run ? 7 : 4) * S; r = Math.sin(pet.ph) * (pet.run ? 3 : 1.8); }
+  else if (want === 'groove' && use !== 'groove') { const b = t * Math.PI * (playing ? 2 / .6 : 3.4); ty = -Math.abs(Math.sin(b)) * 6 * S; r = Math.sin(b / 2) * 3.5; sy = 1 - Math.max(0, Math.cos(b)) * .025; }
+  else if (frozen) { sy = 1 + Math.sin(t * 1.5) * .012; r = -1.5; }
+  else if (m === 'drag') r = clamp(-pet.dragVx * .015, -18, 18);
+  paintFlip = def.facing ? dv * def.facing : 1;
+  paintEl.style.transformOrigin = '50% 95%';
+  paintEl.style.transform = `translateY(${ty.toFixed(1)}px) rotate(${r.toFixed(2)}deg) scale(${paintFlip.toFixed(3)},${sy.toFixed(3)})`;
+}
+/* the painted Dude is see-through around his edges: only his pixels count as "him" for clicks */
+const hitC = document.createElement('canvas'); hitC.width = 52; hitC.height = 100;
+const hitX = hitC.getContext('2d', { willReadFrequently: true });
+function paintHit(cx, cy) {
+  const v = paintVid[paintCur]; if (!painted || !v || v.readyState < 2) return true;
+  const r = v.getBoundingClientRect(); let u = (cx - r.left) / r.width; const w = (cy - r.top) / r.height;
+  if (u < 0 || u > 1 || w < 0 || w > 1) return false;
+  if (paintFlip < 0) u = 1 - u;
+  try {
+    hitX.clearRect(0, 0, 52, 100); hitX.drawImage(v, 0, 0, 52, 100);
+    const x = Math.min(50, Math.max(1, u * 52 | 0)), y = Math.min(98, Math.max(1, w * 100 | 0)), d = hitX.getImageData(x - 1, y - 1, 3, 3).data;
+    for (let i = 3; i < d.length; i += 4) if (d[i] > 40) return true;
+    return false;
+  } catch (e) { return true; }
+}
+const onPet = e => !!e.target.closest('.pet') && paintHit(e.clientX, e.clientY);
+
 /* ================= drawing ================= */
 let lastMood = '';
 function render(dt, now) {
@@ -4020,12 +4143,18 @@ function render(dt, now) {
   pet.dirVis += (pet.dir - pet.dirVis) * Math.min(1, dt * 16);
   const dv = Math.abs(pet.dirVis) < .08 ? (Math.sign(pet.dirVis) || pet.dir) * .08 : pet.dirVis;
   petSvg.style.transform = `scaleX(${(dv * p.flip).toFixed(3)})`;
+  if (painted) paintFrame(dt, t, m, a, dv);
 
-  const headTop = pet.y - (G - 8) * S + (p.sit + feet) * S - lift;
+  const headTop = painted ? pet.y - 200 * S - lift : pet.y - (G - 8) * S + (p.sit + feet) * S - lift;
   placeCard();
   if (!bubble.hidden) {
     const bw = bubble.offsetWidth, bh = bubble.offsetHeight;
     let bx = clamp(pet.x - bw / 2, 6, deskW - bw - 6), by = Math.max(6, headTop - bh - 14);
+    if (headTop - bh - 14 < 6) {
+      // no room above his head (he's near the top of the screen): talk from the side, so his face stays visible
+      const right = pet.x + W * .42, left = pet.x - W * .42 - bw;
+      bx = right + bw <= deskW - 6 ? right : Math.max(6, left); by = Math.max(6, headTop + 6);
+    }
     if (cardBox && bx < cardBox.x + cardBox.w + 6 && bx + bw > cardBox.x - 6 && by < cardBox.y + cardBox.h && by + bh > cardBox.y) {
       // the card is in the way: slide the bubble to the other side, or lift it above the card
       const left = cardBox.x - bw - 8, right = cardBox.x + cardBox.w + 8;
