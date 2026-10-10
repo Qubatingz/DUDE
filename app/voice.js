@@ -149,4 +149,4 @@ function say(text, speed = 1) {
 
 async function forget() { ref = null; await fsp.unlink(refWav()).catch(() => {}); await fsp.unlink(refJson()).catch(() => {}); return status(); }
 
-module.exports = { status, prepare, setRef, say, forget };
+module.exports = { status, prepare, setRef, say, forget, download, untar };

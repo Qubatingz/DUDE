@@ -18,10 +18,11 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 
 ## Play with him
 
+- **On/off:** click his face in the tray near the clock (or the big switch in his panel). On: he pops up and listens. Off: he waves bye, disappears, and the mic is off.
+- **Just talk:** while he's on, say **"Dude..."** and talk. After he answers or asks you something, you can reply without saying his name. (Windows speech recognition, on your laptop. Switch it off in the Brain tab.)
 - Grab him and throw him. He bounces off the screen edges.
 - He walks on your windows. Drag a window while he stands on it.
-- Right-click him, or press **Ctrl+Shift+D**, for his control panel.
-- Press **Ctrl+Shift+Space** and speak to talk to him with your voice.
+- Right-click him, or press **Ctrl+Shift+D**, for his control panel: big buttons for Talk, Today, Beats, Dance, Fit check, Voice, Look and Studio.
 - His face sits in the tray near the clock: controls, Studio, jokes, voice, sleep, start with Windows, quit.
 - **Ctrl+Shift+Q** quits him instantly.
 
@@ -31,6 +32,9 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 - **Get-to-know-you questions:** what you're building, what you're learning, your dream.
 - **Studies your routine** (on your laptop only): when you start, your busiest hour, the apps and sites you live in, late nights, long sessions.
 - **Learns your humor:** tap &#128514; or &#128078; on his speech bubble. He does more of what you laugh at and never repeats a killed joke.
+- **Calendar:** "Dude, studio session with Eric Saturday at 3." He reminds you 30 minutes before, pops up even when he's switched off, and tells you what's on every morning. "What's on today?" shows your day.
+- **Quick facts, free:** "Dude, who is Burna Boy?" He looks it up on Wikipedia.
+- **His own voice:** a warm, natural voice (Kokoro, free, runs on your laptop, one-time 130 MB download). Windows voices and your own voice are still there.
 - **Daily mission:** every morning he asks for the one thing you'll do today, and checks on it in the evening.
 - **English practice:** word of the day, small challenges, better ways to say things.
 - **Calms overthinking:** say "I'm overthinking" and he walks you to one small next step.
@@ -70,6 +74,8 @@ Dude asks before he touches anything. Access to your folders, apps and recent fi
 | `app/memory.js` | What you worked on each day, kept on your laptop. |
 | `app/habits.js` | Learns your routine and tells Dude about moments worth reacting to. |
 | `app/studio.js`, `app/flp.js` | The studio helper: finds and reads FL Studio projects (read-only), reports, renames with undo. |
+| `app/dudevoice.js` | "Dude's voice": his natural voice (voice 1), made on your laptop (sherpa-onnx + Kokoro). |
+| `app/hear.ps1` | Always listening while he's on: Windows speech recognition, one line per sentence, pauses while he talks. |
 | `app/voice.js` | "My voice": copies your voice from a short recording, on your laptop (sherpa-onnx). |
 | `ci/voice-smoke.js` | Build check on a real Windows machine that the voice engine loads and talks. |
 | `app/settings.js` | Permissions, allowed folders, the encrypted API key. |

@@ -152,6 +152,39 @@ body{height:100%;margin:0;padding-inline:16px;padding-block:16px;background:var(
 .drip-txt{flex:1;min-width:0}
 .drip-name{font:17px/1.15 var(--font-display);color:var(--text)}
 .tip{margin:0;color:var(--muted);font-size:13.5px;line-height:1.45}
+/* the simple Home tab: one big on/off switch, big icon buttons */
+.power{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:14px;border:1.5px solid var(--line);background:#fff;cursor:pointer;text-align:left;font:inherit;color:var(--text)}
+.power .pw-knob{flex:none;position:relative;width:52px;height:30px;border-radius:999px;background:var(--paper-2);transition:background .2s}
+.power .pw-knob::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.power[aria-checked="true"] .pw-knob{background:var(--accent)}
+.power[aria-checked="true"] .pw-knob::after{transform:translateX(22px)}
+.power .pw-txt{display:flex;flex-direction:column;min-width:0}
+.power .pw-txt b{font:17px/1.15 var(--font-display)}
+.power .pw-txt span{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.power:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bigbtns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.bb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:70px;padding:8px 4px;border-radius:13px;border:1.5px solid var(--line);background:#fff;color:var(--text);font:700 12px var(--font-ui);cursor:pointer}
+.bb svg{width:24px;height:24px;color:var(--accent)}
+.bb span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.bb:hover{border-color:var(--accent)}
+.bb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bb.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.bb.on svg{color:#fff}
+.bb.off svg{color:var(--muted)}
+details.more{border-top:1.5px solid var(--line);padding-top:8px}
+details.more summary{cursor:pointer;font:700 13px var(--font-ui);color:var(--muted);list-style:none;padding:4px 0}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::before{content:"\25B8  "}
+details.more[open] summary::before{content:"\25BE  "}
+.more-in{display:flex;flex-direction:column;gap:14px;padding-top:8px}
+/* on screen: a little ear that shows he's listening, and what he heard */
+.ear{position:absolute;left:0;top:0;z-index:1001;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#1c5a34;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);pointer-events:none;transition:background .2s,opacity .3s}
+.ear svg{width:12px;height:12px}
+.ear.paused{background:#6b6880}
+.ear.err{background:var(--bad)}
+.ear.hit{animation:earhit .6s ease-out}
+@keyframes earhit{0%{transform:scale(1.5)}100%{transform:scale(1)}}
+.heard{position:absolute;left:0;top:0;z-index:1001;max-width:260px;padding:4px 10px;border-radius:999px;background:rgba(16,14,30,.78);color:#f1eff9;font:13px var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .sec{display:flex;flex-direction:column;gap:8px}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .talk{display:flex;gap:6px}
@@ -499,25 +532,42 @@ html.desktop .studio{bottom:0}
         <span class="mood" id="mood">Feeling fresh</span>
       </div>
 
-      <div class="drip">
-        <div class="drip-txt"><span class="lab" id="dripDay">Today's drip</span><div class="drip-name" id="dripName">Original Drip</div></div>
-        <button class="btn sm primary" type="button" id="openStudio2">Open Studio</button>
+      <button class="power" id="powerBtn" type="button" role="switch" aria-checked="true">
+        <span class="pw-knob" aria-hidden="true"></span>
+        <span class="pw-txt"><b id="powerTxt">Dude is on</b><span id="powerSub">Listening. Say "Dude..."</span></span>
+      </button>
+
+      <div class="bigbtns" id="bigBtns">
+        <button class="bb" type="button" data-bb="talk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Talk</span></button>
+        <button class="bb" type="button" data-bb="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Today</span></button>
+        <button class="bb" type="button" data-bb="beats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg><span>Beats</span></button>
+        <button class="bb" type="button" data-bb="dance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v6l-3 7M12 13l4 6M8 10l4-2 4 3"/></svg><span>Dance</span></button>
+        <button class="bb" type="button" data-bb="fit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3l-4 3 2 4 2-1v12h8V9l2 1 2-4-4-3a4 4 0 0 1-8 0z"/></svg><span>Fit check</span></button>
+        <button class="bb" type="button" data-bb="voice" id="bbVoice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span>Voice</span></button>
+        <button class="bb" type="button" data-bb="look" id="bbLook" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-2.5S14 15 15 15h2a4 4 0 0 0 4-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg><span>Look</span></button>
+        <button class="bb" type="button" data-bb="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z"/></svg><span>Studio</span></button>
       </div>
 
-      <div class="sec" id="lookSec" hidden>
-        <span class="sec-label" id="lookLabel">Switch his look</span>
-        <div class="seg" id="lookSeg" role="radiogroup" aria-labelledby="lookLabel"><button type="button" role="radio" data-look="painted">Painted</button><button type="button" role="radio" data-look="cartoon">Cartoon, new outfit daily</button></div>
-      </div>
+      <form class="talk" id="talkForm" autocomplete="off">
+        <input id="talkIn" placeholder="Type here, or just talk">
+        <button class="btn mic" type="button" id="micBtn" aria-label="Talk with your voice" title="Talk with your voice (Ctrl+Shift+Space)" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="5.5" y="1.8" width="5" height="8.2" rx="2.5"/><path d="M3 7.6a5 5 0 0 0 10 0M8 12.6v2"/></svg></button>
+        <button class="btn primary" type="submit">Send</button>
+      </form>
+      <ol class="chatlog" id="chatLog" aria-label="Conversation"></ol>
 
-      <p class="tip">Drag him and throw him. Click any empty spot and he runs there. A new outfit every day of the week.</p>
-
-      <div class="sec">
-        <div class="sec-head"><label class="sec-label" for="talkIn">Talk to <span class="petName">Dude</span></label><span class="sub" id="brainBadge">Basic brain</span></div>
-        <form class="talk" id="talkForm" autocomplete="off">
-          <input id="talkIn" placeholder="find the beat I made last week">
-          <button class="btn mic" type="button" id="micBtn" aria-label="Talk with your voice" title="Talk with your voice (Ctrl+Shift+Space)" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="5.5" y="1.8" width="5" height="8.2" rx="2.5"/><path d="M3 7.6a5 5 0 0 0 10 0M8 12.6v2"/></svg></button>
-          <button class="btn primary" type="submit">Send</button>
-        </form>
+      <details class="more">
+        <summary>More</summary>
+        <div class="more-in">
+          <div class="drip">
+            <div class="drip-txt"><span class="lab" id="dripDay">Today's drip</span><div class="drip-name" id="dripName">Original Drip</div></div>
+            <button class="btn sm primary" type="button" id="openStudio2">Open Studio</button>
+          </div>
+          <div class="sec" id="lookSec" hidden>
+            <span class="sec-label" id="lookLabel">Switch his look</span>
+            <div class="seg" id="lookSeg" role="radiogroup" aria-labelledby="lookLabel"><button type="button" role="radio" data-look="painted">Painted</button><button type="button" role="radio" data-look="cartoon">Cartoon, new outfit daily</button></div>
+          </div>
+          <div class="sec">
+            <div class="sec-head"><h3 class="sec-label">Try saying</h3><span class="sub" id="brainBadge">Basic brain</span></div>
         <div class="chips">
           <button class="chip" type="button" data-say="roast me">roast me</button>
           <button class="chip" type="button" data-say="word of the day">word of the day</button>
@@ -527,27 +577,23 @@ html.desktop .studio{bottom:0}
           <button class="chip" type="button" data-say="show my beats">my beats</button>
           <button class="chip" type="button" data-say="how's my laptop doing?">how's my laptop?</button>
         </div>
-        <ol class="chatlog" id="chatLog" aria-label="Conversation"></ol>
-      </div>
-
-      <div class="sec">
-        <div class="sec-head"><h3 class="sec-label">Quick moves</h3><span class="sub">18 moves in the Studio</span></div>
-        <div class="moves">
-          <button class="btn" type="button" data-move="moonwalk">Moonwalk</button>
-          <button class="btn" type="button" data-move="backflip">Backflip</button>
-          <button class="btn" type="button" data-move="noodle">Noodle groove</button>
-          <button class="btn" type="button" data-move="graffiti">Graffiti</button>
-          <button class="btn" type="button" data-move="crazy">Go crazy</button>
-          <button class="btn" type="button" data-move="climb">Climb wall</button>
-        </div>
-      </div>
-
-      <div class="sec humor" data-humor>
-        <div class="humor-top"><label class="sec-label" for="humor1">Humor level</label><span class="humor-val">80%</span></div>
-        <input type="range" id="humor1" min="0" max="100" step="10" value="80">
-        <span class="humor-cap">80% funny, 20% useful.</span>
-      </div>
-
+          </div>
+          <div class="sec">
+            <h3 class="sec-label">Quick moves</h3>
+            <div class="moves">
+              <button class="btn" type="button" data-move="moonwalk">Moonwalk</button>
+              <button class="btn" type="button" data-move="backflip">Backflip</button>
+              <button class="btn" type="button" data-move="noodle">Noodle groove</button>
+              <button class="btn" type="button" data-move="graffiti">Graffiti</button>
+              <button class="btn" type="button" data-move="crazy">Go crazy</button>
+              <button class="btn" type="button" data-move="climb">Climb wall</button>
+            </div>
+          </div>
+          <div class="sec humor" data-humor>
+            <div class="humor-top"><label class="sec-label" for="humor1">Humor level</label><span class="humor-val">80%</span></div>
+            <input type="range" id="humor1" min="0" max="100" step="10" value="80">
+            <span class="humor-cap">80% funny, 20% useful.</span>
+          </div>
       <div class="sec">
         <div class="sec-head"><h3 class="sec-label">Computer health</h3><span class="sub">Break something. He gets sick.</span></div>
         <div class="health">
@@ -569,6 +615,8 @@ html.desktop .studio{bottom:0}
           </div>
         </div>
       </div>
+        </div>
+      </details>
     </div>
 
     <div class="win-body ctrl" data-pane="teach" role="tabpanel" aria-labelledby="tab-teach" hidden>
@@ -640,6 +688,7 @@ html.desktop .studio{bottom:0}
       </div>
       <label class="fieldwrap"><span class="sec-label">What he calls you</span><input id="userNameIn" class="field" maxlength="24" placeholder="Your name" autocomplete="off"></label>
       <div class="sec">
+        <div class="prow" id="hearRow"><div class="ptxt"><span class="pname">Always listening</span><span class="pdesc">While he's on, say "Dude..." and talk. When he's off, the mic is off.</span></div><button class="switch" type="button" role="switch" id="hearSw" aria-checked="true" aria-label="Always listening"></button></div>
         <div class="prow"><div class="ptxt"><span class="pname">Do not disturb</span><span class="pdesc">He stays quiet unless something is important. He also goes quiet by himself during full-screen apps, music software and video calls.</span></div><button class="switch" type="button" role="switch" id="dndSw" aria-checked="false" aria-label="Do not disturb"></button></div>
       </div>
       <div class="sec">
@@ -648,7 +697,8 @@ html.desktop .studio{bottom:0}
           <button class="btn" id="voiceBtn" type="button" aria-pressed="false">Turn on his voice</button>
           <button class="btn" id="voiceTest" type="button">Test voice</button>
         </div>
-        <div class="seg" id="engineSeg" role="radiogroup" aria-label="Which voice"><button type="button" role="radio" data-eng="windows">Windows voice</button><button type="button" role="radio" data-eng="me">My voice</button></div>
+        <div class="seg" id="engineSeg" role="radiogroup" aria-label="Which voice"><button type="button" role="radio" data-eng="dude">Dude's voice</button><button type="button" role="radio" data-eng="windows">Windows</button><button type="button" role="radio" data-eng="me">My voice</button></div>
+        <div class="lasttime" id="dvBox" hidden></div>
         <div class="lasttime" id="myVoiceBox" hidden>
           <div id="myVoiceStatus"></div>
           <div class="card-row"><button class="btn sm primary" type="button" id="myVoiceRec">Record my voice</button><button class="btn sm" type="button" id="myVoiceTest">Test</button><button class="btn sm danger" type="button" id="myVoiceDel">Delete my recording</button></div>
@@ -967,6 +1017,8 @@ html.desktop .studio{bottom:0}
   </div>
 
   <div class="badge" id="badge" hidden></div>
+  <div class="ear" id="ear" hidden aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5.5" y="1.8" width="5" height="8.2" rx="2.5"/><path d="M3 7.6a5 5 0 0 0 10 0M8 12.6v2"/></svg></div>
+  <div class="heard" id="heard" hidden aria-hidden="true"></div>
   <div class="card" id="card" role="dialog" aria-labelledby="cardTitle" hidden></div>
   <div class="bubble" id="bubble" role="status" aria-live="polite" hidden><span class="btxt" id="btxt"></span><span class="fb" hidden><button type="button" data-fb="up" aria-label="That was funny" title="Funny! More like this">&#128514;</button><button type="button" data-fb="down" aria-label="Not funny" title="Not funny. Never again">&#128078;</button></span></div>
   <div class="fx" id="fx" aria-hidden="true"></div>
@@ -1425,7 +1477,7 @@ function paintFace(f, gx, gy, bl, turn, pitch, hatA, wavy, t) {
 function faceStatic(expr) { paintFace(Object.assign({}, FACE0, EXPR[expr] || {}), .1, .1, 0, 0, 0, 0, false, 0); }
 
 /* ================= geometry ================= */
-let deskW = 0, deskH = 0, floorY = 0, S = .8, W = 96, H = 169, studio = false, painted = false;
+let deskW = 0, deskH = 0, floorY = 0, S = .8, W = 96, H = 169, studio = false, painted = false, dudeOn = true;
 function measure() {
   deskW = desk.clientWidth; deskH = desk.clientHeight;
   floorY = deskH - $('#taskbar').offsetHeight;
@@ -1535,7 +1587,9 @@ for (const w of wins) {
 
 /* ================= voice ================= */
 const canSpeak = 'speechSynthesis' in window;
-let voiceOn = false, voices = [];
+let voiceOn = DESKTOP ? !!store.get('voiceOn', true) : false, voices = [];
+/* always listening (Windows app, only while he's switched on) */
+const hear = { on: false, ready: false, paused: false, convoUntil: 0, lastAudible: 0, followUp: false, err: '' };
 function loadVoices() { try { voices = speechSynthesis.getVoices() || []; } catch (e) { voices = []; } try { fillVoices(); } catch (e) {} }
 if (canSpeak) { loadVoices(); try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (e) {} }
 function pickVoice() {
@@ -1567,7 +1621,7 @@ function renderVoice() {
 }
 function toggleVoice() {
   if (!canSpeak) return;
-  voiceOn = !voiceOn; renderVoice(); userPing();
+  voiceOn = !voiceOn; store.set('voiceOn', voiceOn); renderVoice(); renderBig(); userPing();
   if (voiceOn) say('Testing, testing. Do I sound handsome?', { voice: true });
   else { try { speechSynthesis.cancel(); } catch (e) {} say('Okay. Silent mode. Like a ninja.'); }
 }
@@ -1601,7 +1655,18 @@ fillVoices(); renderVoiceCfg();
 /* ================= audio: his own recorded lines, and "my voice" ================= */
 let actx = null, curSrc = null, voiceTok = 0, muteUntil = 0;
 function AC() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume().catch(() => {}); return actx; }
-function stopAudio() { if (curSrc) { try { curSrc.stop(); } catch (e) {} curSrc = null; } }
+let curSrcs = [], qEnd = 0;   // Dude's voice plays sentence by sentence, queued back to back
+function stopAudio() { if (curSrc) { try { curSrc.stop(); } catch (e) {} curSrc = null; } for (const x of curSrcs) { try { x.stop(); } catch (e) {} } curSrcs = []; }
+const audioPlaying = () => !!curSrc || curSrcs.length > 0;
+function queueSamples(samples, sr, first) {
+  const ctx = AC(), data = samples instanceof Float32Array ? samples : Float32Array.from(samples);
+  const b = ctx.createBuffer(1, data.length, sr); b.copyToChannel(data, 0);
+  const src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination);
+  if (first) { stopAudio(); try { speechSynthesis.cancel(); } catch (e) {} qEnd = 0; }
+  const at = Math.max(ctx.currentTime + .02, qEnd); src.start(at); qEnd = at + b.duration;
+  curSrcs.push(src); src.onended = () => { curSrcs = curSrcs.filter(x => x !== src); };
+  return b.duration;
+}
 function playSamples(samples, sr) {
   const ctx = AC(), data = samples instanceof Float32Array ? samples : Float32Array.from(samples);
   const b = ctx.createBuffer(1, data.length, sr); b.copyToChannel(data, 0);
@@ -1631,6 +1696,34 @@ async function playClip(id, key) {
   const tok = ++voiceTok;
   try { const c = await loadClip(id); if (tok !== voiceTok) return; if (!c) throw new Error('gone'); releaseTalk(key, playSamples(c.data, c.sr)); }
   catch (e) { if (tok === voiceTok) releaseTalk(key, null); }
+}
+/* "Dude's voice": voice 1 (warm and friendly), made on the laptop. Until it has downloaded, the Windows voice fills in. */
+const dv = { status: null, cache: new Map(), told: false };
+const engineNow = () => voiceCfg.engine || (DESKTOP ? 'dude' : 'windows');
+const useDudeVoice = () => DESKTOP && engineNow() === 'dude' && !!dv.status && dv.status.engine;
+const dvSpeed = () => clamp(voiceCfg.rate / 1.05, .8, 1.35);
+function chunks(text) {   // sentences, glued together when they're short, so he starts talking fast
+  const parts = String(text).match(/[^.!?]+[.!?]*["”')]*\s*/g) || [String(text)], out = [];
+  for (const p of parts) { const t = p.trim(); if (!t) continue; if (out.length && (out[out.length - 1].length < 40 || t.length < 12) && out[out.length - 1].length + t.length < 170) out[out.length - 1] += ' ' + t; else out.push(t); }
+  return out.length ? out : [String(text)];
+}
+async function prepareDudeVoice() { if (!DESKTOP) return null; const st = await KD.dvPrepare().catch(() => null); if (st) dv.status = st; renderMyVoice(); return st; }
+async function speakDude(text, key) {
+  const tok = ++voiceTok, st = dv.status;
+  if (!st || st.state !== 'ready') {
+    if (st && st.engine && !['downloading', 'loading'].includes(st.state) && !(st.state === 'error' && dv.failedAt && Date.now() - dv.failedAt < 6e5)) prepareDudeVoice();
+    releaseTalk(key, null); speak(text, true); return;
+  }
+  const parts = chunks(text);
+  const gen = t => { const c = dv.cache.get(t); if (c) return Promise.resolve(c); return timeoutP(KD.dvSay(t, dvSpeed()).catch(e => ({ error: String(e) })), 30000).then(r => { if (r && r.samples) { dv.cache.set(t, r); if (dv.cache.size > 60) dv.cache.delete(dv.cache.keys().next().value); } return r; }); };
+  let next = gen(parts[0]);
+  for (let i = 0; i < parts.length; i++) {
+    const r = await next; if (tok !== voiceTok) return;
+    if (i + 1 < parts.length) next = gen(parts[i + 1]);   // make the next sentence while this one plays
+    if (!r || !r.samples) { if (i === 0) { releaseTalk(key, null); speak(text, true); } return; }
+    const d = queueSamples(r.samples, r.sampleRate, i === 0);
+    if (i === 0) releaseTalk(key, d * text.length / Math.max(1, parts[0].length));
+  }
 }
 const myVoice = { status: null, cache: new Map() };
 const useMyVoice = () => DESKTOP && voiceCfg.engine === 'me' && !!myVoice.status && myVoice.status.state === 'ready' && myVoice.status.hasRef;
@@ -1684,6 +1777,7 @@ let bubbleTimer = 0, ready = false, bubbleFb = null;
 const btxt = $('#btxt'), fbEl = bubble.querySelector('.fb');
 function say(text, o = {}) {
   if (pet.mode === 'trash' && !o.force) return;
+  if (!dudeOn && !o.force) return;   // switched off: not a word
   // a good companion knows when NOT to talk
   if (quiet && !o.important && !o.reply && !o.force && !logReply) return;
   if (performance.now() < muteUntil && !o.rule && !o.reply && !o.important && !o.force) return;   // a taught move is running: no move chatter
@@ -1692,15 +1786,18 @@ function say(text, o = {}) {
   btxt.textContent = text; bubbleFb = o.fb || null; fbEl.hidden = !bubbleFb; bubble.hidden = false;
   bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
   pet.lastTalk = performance.now();
+  // after a reply or a question you can just answer, without saying "Dude" first
+  if (o.reply || /\?["”')]*\s*$/.test(text)) { hear.followUp = true; hear.convoUntil = Math.max(hear.convoUntil, performance.now() + 9000 + text.length * 70); }
   // a bubble with the 😂 / 👎 buttons stays a bit longer, and stays while your mouse is on it
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(hideBubble, (o.ms || Math.max(2600, text.length * 75)) + (bubbleFb ? 3500 : 0));
   // his voice: a line you recorded, your cloned voice, or the Windows voice
   stopAudio(); voiceTok++;
-  const loud = (o.voice && voiceOn) || o.forceVoice, clip = o.clip && (loud || o.reply) ? o.clip : '', mine = !clip && loud && useMyVoice();
+  const loud = (o.voice && voiceOn) || o.forceVoice, clip = o.clip && (loud || o.reply) ? o.clip : '', mine = !clip && loud && useMyVoice(), dvx = !clip && !mine && loud && useDudeVoice();
   const key = o.talkText || text;
-  startTalk(key, Object.assign({}, o, { hold: !!(clip || mine) }));
+  startTalk(key, Object.assign({}, o, { hold: !!(clip || mine || dvx) }));
   if (clip) playClip(clip, key);
   else if (mine) speakMine(text, key);
+  else if (dvx) speakDude(text, key);
   else if (o.voice || o.forceVoice) speak(text, !!o.forceVoice);
 }
 function hideBubble() { if (bubble.matches(':hover')) { bubbleTimer = setTimeout(hideBubble, 1500); return; } bubble.hidden = true; bubbleFb = null; }
@@ -1839,7 +1936,12 @@ function renderMem() {
 }
 setInterval(() => { for (const c of $$('.count')) c.textContent = fmtLeft(+c.dataset.at); }, 1000);
 function addNote(t) { notes = notes.filter(n => !n.ex); notes.unshift({ t }); notes = notes.slice(0, 30); saveNotes(); renderMem(); }
-function fireReminder(r) { r.done = true; wake(true); if (pet.mode === 'ground') setAct('wave', 4.5); say(`Hey boss! Don't forget: ${r.text}`, { voice: true, ms: 9000 }); stars(pet.x, pet.y - H, 10); renderMem(); }
+function fireReminder(r) {
+  r.done = true;
+  if (!dudeOn) { setPower(true, { quiet: true }); setTimeout(() => fireReminderNow(r), 1300); return; }   // he comes back for reminders
+  fireReminderNow(r);
+}
+function fireReminderNow(r) { wake(true); if (pet.mode === 'ground') setAct('wave', 4.5); say(`Hey${nameBit()}! Don't forget: ${r.text}`, { voice: true, important: true, ms: 9000 }); stars(pet.x, pet.y - H, 10); renderMem(); }
 
 /* ================= name ================= */
 let petName = store.get('name', 'Dude');
@@ -2278,6 +2380,9 @@ if (DESKTOP) {
   KD.onWindows(list => setRealWindows(list));
   KD.onCommand(c => {
     userPing();
+    if (c === 'power') { setPower(!dudeOn); return; }   // the tray icon is his on/off button
+    if (c === 'wake') { if (!dudeOn) setPower(true); else openWin('win-pet'); return; }
+    if (!dudeOn && ['call', 'joke', 'sleep', 'listen', 'checkup'].includes(c)) setPower(true, { quiet: true });
     if (c === 'controls') { const w = $('#win-pet'); if (w.hidden) openWin('win-pet'); else w.hidden = true; }
     else if (c === 'studio') { studio ? exitStudio() : enterStudio(); }
     else if (c === 'call') { if (studio) exitStudio(); goTo(deskW * .5, 'floor', () => setAct('wave', 2)); say(pick(L.start), { voice: true }); }
@@ -2425,6 +2530,7 @@ function update(dt) {
       { const P = findPlat(pet.plat); if (P) pet.y = P.top; }
       if (pet.spawnT >= .9) {
         ready = true; land(pet.plat, 0); setAct('idle', 3.2);
+        if (pet.powerOn) { pet.powerOn = false; if (pet.powerGreet) greetOn(); break; }   // switched back on: a quick hello
         const o = outfit(), lastDay = store.get('lastDay', null);
         say(painted ? `It's ${o.day}! Matcha in hand. Let's go.` : `It's ${o.day}! ${o.name} day.`, { voice: true });
         setTimeout(() => { if (grounded() && bubble.hidden) say(painted ? PAINT_VIBE[outfitIdx] : lastDay && lastDay !== o.day ? 'New day, new drip. You like it?' : o.vibe); }, 3600);
@@ -2903,6 +3009,9 @@ function showCard(c) {
       (r.topSamples && r.topSamples.length ? `<div class="card-why">Your signature sounds: ${r.topSamples.map(x => esc(x.name)).join(', ')}.</div>` : '') +
       (r.backups ? `<div class="card-why">FL keeps ${r.backups} autosave backups. I never delete them.</div>` : '');
   }
+  else if (c.kind === 'today') body = (c.items.length ? `<ul class="flist">${c.items.map(e => `<li><span class="fname" title="${esc(e.title)}">${esc(e.title)}</span><span class="fsub">${esc(fmtTime(e.at))}${e.at < Date.now() ? ' \u00b7 done' : ''}</span><span class="fbtns"><button class="btn sm" type="button" data-c="caldel" data-id="${esc(e.id)}" aria-label="Remove ${esc(e.title)}">&#215;</button></span></li>`).join('')}</ul>` : `<div class="card-why">${c.off ? 'Nothing tomorrow yet.' : 'Nothing today yet.'}</div>`)
+    + (c.mission ? `<div class="card-why">Mission: ${esc(c.mission)}</div>` : '')
+    + `<form class="talk" data-c="calform" autocomplete="off"><input id="calIn" maxlength="120" placeholder="Studio with Eric Saturday 3pm" aria-label="Add to your calendar"><button class="btn primary" type="submit">Add</button></form><div class="card-row"><button class="btn sm" type="button" data-c="calday" data-v="${c.off ? 0 : 1}">${c.off ? 'Back to today' : 'Tomorrow'}</button></div>`;
   else if (c.kind === 'rec') body = `<div class="card-why">Read this out loud with your normal energy. About 15 seconds, in a quiet room.</div><div class="script">"${esc(c.script)}"</div><div class="card-row"><button class="btn primary" type="button" data-c="rec">&#9679; Start recording</button><button class="btn" type="button" data-c="reccancel">Cancel</button></div>`;
   else if (c.kind === 'choice') body = `<div class="card-q">${esc(c.question)}</div><div class="card-row">${c.choices.map(([v, l, pri]) => `<button class="btn${pri ? ' primary' : ''}" type="button" data-c="pick" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
   else if (c.kind === 'name') body = `<div class="card-q">What should I call you?</div><form class="talk" data-c="nameform" autocomplete="off"><input id="nameAsk" maxlength="24" placeholder="Your name" aria-label="Your name"><button class="btn primary" type="submit">Save</button></form>`;
@@ -2931,6 +3040,8 @@ cardEl.addEventListener('click', async e => {
     return;
   }
   if (act === 'reccancel') { c.cancelled = true; if (c.rec) c.rec.stop(); hideCard(); c.onDone(null); return; }
+  if (act === 'caldel') { cal = cal.filter(e => e.id !== b.dataset.id); saveCal(); showToday({ speak: false, off: c.off }); return; }
+  if (act === 'calday') { showToday({ speak: false, off: +b.dataset.v }); return; }
   if (act === 'rename') { const it = c.items && c.items[+b.dataset.i]; if (it) { hideCard(); renameFlow(it); } return; }
   if (act === 'nameall') { hideCard(); nameAll(c.report.untitled); return; }
   if (act === 'stop') { hideCard(); if (c.onStop) c.onStop(); return; }
@@ -2956,6 +3067,7 @@ cardEl.addEventListener('submit', e => {
   e.preventDefault();
   if (card && card.kind === 'name') { const v = ($('#nameAsk').value || '').trim().slice(0, 24); if (v && card.onName) { const f = card.onName; hideCard(); f(v); } }
   else if (card && card.kind === 'q') { const v = ($('#qIn').value || '').trim(); const f = card.onAnswer; hideCard(); if (f) f(v); }
+  else if (card && card.kind === 'today') { const v = ($('#calIn').value || '').trim(); if (!v) return; userPing(); if (!calendarCmd(v, true)) say('Add a day or a time, like "Saturday at 3".', { emo: 'thinking', reply: true }); }
 });
 let cardBox = null;
 function placeCard() {
@@ -3064,6 +3176,8 @@ const micBtn = $('#micBtn');
 let listeningNow = false;
 async function listenNow() {
   if (!DESKTOP || listeningNow) return;
+  // already listening all the time: no need to say his name for the next thing you say
+  if (hear.on && hear.ready) { userPing(); wake(true); hear.convoUntil = performance.now() + 15000; say(pick(["I'm listening...", 'Go ahead.', 'Talk to me.']), { emo: 'thinking', reply: true }); return; }
   listeningNow = true; micBtn.classList.add('on'); userPing(); wake(true);
   setGest('listen', 20); say("I'm listening...", { emo: 'thinking', ms: 16000, reply: true });
   const r = await KD.listen();
@@ -3095,8 +3209,7 @@ function onDudeEvent(ev) {
 function addReminder(text, minutes) { reminders.push({ text, at: Date.now() + minutes * 60000, done: false }); renderMem(); }
 
 if (DESKTOP) {
-  micBtn.hidden = false;
-  $('#voiceSub').textContent = 'These voices come from Windows. To talk TO him, press the mic button on the Home tab or Ctrl+Shift+Space.';
+  $('#voiceSub').textContent = 'These voices come from Windows. To talk TO him, just say "Dude..." while he is on.';
   KD.onAsk(a => {
     clearTimeout(thinkingTimer);
     say(a.question, { emo: 'thinking', voice: true, reply: true, ms: 60000 });
@@ -3466,6 +3579,8 @@ function morning() {
   const kind = nowH >= 12 ? 'late' : us != null && nowH < us - .75 ? 'early' : us != null && nowH > us + 2 ? 'late' : 'normal';
   const c = r ? Object.assign({ text: ruleText(r) }, ruleOpts(r)) : (() => { const x = choose(MORNING[kind], 'morning:'); return x && { text: fill(x.tpl), key: x.key, topic: 'random' }; })();
   if (c) sayThought(c.text, Object.assign(c, { emo: 'excited', important: true }));
+  // and what's on your calendar today
+  { const ev = dayEvents(0).filter(e => e.at > Date.now()); if (ev.length) setTimeout(() => say(`Today: ${ev.map(e => `${e.title} at ${fmtTime(e.at)}`).join(', ')}.`, { voice: true, important: true, emo: 'proud', ms: 8000 }), 3600); }
   if (grounded()) setAct('wave', 2.2);
   flow = 'morning';
   setTimeout(() => {
@@ -3624,6 +3739,10 @@ const CRISIS = /\b(kill myself|suicid\w*|end my life|want to die|don'?t want to 
 function localFirst(text) {
   const t = text.toLowerCase().trim(); let m;
   if (CRISIS.test(t)) { thinkState.calm = null; reply(`${N() === 'boss' ? 'Hey' : N()}, that sounds really heavy. You don't have to carry it alone. Please talk to someone you trust right now, or call a local crisis line or emergency number. I'm here, but you deserve real support.`, { emo: 'concerned', ms: 16000 }); return true; }
+  // switch off / stop listening, your calendar, quick facts
+  if (powerCmd(t)) return true;
+  if (calendarCmd(text)) return true;
+  if (factCmd(text)) return true;
   // teaching him by talking: "when I say X, say Y" / "when I say X, do a backflip"
   if ((m = text.match(/^when i say ["“']?(.+?)["”']?,?\s+(?:you )?(say|answer|reply|tell me|do|dance)[:,]?\s+(.+)$/i))) {
     const verb = m[2].toLowerCase(), mv = verb === 'do' || verb === 'dance' ? (moveFrom(m[3]) || 'noodle') : '';
@@ -3864,10 +3983,16 @@ $('#ruleForm').addEventListener('submit', async e => {
 /* ---- "my voice" ---- */
 const VOICE_SCRIPT = () => fill("Yo, it's me. I'm building {p}, and today we are going to make it big. I wake up, I make a plan, and I do the work. Some days are hard, but I keep going. Let's make some money and have fun doing it.");
 function renderMyVoice() {
-  const eng = voiceCfg.engine || 'windows', box = $('#myVoiceBox'), st = myVoice.status;
+  const eng = engineNow(), box = $('#myVoiceBox'), st = myVoice.status, dvb = $('#dvBox'), ds = dv.status;
   $$('#engineSeg button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.eng === eng)));
-  box.hidden = eng !== 'me';
-  for (const id of ['voicePresets', 'voiceSelWrap', 'pitchWrap']) $('#' + id).hidden = eng === 'me';   // those only change the Windows voice
+  box.hidden = eng !== 'me'; dvb.hidden = eng !== 'dude';
+  for (const id of ['voicePresets', 'voiceSelWrap', 'pitchWrap']) $('#' + id).hidden = eng !== 'windows';   // those only change the Windows voice
+  if (eng === 'dude') {
+    dvb.textContent = !DESKTOP ? "His real voice works in the Windows app." : !ds ? 'Checking...' : !ds.engine ? 'This Dude download is missing the voice engine. Get the newest Dude.'
+      : ds.state === 'downloading' ? `Downloading his voice... ${Math.round(ds.progress * 100)}% (one time, about 130 MB). The Windows voice fills in until then.`
+      : ds.state === 'loading' ? 'Warming up his voice...' : ds.state === 'error' ? 'His voice had a problem: ' + ds.error + ' Using the Windows voice for now.'
+      : ds.state === 'ready' ? 'Voice 1: warm and friendly. Made right here on your laptop.' : ds.hasPack ? 'Loading his voice...' : 'His voice downloads the first time he talks (one time, about 130 MB).';
+  }
   if (box.hidden) return;
   let msg;
   if (!DESKTOP) msg = 'In the Windows app he learns your voice from a 15-second recording, right on your laptop.';
@@ -3908,6 +4033,11 @@ function learnMyVoice() {
 $('#engineSeg').addEventListener('click', e => {
   const b = e.target.closest('[data-eng]'); if (!b) return;
   userPing(); setVoice({ engine: b.dataset.eng }); renderMyVoice();
+  if (b.dataset.eng === 'dude') {
+    if (!DESKTOP) { say('My real voice works in the Windows app.', { emo: 'cheeky', reply: true }); return; }
+    if (!dv.status || dv.status.state !== 'ready') { say("Getting my real voice ready. Give me a minute.", { emo: 'excited', reply: true }); prepareDudeVoice().then(st => { if (st && st.state === 'ready') say("This is me. The real me. Better, right?", { emo: 'excited', reply: true, forceVoice: true }); }); return; }
+    say("This is me. The real me. Better, right?", { emo: 'excited', reply: true, forceVoice: true }); return;
+  }
   if (b.dataset.eng !== 'me') { say('Windows voice. Classic.', { emo: 'cheeky', reply: true, forceVoice: true }); return; }
   if (!DESKTOP) { say('My voice works in the Windows app.', { emo: 'cheeky', reply: true }); return; }
   if (myVoice.status && myVoice.status.hasRef) prepareMyVoice(); else learnMyVoice();
@@ -3918,6 +4048,14 @@ $('#myVoiceDel').addEventListener('click', async () => { userPing(); if (DESKTOP
 if (DESKTOP) {
   KD.onVoiceStatus(st => { myVoice.status = st; renderMyVoice(); });
   KD.voiceStatus().then(st => { myVoice.status = st; renderMyVoice(); if (voiceCfg.engine === 'me' && st.hasRef && st.engine) prepareMyVoice(); }).catch(() => {});
+  // Dude's voice (voice 1) is his voice from now on, unless you chose your own voice
+  if (!store.get('dvSet', false)) { if (voiceCfg.engine !== 'me') { voiceCfg.engine = 'dude'; store.set('voice', voiceCfg); } store.set('dvSet', true); }
+  KD.onDvStatus(st => {
+    const was = dv.status && dv.status.state; dv.status = st; renderMyVoice();
+    if (st.state === 'error') dv.failedAt = Date.now();
+    if (st.state === 'ready' && was && was !== 'ready' && !dv.told && engineNow() === 'dude' && dudeOn && voiceOn) { dv.told = true; setTimeout(() => say(pick(["Hold on. Is that... my real voice? Yes! Finally.", "New voice unlocked. I sound expensive now."]), { emo: 'excited', voice: true, reply: true }), 900); }
+  });
+  KD.dvStatus().then(st => { dv.status = st; renderMyVoice(); if (engineNow() === 'dude' && st.engine && (st.hasPack || voiceOn)) prepareDudeVoice(); }).catch(() => {});
 }
 renderMyVoice();
 renderTeach();
@@ -3947,7 +4085,7 @@ for (const name in CLIPS) {
 }
 function paintReady() {
   const ok = !!CLIPS.chill.ok;
-  $('#lookSec').hidden = !ok;
+  $('#lookSec').hidden = !ok; renderBig();
   setLook(ok ? store.get('look', 'painted') : 'cartoon', false, true);
 }
 function setLook(l, save, quiet) {
@@ -4030,6 +4168,263 @@ function paintHit(cx, cy) {
   } catch (e) { return true; }
 }
 const onPet = e => !!e.target.closest('.pet') && paintHit(e.clientX, e.clientY);
+
+/* ================= on / off: he only shows up (and listens) when you switch him on ================= */
+const powerBtn = $('#powerBtn'), earEl = $('#ear'), heardEl = $('#heard');
+let powerTimer = 0, heardTimer = 0, poweredAt = 0;
+const escRe = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function renderPower() {
+  powerBtn.setAttribute('aria-checked', String(dudeOn));
+  $('#powerTxt').textContent = `${petName} is ${dudeOn ? 'on' : 'off'}`;
+  $('#powerSub').textContent = !dudeOn ? 'Switch him on and he comes back.' : !DESKTOP ? 'Type below to talk to him.' : hear.err ? hear.err : hear.on ? `Listening. Say "${petName}..." and talk.` : 'Not listening. Tap Talk to talk.';
+  const hs = $('#hearSw'); if (hs) hs.setAttribute('aria-checked', String(!!store.get('hear', true)));
+  renderBig();
+}
+function setPower(on, o = {}) {
+  if (on === dudeOn) { renderPower(); return; }
+  clearTimeout(powerTimer);
+  if (!on) {
+    say(pick(['Later! Switch me on when you need me.', 'Going offline. Miss me.', "Peace out. I'll be right here."]), { voice: true, force: true, ms: 2600 });
+    if (grounded()) setAct('wave', 2);
+    dudeOn = false; hearSync(); renderPower();
+    powerTimer = setTimeout(() => {
+      if (dudeOn) return;
+      petEl.style.transition = 'opacity .45s'; petEl.style.opacity = '0';
+      powerTimer = setTimeout(() => { if (!dudeOn) { petEl.style.display = 'none'; bubble.hidden = true; badge.hidden = true; earEl.hidden = true; heardEl.hidden = true; } }, 480);
+    }, 2100);
+    return;
+  }
+  dudeOn = true; poweredAt = performance.now();
+  petEl.style.display = ''; petEl.style.opacity = ''; petEl.style.transition = '';
+  if (!studio) { PL = plats(); const P = PL[0]; pet.plat = P.id; pet.platLeft = P.ox ?? P.left; pet.y = P.top; pet.x = clamp(pet.x, W * .4, deskW - W * .4); }
+  pet.mode = 'spawn'; pet.spawnT = 0; pet.rot = 0; pet.vx = pet.vy = 0; pet.powerOn = true; pet.powerGreet = !o.quiet;
+  renderHealth(); hearSync(); renderPower();
+}
+function greetOn() {
+  const lines = hear.on ? [`Yo${nameBit()}! I'm back. Just talk to me.`, `I'm here${nameBit()}. What are we doing today?`, `Back online. What's up${nameBit()}?`] : [`Yo${nameBit()}! I'm back.`, 'Back online. Did you miss me?'];
+  say(pick(lines), { voice: true, reply: true, emo: 'excited' });
+  setAct('wave', 2.2);
+}
+powerBtn.addEventListener('click', () => { userPing(); setPower(!dudeOn); });
+
+/* ================= always listening (Windows app): say his name and talk ================= */
+function hearSync() {
+  const want = DESKTOP && !!KD.hearStart && dudeOn && !!store.get('hear', true);
+  if (want && !hear.on) {
+    hear.on = true; hear.ready = false; hear.err = '';
+    KD.hearStart().then(r => { if (r && !r.ok) { hear.on = false; hear.err = r.error || 'Listening could not start.'; renderPower(); } }).catch(() => {});
+  } else if (!want && hear.on) { hear.on = false; hear.ready = false; hear.paused = false; KD.hearStop(); }
+  renderPower();
+}
+// he lets go of the mic while he talks, so he never answers his own voice
+function hearTick(now) {
+  if (!hear.on) return;
+  const audible = audioPlaying() || (canSpeak && speechSynthesis.speaking);
+  if (audible) hear.lastAudible = now;
+  const p = audible || now - hear.lastAudible < 450;
+  if (p !== hear.paused) {
+    hear.paused = p; KD.hearPause(p);
+    if (!p && hear.followUp) { hear.followUp = false; hear.convoUntil = Math.max(hear.convoUntil, now + 9000); }
+  }
+}
+function heardCaption(t) {
+  heardEl.textContent = '\u{1F399} ' + t; heardEl.hidden = false;
+  earEl.classList.remove('hit'); void earEl.offsetWidth; earEl.classList.add('hit');
+  clearTimeout(heardTimer); heardTimer = setTimeout(() => { heardEl.hidden = true; }, 3400);
+}
+function onHeard(text, conf) {
+  const now = performance.now();
+  if (!dudeOn || !ready || hear.paused || now - hear.lastAudible < 700) return;   // that was probably his own voice
+  const nm = escRe(petName.toLowerCase());
+  const call = new RegExp(`^\\s*(?:(?:hey|yo|ok|okay|hi|hello)\\s+)?(?:dude|dood|${nm})\\b[\\s,.!?]*`, 'i');
+  const called = call.test(text) || new RegExp(`\\b(?:dude|${nm})\\b`, 'i').test(text);
+  const inConvo = now < hear.convoUntil;
+  if (!called && !inConvo) return;
+  if (!called && conf < .35) return;
+  const q = text.replace(call, '').trim();
+  heardCaption(text);
+  hear.convoUntil = now + 15000;
+  if (!q || /^(dude|yo|hey|hello|hi)[.!?]*$/i.test(q)) { say(pick(['Yeah?', 'Talk to me.', "I'm listening.", "Yo, what's up?"]), { voice: true, reply: true, emo: 'happy' }); return; }
+  talk(q);
+}
+if (DESKTOP && KD.onHear) KD.onHear(ev => {
+  if (ev.type === 'ready') { hear.ready = true; hear.err = ''; renderPower(); }
+  else if (ev.type === 'error') { hear.on = false; hear.ready = false; hear.err = ev.error; renderPower(); if (dudeOn) say(ev.error, { reply: true, ms: 9000, emo: 'concerned' }); }
+  else if (ev.type === 'heard') onHeard(ev.text, ev.conf);
+});
+const hearSw = $('#hearSw');
+if (hearSw) {
+  $('#hearRow').hidden = !DESKTOP;
+  hearSw.addEventListener('click', () => { userPing(); store.set('hear', !store.get('hear', true)); hearSync(); say(store.get('hear', true) ? "I'm all ears. Just say my name." : 'Okay, I stopped listening. Tap Talk when you need me.', { reply: true, emo: 'chill' }); });
+}
+// things you can say to switch him off or stop the mic
+function powerCmd(t) {
+  if (/^(turn (yourself )?off|switch (yourself )?off|shut ?down|power off|go away|log ?off|disappear|bye( bye)?|goodbye|good night)[.!]*$/.test(t)) { setPower(false); return true; }
+  if (/^(stop listening|don'?t listen|mic off|mute (the )?mic)\b/.test(t)) { store.set('hear', false); hearSync(); reply('Okay, I stopped listening. Tap Talk when you need me.', { emo: 'chill' }); return true; }
+  if (/^(start listening|listen to me|mic on)\b/.test(t)) { store.set('hear', true); hearSync(); reply("I'm all ears. Just say my name.", { emo: 'happy' }); return true; }
+  return false;
+}
+
+/* ================= the big buttons on the Home tab ================= */
+function renderBig() {
+  const vb = $('#bbVoice'); if (vb) { vb.classList.toggle('off', !voiceOn); vb.querySelector('span').textContent = voiceOn ? 'Voice on' : 'Voice off'; }
+  const lk = $('#bbLook'); if (lk) lk.hidden = !CLIPS.chill.ok;
+  const tk = $('[data-bb="talk"]'); if (tk) tk.classList.toggle('on', hear.on && hear.ready);
+}
+$('#bigBtns').addEventListener('click', e => {
+  const b = e.target.closest('[data-bb]'); if (!b) return;
+  userPing();
+  const k = b.dataset.bb;
+  if (!dudeOn && !['voice', 'look', 'today'].includes(k)) { setPower(true); return; }
+  if (k === 'talk') { if (DESKTOP) listenNow(); else $('#talkIn').focus(); }
+  else if (k === 'today') showToday({ speak: dudeOn });
+  else if (k === 'beats') talk('show my beats');
+  else if (k === 'dance') doMove(pick(['noodle', 'shimmy', 'runningman', 'guitar', 'robot']));
+  else if (k === 'fit') doMove('fitcheck');
+  else if (k === 'voice') toggleVoice();
+  else if (k === 'look') setLook(painted ? 'cartoon' : 'painted', true);
+  else if (k === 'studio') enterStudio();
+});
+
+/* ================= calendar: your sessions, and what's on today ================= */
+let cal = store.get('cal', []), calCheckAt = 0;
+const saveCal = () => store.set('cal', cal);
+const DAYNAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const CAL_NOUN = /\b(session|sessions|meeting|appointment|studio|call|shoot|video shoot|show|gig|class|interview|rehearsal|practice|date|lunch|dinner|breakfast|party|event|deadline|release|concert|exam|game|match|church|gym|workout|flight|bus|trip|recording|mixing|mix|mastering|performance|launch|pitch|demo)\b/i;
+// finds a day and/or time in what you said: { at, hadDay, hadTime, rest } or null
+function parseWhen(text, nowD) {
+  const now = nowD || new Date();
+  let rest = ' ' + text + ' ', m, day = null, hadDay = false, byWeekday = false, h = null, min = 0, hadTime = false, ap = '';
+  const cut = re => { rest = rest.replace(re, ' '); };
+  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const part = /\b(?:this |in the |tomorrow )?(morning|afternoon|evening|night|tonight)\b/i.exec(rest);
+  const partOfDay = part ? part[1].toLowerCase() : '';
+  if (/\b(today|tonight|this (morning|afternoon|evening))\b/i.test(rest)) { day = new Date(base); hadDay = true; cut(/\b(today|tonight|this (morning|afternoon|evening))\b/ig); }
+  else if (/\b(tomorrow|tmrw|tmr)\b/i.test(rest)) { day = new Date(base); day.setDate(day.getDate() + 1); hadDay = true; cut(/\b(tomorrow|tmrw|tmr)( (morning|afternoon|evening|night))?\b/ig); }
+  else if ((m = /\b(?:on |this |next |coming )?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)s?\b/i.exec(rest))) {
+    const target = DAYNAMES.indexOf(m[1].toLowerCase());
+    let d = (target - now.getDay() + 7) % 7;
+    if (/^next /i.test(m[0]) && d === 0) d = 7;
+    day = new Date(base); day.setDate(day.getDate() + d); hadDay = true; byWeekday = true; cut(m[0]);
+  }
+  if ((m = /\b(?:at |by |around |from )?(\d{1,2})[:.](\d{2})\s*(a\.?m\.?|p\.?m\.?)?(?=\W)/i.exec(rest))) { h = +m[1]; min = +m[2]; ap = (m[3] || '').toLowerCase(); hadTime = true; cut(m[0]); }
+  else if ((m = /\b(?:at |by |around |from )?(\d{1,2})\s*(a\.?m\.?|p\.?m\.?)(?=\W)/i.exec(rest)) || (m = /\b(?:at|by|around|from)\s+(\d{1,2})(?:\s*o'?clock)?(?=\W)/i.exec(rest))) { h = +m[1]; ap = (m[2] || '').toLowerCase(); hadTime = true; cut(m[0]); }
+  else if (/\b(noon|midday)\b/i.test(rest)) { h = 12; hadTime = true; cut(/\b(at |around )?(noon|midday)\b/i); }
+  else if (/\bmidnight\b/i.test(rest)) { h = 0; hadTime = true; cut(/\b(at |around )?midnight\b/i); }
+  if (hadTime && (h > 23 || min > 59)) return null;
+  if (part) cut(/\b(?:this |in the )?(morning|afternoon|evening|night|tonight)\b/ig);
+  if (!hadDay && !hadTime) return null;
+  if (hadTime) {
+    if (ap.startsWith('p') && h < 12) h += 12;
+    else if (ap.startsWith('a') && h === 12) h = 0;
+    else if (!ap && h < 12) { if (/afternoon|evening|night|tonight/.test(partOfDay)) h += 12; else if (partOfDay !== 'morning' && h >= 1 && h <= 6) h += 12; }   // "at 3" usually means the afternoon
+  } else { h = partOfDay === 'morning' ? 9 : /evening|night|tonight/.test(partOfDay) ? 19 : partOfDay === 'afternoon' ? 14 : 10; }
+  if (!day) { day = new Date(base); if (h * 60 + min <= now.getHours() * 60 + now.getMinutes()) day.setDate(day.getDate() + 1); }
+  else if (byWeekday && day.getTime() === base.getTime() && h * 60 + min <= now.getHours() * 60 + now.getMinutes()) day.setDate(day.getDate() + 7);   // "Saturday at 3" said on Saturday evening means next week
+  const at = new Date(day); at.setHours(h, min, 0, 0);
+  return { at: at.getTime(), hadDay, hadTime, rest: rest.replace(/\s+/g, ' ').trim() };
+}
+// what's left after taking out the day and time, cleaned up into a title
+function calTitle(rest) {
+  let t = ' ' + rest + ' ';
+  t = t.replace(/^\s*(?:hey |yo |ok |okay )?(?:dude[,!]?\s+)?/i, ' ');
+  t = t.replace(/\b(?:please |can you |could you |pls )/ig, ' ');
+  t = t.replace(/^\s*(?:add|put|schedule|book|plan|set up|create|make|save|note)\b\s*(?:a |an |my |the )?/i, ' ');
+  t = t.replace(/^\s*(?:i have|i've got|i got|i'?ve|there'?s|we have|we've got|i need to go to|i'?m going to|i will go to|i am going to)\s+(?:a |an |my |the )?/i, ' ');
+  t = t.replace(/^\s*remind me\s+(?:to |that |about |of )?/i, ' ');
+  t = t.replace(/\b(?:to|on|in|into) (?:my |the )?(?:calendar|schedule|agenda|plan)\b/ig, ' ');
+  t = t.replace(/^\s*(?:to|for|on|at)\s+/i, ' ');
+  t = t.replace(/\s+(?:to|for|on|at)\s*$/i, ' ');
+  t = t.replace(/[.!?,]+\s*$/, '').replace(/\s+/g, ' ').trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+function fmtTime(ms) { const d = new Date(ms); let h = d.getHours(); const m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return m ? `${h}:${String(m).padStart(2, '0')} ${ap}` : `${h} ${ap}`; }
+function fmtDay(ms) { const d0 = new Date(); d0.setHours(0, 0, 0, 0); const diff = Math.round((new Date(ms).setHours(0, 0, 0, 0) - d0) / 864e5); return diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : diff > 1 && diff < 7 ? 'on ' + DAYNAMES[new Date(ms).getDay()].replace(/^./, c => c.toUpperCase()) : new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); }
+function dayEvents(off = 0) { const d0 = new Date(); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() + off); const a = d0.getTime(), b = a + 864e5; return cal.filter(e => e.at >= a && e.at < b).sort((x, y) => x.at - y.at); }
+function calAdd(title, at, kind) {
+  const e = { id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: title.slice(0, 90), at, kind: kind || 'event', r30: false, r0: false };
+  cal.push(e); cal.sort((x, y) => x.at - y.at); saveCal(); return e;
+}
+function calendarCmd(text, forceAdd) {
+  const t = text.toLowerCase().trim();
+  // what's on?
+  if (!forceAdd && /\b(what'?s|what is|what do i have|what have i got|anything)\b.*\b(today|tomorrow|tonight|on my calendar|schedule|agenda|plan)\b|\bwhat do i (need|have) to do\b|\bmy (day|schedule|calendar|agenda|plan for today)\b|^(today|calendar|schedule)\??$/.test(t)) {
+    showToday({ speak: true, off: /\btomorrow\b/.test(t) ? 1 : 0 }); return true;
+  }
+  // cancel something
+  if (!forceAdd && /^(?:please )?(cancel|delete|remove|clear)\b/.test(t) && cal.length) {
+    const words = t.replace(/^(?:please )?(cancel|delete|remove|clear)\b/, '').split(/\W+/).filter(w => w.length > 2 && !/^(the|my|from|calendar|schedule|with|and|for|that|this)$/.test(w));
+    let best = null, score = 0;
+    for (const e of cal) { const s = words.filter(w => e.title.toLowerCase().includes(w)).length; if (s > score) { score = s; best = e; } }
+    if (best) { cal = cal.filter(e => e !== best); saveCal(); reply(`Done. "${best.title}" is off your calendar.`, { emo: 'chill' }); if (card && card.kind === 'today') showToday({ speak: false, off: card.off }); return true; }
+    return false;
+  }
+  // add something: needs a day or a time, and either a calendar word or "remind me"
+  if (/\?\s*$/.test(t) && !forceAdd) return false;
+  if (/\bin \d+\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b/.test(t)) return false;   // "remind me in 20 minutes" is a quick reminder, not the calendar
+  const isRemind = /^(?:(?:hey |yo )?dude,? )?remind me\b/.test(t);
+  if (!forceAdd && !isRemind && !CAL_NOUN.test(t) && !/\b(add|put|schedule|book)\b.*\b(calendar|schedule)\b/.test(t)) return false;
+  const w = parseWhen(text);
+  if (!w) return false;
+  const title = calTitle(w.rest);
+  if (!title || title.length < 2) return false;
+  const e = calAdd(title, w.at, isRemind ? 'remind' : 'event');
+  const when = `${fmtDay(e.at)} at ${fmtTime(e.at)}`;
+  reply(isRemind ? `Okay. I'll remind you ${when}: ${title}.` : pick([`Locked in: ${title}, ${when}. I'll remind you 30 minutes before.`, `Got it. ${title}, ${when}. I'll tell you before it starts.`]), { emo: 'proud', ms: 6500 });
+  if (card && card.kind === 'today') showToday({ speak: false, off: card.off });
+  return true;
+}
+function showToday(o = {}) {
+  const off = o.off || 0, ev = dayEvents(off), when = off ? 'Tomorrow' : 'Today';
+  const mission = !off && typeof day !== 'undefined' && day && day.mission ? day.mission : '';
+  if (o.speak) {
+    const list = ev.filter(e => off || e.at > Date.now() - 36e5).map(e => `${e.title} at ${fmtTime(e.at)}`);
+    const text = list.length ? `${when}: ${list.join(', ')}.${mission ? ` Your mission: ${mission}.` : ''}` : mission ? `Nothing else on the calendar. Your mission today: ${mission}.` : off ? 'Tomorrow is empty so far.' : 'Nothing on your calendar today. Tell me, like: "studio session with Eric at 3".';
+    reply(text, { emo: list.length ? 'proud' : 'chill', ms: Math.max(5000, text.length * 80) });
+  }
+  showCard({ kind: 'today', title: when, items: ev, mission, off });
+}
+function calTick() {
+  const now = Date.now(); if (now < calCheckAt) return; calCheckAt = now + 5000;
+  let changed = false;
+  for (const e of cal) {
+    if (e.kind !== 'remind' && !e.r30 && e.at - now <= 30 * 6e4 && e.at - now > 6e4) { e.r30 = true; changed = true; calAlert(e, 30); }
+    else if (!e.r0 && now >= e.at && now - e.at < 30 * 6e4) { e.r0 = e.r30 = true; changed = true; calAlert(e, 0); }
+    else if (!e.r0 && now - e.at >= 30 * 6e4) { e.r0 = e.r30 = true; changed = true; }   // missed while the laptop was off
+  }
+  const n = cal.length; cal = cal.filter(e => now - e.at < 2 * 864e5); if (cal.length !== n) changed = true;   // forget the old ones
+  if (changed) saveCal();
+}
+function calAlert(e, mins) {
+  const wasOff = !dudeOn;
+  if (wasOff) setPower(true, { quiet: true });   // he pops up for this, even when he's switched off
+  const text = mins ? `Heads up${nameBit()}: ${e.title} in 30 minutes.` : e.kind === 'remind' ? `Hey${nameBit()}! Don't forget: ${e.title}.` : `It's time${nameBit()}: ${e.title}!`;
+  setTimeout(() => { wake(true); say(text, { voice: true, important: true, reply: true, ms: 10000, emo: 'excited' }); if (grounded()) setAct('wave', 3); stars(pet.x, pet.y - H, 10); }, wasOff ? 1300 : 0);
+}
+
+/* ================= quick facts from Wikipedia (free, no key needed) ================= */
+function factCmd(text) {
+  if (aiOk()) return false;   // with the Claude brain he answers these himself
+  const m = text.match(/^(?:hey |yo )?(?:who|what)(?:\s+(?:is|was|are|were)|'s|’s)\s+(.+?)[?.!]*$/i) || text.match(/^(?:tell me about|do you know|look up|search for|search|google|wikipedia)\s+(.+?)[?.!]*$/i);
+  if (!m) return false;
+  const q = m[1].replace(/^(a|an|the)\s+/i, '').trim();
+  if (!q || q.split(/\s+/).length > 8) return false;
+  if (/^(you|your name|my name|me|i|this|that|it|up|going on|happening|the time|time|today|the date|the weather|weather|new|wrong|good|better|best|your favou?rite.*|on today|on tomorrow|my plan|the plan|next)$/i.test(q)) return false;
+  lookUp(q); return true;
+}
+async function lookUp(q) {
+  say(pick(['Let me check...', 'Looking it up...', 'One sec, checking...']), { emo: 'thinking', reply: true, ms: 15000 });
+  try {
+    const sr = await timeoutP(fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=1&format=json&origin=*`).then(r => r.json()), 9000);
+    const title = sr && sr.query && sr.query.search && sr.query.search[0] && sr.query.search[0].title;
+    if (!title) throw new Error('none');
+    const sm = await timeoutP(fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, '_'))}`).then(r => r.json()), 9000);
+    const ex = sm && sm.extract; if (!ex) throw new Error('none');
+    const sents = ex.match(/[^.!?]+[.!?]+/g) || [ex];
+    let out = sents[0]; if (out.length < 90 && sents[1]) out += sents[1];
+    reply(out.replace(/\s+/g, ' ').trim().slice(0, 320), { emo: 'smug', ms: Math.max(6000, out.length * 75) });
+  } catch (e) { reply(navigator.onLine ? `I couldn't find "${q}". Try other words?` : "I can't look things up without internet.", { emo: 'concerned' }); }
+}
 
 /* ================= drawing ================= */
 let lastMood = '';
@@ -4174,6 +4569,17 @@ function render(dt, now) {
     bubble.style.setProperty('--tail', clamp(pet.x - bx, 18, bw - 18).toFixed(1) + 'px');
   }
   if (!badge.hidden) { const bx = clamp(pet.x + 24 * S, 4, deskW - badge.offsetWidth - 4); badge.style.transform = `translate(${bx.toFixed(1)}px,${(headTop - 4).toFixed(1)}px)`; }
+  // the little mic next to him while he listens, and a caption of what he just heard
+  const showEar = hear.on && dudeOn && petEl.style.display !== 'none';
+  if (earEl.hidden === showEar) earEl.hidden = !showEar;
+  if (showEar) { earEl.classList.toggle('paused', hear.paused || !hear.ready); earEl.style.transform = `translate(${clamp(pet.x + W * .34, 4, deskW - 26).toFixed(0)}px,${(headTop + 4).toFixed(0)}px)`; }
+  if (!heardEl.hidden) {
+    const hw = heardEl.offsetWidth, right = pet.x + W * .45;
+    const hx = right + hw < deskW - 6 ? right : clamp(pet.x - W * .45 - hw, 6, deskW - hw - 6);
+    let hy = pet.y - H * .45;
+    if (cardBox && hx < cardBox.x + cardBox.w && hx + hw > cardBox.x && hy + 26 > cardBox.y && hy < cardBox.y + cardBox.h) hy = cardBox.y - 34;   // not behind the card
+    heardEl.style.transform = `translate(${hx.toFixed(0)}px,${Math.max(6, hy).toFixed(0)}px)`;
+  }
 
   let mood = 'Feeling fresh', cls = '';
   if (sick) { mood = PROB[primary()].mood; cls = 'sick'; }
@@ -4192,12 +4598,11 @@ tick(); setInterval(tick, 10000);
 /* ================= boot ================= */
 applyOutfit(todayIdx, false);
 measure(); layout();
-applyName(); renderVoice(); renderHealth(); applyLook(); renderMem(); renderHumor();
+applyName(); renderVoice(); renderHealth(); applyLook(); renderMem(); renderHumor(); renderPower(); hearSync();
 front($('#win-pet'));
 if (DESKTOP) {
   // on the real desktop: controls stay hidden until you ask (tray icon, right-click on him, or Ctrl+Shift+D)
   $('#win-ideas').hidden = true; $('#win-pet').hidden = true;
-  $('#win-pet .tip').textContent = 'Grab him and throw him. He walks on your windows. Right-click him or press Ctrl+Shift+D to open this panel.';
   const cw = Math.min(370, deskW * .4); place($('#win-pet'), deskW - cw - 24, 24, cw); fitHeight($('#win-pet'));
 }
 PL = plats();
@@ -4219,7 +4624,7 @@ new ResizeObserver(() => {
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
-  if (!window.__kitoPause) { PL = plats(); update(dt); render(dt, now); }
+  if (!window.__kitoPause) { PL = plats(); update(dt); render(dt, now); hearTick(now); calTick(); }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

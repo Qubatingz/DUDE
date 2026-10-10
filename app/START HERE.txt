@@ -11,9 +11,17 @@ HOW TO START
 4. Dude appears at the bottom of your screen, asks your name,
    and asks before he looks at anything.
 
+ON / OFF
+- Click his face in the tray (near the clock) to switch him on or off.
+  On: he pops up and listens. Off: he disappears and the mic is off.
+
 TALK TO HIM
-- Right-click him (or press Ctrl+Shift+D) to open his panel.
-- Type in "Talk to Dude", or press the mic button / Ctrl+Shift+Space and speak.
+- Just say "Dude..." and talk. When he answers or asks you something,
+  you can reply without saying his name.
+- Or right-click him (Ctrl+Shift+D) and type in his panel.
+- His calendar: "Dude, studio session with Eric Saturday at 3".
+  "Dude, what's on today?"
+- The first time he talks, his new voice downloads (about 130 MB, one time).
 - Try: "find the beat I made last week", "how's my laptop doing?",
   "organize my computer", "what did I work on yesterday?",
   "remind me to call Eric in 20 minutes".

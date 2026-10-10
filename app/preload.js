@@ -18,6 +18,16 @@ contextBridge.exposeInMainWorld('kitoDesktop', {
   voiceSay: (text, speed) => ipcRenderer.invoke('dude:voice:say', text, speed),
   voiceForget: () => ipcRenderer.invoke('dude:voice:forget'),
   onVoiceStatus: on('dude:voiceStatus'),
+  // Dude's own voice (voice 1)
+  dvStatus: () => ipcRenderer.invoke('dude:dv:status'),
+  dvPrepare: () => ipcRenderer.invoke('dude:dv:prepare'),
+  dvSay: (text, speed) => ipcRenderer.invoke('dude:dv:say', text, speed),
+  onDvStatus: on('dude:dvStatus'),
+  // always listening (only while he's on)
+  hearStart: () => ipcRenderer.invoke('dude:hear:start'),
+  hearStop: () => ipcRenderer.send('dude:hear:stop'),
+  hearPause: on => ipcRenderer.send('dude:hear:pause', !!on),
+  onHear: on('dude:hear'),
   // the studio (FL Studio projects)
   studioReport: () => ipcRenderer.invoke('dude:studio:report'),
   studioCurrent: () => ipcRenderer.invoke('dude:studio:current'),

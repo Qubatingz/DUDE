@@ -10,6 +10,7 @@ const files = require('./files');
 const memory = require('./memory');
 const habits = require('./habits');
 const voice = require('./voice');
+const dudeVoice = require('./dudevoice');
 const studio = require('./studio');
 const { readFlp } = require('./flp');
 const { createBrain } = require('./brain');
@@ -181,6 +182,11 @@ ipcMain.handle('dude:voice:prepare', () => voice.prepare(voiceEmit));
 ipcMain.handle('dude:voice:setRef', (e, samples, sr, text) => voice.setRef(samples, sr, text).catch(err => ({ error: String(err.message || err) })));
 ipcMain.handle('dude:voice:say', (e, text, speed) => voice.say(text, speed));
 ipcMain.handle('dude:voice:forget', () => voice.forget());
+// Dude's own voice (voice 1)
+const dvEmit = () => send('dude:dvStatus', dudeVoice.status());
+ipcMain.handle('dude:dv:status', () => dudeVoice.status());
+ipcMain.handle('dude:dv:prepare', () => dudeVoice.prepare(dvEmit));
+ipcMain.handle('dude:dv:say', (e, text, speed) => dudeVoice.say(text, speed));
 function afterSettings() {
   const roots = settings.grantedFolders();
   if (process.env.DUDE_DEBUG) console.log('[watch]', roots.map(r => r.path).join(' | '));
@@ -240,6 +246,44 @@ function listen() {
   return listening;
 }
 ipcMain.handle('dude:listen', () => listen());
+
+/* ================= always listening (only while Dude is switched on) ================= */
+// hear.ps1 keeps Windows speech recognition running and prints each sentence it hears. Nothing is recorded or saved.
+// While Dude himself is talking, a small "pause" file tells it to stop listening, so he doesn't hear his own voice.
+let hearer = null, hearWant = false, hearFails = 0;
+const pauseFile = () => path.join(os.tmpdir(), `dude-hear-pause-${process.pid}`);
+function hearStart() {
+  hearWant = true;
+  if (process.platform !== 'win32') return { ok: false, error: 'Listening works on Windows only.' };
+  if (hearer) return { ok: true };
+  try { fs.unlinkSync(pauseFile()); } catch (e) {}
+  try { hearer = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'hear.ps1'), pauseFile()], { windowsHide: true }); }
+  catch (e) { hearer = null; return { ok: false, error: 'Listening could not start.' }; }
+  let buf = '', failed = false;
+  const me = hearer;
+  me.stdout.on('data', d => {
+    buf += d.toString();
+    let i;
+    while ((i = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+      if (line === 'READY') { hearFails = 0; send('dude:hear', { type: 'ready' }); }
+      else if (line.startsWith('OK:')) { const m = line.match(/^OK:([\d.]+):(.*)$/); if (m && m[2].trim()) send('dude:hear', { type: 'heard', conf: +m[1], text: m[2].trim() }); }
+      else if (line.startsWith('ERR:')) { failed = true; send('dude:hear', { type: 'error', error: VOICE_ERR[line.slice(4).trim()] || 'Listening stopped.' }); }
+    }
+  });
+  me.on('error', () => {});
+  me.on('exit', () => {
+    if (hearer === me) hearer = null;
+    // it stopped by itself (not because of an error message): start it again, but don't keep trying forever
+    if (hearWant && !quitting && !failed && ++hearFails <= 3) setTimeout(() => { if (hearWant && !hearer) hearStart(); }, 2000 * hearFails);
+  });
+  return { ok: true };
+}
+function hearStop() { hearWant = false; if (hearer) { try { hearer.kill(); } catch (e) {} hearer = null; } try { fs.unlinkSync(pauseFile()); } catch (e) {} }
+function hearPause(on) { try { if (on) fs.writeFileSync(pauseFile(), '1'); else fs.unlinkSync(pauseFile()); } catch (e) {} }
+ipcMain.handle('dude:hear:start', () => hearStart());
+ipcMain.on('dude:hear:stop', () => hearStop());
+ipcMain.on('dude:hear:pause', (e, on) => hearPause(!!on));
 
 /* ================= what's on screen: windows + the app in front ================= */
 let focus = { exe: '', title: '', app: '', fullscreen: false, quiet: false };
@@ -303,6 +347,7 @@ setInterval(() => {
 /* ================= tray ================= */
 function buildMenu() {
   return Menu.buildFromTemplate([
+    { label: 'Turn Dude on / off', click: () => cmd('power') },
     { label: 'Show controls', click: () => cmd('controls') },
     { label: 'Talk to Dude (voice)', click: () => cmd('listen') },
     { label: 'Open Studio', click: () => cmd('studio') },
@@ -319,7 +364,7 @@ function createTray() {
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'tray.png')));
   tray.setToolTip('Dude');
   tray.setContextMenu(buildMenu());
-  tray.on('click', () => cmd('controls'));
+  tray.on('click', () => cmd('power'));   // the tray icon is his on/off button
   tray.on('right-click', () => tray.setContextMenu(buildMenu()));
 }
 
@@ -339,7 +384,7 @@ app.whenReady().then(() => {
   screen.on('display-added', fitToScreen);
   screen.on('display-removed', fitToScreen);
 });
-app.on('second-instance', () => cmd('controls'));
-app.on('before-quit', () => { quitting = true; memory.save(); if (watcher) { try { watcher.kill(); } catch (e) {} } });
+app.on('second-instance', () => cmd('wake'));   // opening Dude again switches him on
+app.on('before-quit', () => { quitting = true; hearStop(); memory.save(); if (watcher) { try { watcher.kill(); } catch (e) {} } });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => app.quit());

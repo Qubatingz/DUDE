@@ -44,4 +44,20 @@ jobs:
           $p = Start-Process -FilePath ".\dude\Dude.exe" -ArgumentList @("ci\voice-smoke.js", ".\dude\resources\app") -Wait -PassThru -NoNewWindow -RedirectStandardOutput out.txt -RedirectStandardError err.txt
           Get-Content out.txt, err.txt
           if ($p.ExitCode -ne 0) { exit 1 }
+      - name: Check "Dude's voice" (voice 1) on Windows
+        shell: pwsh
+        run: |
+          $env:ELECTRON_RUN_AS_NODE = "1"
+          $p = Start-Process -FilePath ".\dude\Dude.exe" -ArgumentList @("ci\dudevoice-smoke.js", ".\dude\resources\app") -Wait -PassThru -NoNewWindow -RedirectStandardOutput out2.txt -RedirectStandardError err2.txt
+          Get-Content out2.txt, err2.txt
+          if ($p.ExitCode -ne 0) { exit 1 }
+      - name: Check the listening scripts start on Windows
+        shell: powershell
+        run: |
+          foreach ($f in @("listen.ps1", "hear.ps1")) { $null = [ScriptBlock]::Create((Get-Content ".\dude\resources\app\$f" -Raw)); "$f parses" }
+          # this machine has no microphone, so hear.ps1 should say so (or that no recognizer is installed) and stop
+          $p = Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".\dude\resources\app\hear.ps1", "$env:TEMP\dude-pause-test") -PassThru -NoNewWindow -RedirectStandardOutput hear.txt
+          if (-not $p.WaitForExit(30000)) { $p.Kill(); "hear.ps1 kept running (it found a microphone)" }
+          $out = Get-Content hear.txt -Raw; "hear.ps1 said: $out"
+          if ($out -notmatch "READY|ERR:") { exit 1 }
 
