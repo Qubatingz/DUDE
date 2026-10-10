@@ -1992,6 +1992,8 @@ const MV = {
     } },
   flex: { name: 'Flex', cat: 'trick', dur: 2.6, line: ['Look at these. Tiny but dangerous.', 'Muscle show. Free entry.'],
     pose(p, u, tt) { const k = Math.min(1, u / .15), pulse = Math.sin(tt * 10) * 5; p.armL = 95 * k; p.foreL = (90 + pulse) * k; p.armR = -95 * k; p.foreR = (-90 - pulse) * k; p.thighL = -14; p.thighR = 14; p.shinL = 8; p.lean = -4; p.head = -6; p.mouth = 'grin'; p.armStretch = 1 + .07 * Math.sin(tt * 10); } },
+  fitcheck: { name: 'Fit check', cat: 'trick', dur: 4.3, clip: 'spin', line: ['Fit check. Take a good look.', 'Three-sixty degrees of pure drip.', 'Front, back, side. All iconic.'],
+    pose(p, u) { p.flip = Math.cos(u * Math.PI * 2); p.armR = -14; p.foreR = -30; p.armL = 10; p.foreL = -12; p.head = -4; p.mouth = 'smile'; } },
   slip: { name: 'Banana slip', cat: 'trick', dur: 3.6, ev: [[.02, () => peel()], [.3, () => say('WHOA!')], [.5, () => stars(pet.x - pet.dir * H * .8, pet.y - 14 * S, 6)], [.88, () => say(pick(['I meant to do that.', 'Nobody saw that. Right?']), { voice: true })]],
     pose(p, u, tt) {
       p.origin = '50% 95%';
@@ -2015,7 +2017,7 @@ const MV = {
   joke: { name: 'Tell a joke', cat: 'creative', dur: 3.6, ev: [[.02, () => say(pick(JOKES), { voice: true, ms: 6000 })]],
     pose(p, u, tt) { const g = Math.sin(tt * 5); p.armR = -40 + g * 20; p.foreR = -60; p.armL = 10; p.head = Math.sin(tt * 3) * 4; p.mouth = u > .85 ? 'grin' : 'flat'; } }
 };
-const FUN_MOVES = ['noodle', 'noodle', 'swag', 'moonwalk', 'dab', 'robot', 'shimmy', 'runningman', 'guitar', 'backflip', 'headspin', 'flex', 'slip', 'selfie', 'yawn'];
+const FUN_MOVES = ['noodle', 'noodle', 'fitcheck', 'swag', 'moonwalk', 'dab', 'robot', 'shimmy', 'runningman', 'guitar', 'backflip', 'headspin', 'flex', 'slip', 'selfie', 'yawn'];
 function startMove(id, user) {
   const M = MV[id]; if (!M || !grounded()) return;
   setAct('move', M.dur); pet.move = id; pet.mvEv = 0;
@@ -2097,6 +2099,7 @@ function handle(raw) {
   if (/joke|make me laugh/.test(t)) return doMove('joke');
   if (/moonwalk/.test(t)) return doMove('moonwalk');
   if (/backflip|flip/.test(t)) return doMove('backflip');
+  if (/fit ?check|turn around|spin around|show (me )?(your|the|ur) (fit|outfit|drip)/.test(t)) return doMove('fitcheck');
   if (/head ?spin|breakdance/.test(t)) return doMove('headspin');
   if (/\bdab\b/.test(t)) return doMove('dab');
   if (/robot/.test(t)) return doMove('robot');
@@ -3926,8 +3929,8 @@ lifeReady = true;
    feet at y=480. Every clip starts and ends in the same calm pose, so they cut into each other cleanly.
    A clip that isn't made yet falls back to Chill plus a little motion, so new clips just drop in. */
 const PAINT_ZOOM = 1.3, PF = { w: 260, h: 500, dude: 420, foot: 480 };
-const CLIPS = { chill: {}, talk: {}, wave: { once: true }, sip: { once: true }, groove: {}, sleep: { loopFrom: 43 / 24 }, walk: { facing: 1 } };
-const FALLBACK = { talk: 'chill', wave: 'talk', sip: 'chill', groove: 'chill', sleep: 'chill', walk: 'groove' };   // until there's a walk clip, he steps in place (groove) while he moves
+const CLIPS = { chill: {}, talk: {}, wave: { once: true }, sip: { once: true }, spin: { once: true }, groove: {}, sleep: { loopFrom: 43 / 24 }, walk: { facing: 1 } };
+const FALLBACK = { talk: 'chill', wave: 'talk', sip: 'chill', spin: 'chill', groove: 'chill', sleep: 'chill', walk: 'groove' };   // until there's a walk clip, he steps in place (groove) while he moves
 const PAINT_VIBE = ["Sunday. I'm on airplane mode.", 'Monday. Please speak slowly.', 'Tuesday. Nobody can catch me today.', 'Wednesday. Halfway to the weekend, bro.', 'Thursday. Meetings all day. I AM the meeting.', "It's FRIDAY! Work is cancelled. (It's not.)", 'Saturday. Matcha first, then we create.'];
 const paintEl = $('#petPaint'), paintVid = {};
 let paintCur = '', paintScale = 1, paintZ = 1, paintFlip = 1, paintSip = false, paintNextSip = 0;
@@ -3975,6 +3978,7 @@ function paintWant(m, a) {
   if (a === 'sleep') return 'sleep';
   if (a === 'walk') return 'walk';
   if (a === 'wave') return 'wave';
+  if (a === 'move' && MV[pet.move] && MV[pet.move].clip && CLIPS[MV[pet.move].clip].ok) return MV[pet.move].clip;   // a move with its own painted clip
   if (playing || a === 'dance' || (a === 'move' && MV[pet.move] && MV[pet.move].cat === 'dance')) return 'groove';
   if (talking) return 'talk';
   return paintSip ? 'sip' : 'chill';
