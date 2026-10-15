@@ -41,6 +41,8 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   win.on('closed', () => { win = null; });
 }
+// after a file picker closes, Windows can forget the click-through setting: switch it back on (Dude's page fixes it on the next mouse move)
+function rearmMouse() { if (win && !win.isDestroyed()) win.setIgnoreMouseEvents(true, { forward: true }); }
 function fitToScreen() { if (win && !win.isDestroyed()) win.setBounds(workArea()); }
 function cmd(c) {
   if (!win || win.isDestroyed()) return;
@@ -124,6 +126,7 @@ ipcMain.handle('dude:laptop:stats', () => Object.assign({ allowed: !!settings.ge
 const learnErr = e => ({ error: String((e && e.message) || e) });
 ipcMain.handle('dude:learn:pick', async () => {
   const r = await dialog.showOpenDialog(win, { title: 'Give Dude something to learn', properties: ['openFile'], filters: [{ name: 'Things Dude can read', extensions: ['pdf', 'docx', 'pptx', 'txt', 'md', 'rtf', 'csv', 'html', 'htm', 'srt', 'lrc', 'json'] }] });
+  rearmMouse();
   if (r.canceled || !r.filePaths[0]) return { canceled: true };
   try { return await knowledge.learnFile(r.filePaths[0]); } catch (e) { return learnErr(e); }
 });
@@ -148,6 +151,7 @@ ipcMain.handle('dude:key', async (e, key) => {
 });
 ipcMain.handle('dude:folder:add', async () => {
   const r = await dialog.showOpenDialog(win, { title: 'Pick a folder Dude may search', properties: ['openDirectory'] });
+  rearmMouse();
   if (!r.canceled && r.filePaths[0]) { settings.addCustomFolder(r.filePaths[0]); afterSettings(); }
   return settings.publicView();
 });

@@ -299,7 +299,7 @@ details.more[open] summary::before{content:"\25BE  "}
 .v-shorts{display:var(--v-shorts)} .v-socks{display:var(--v-socks)} .v-sneaker{display:var(--v-sneaker)} .v-slipper{display:var(--v-slipper)}
 
 /* speech, status, effects */
-.bubble{position:absolute;left:0;top:0;z-index:1001;max-width:min(250px,72%);padding:8px 13px 9px;background:var(--bubble);color:var(--outline);border:2.5px solid var(--outline);border-radius:16px;font:20px/1.15 var(--font-hand);pointer-events:none;box-shadow:3px 4px 0 rgba(0,0,0,.28);transform-origin:50% 100%}
+.bubble{position:absolute;left:0;top:0;z-index:1001;max-width:min(250px,72%);padding:8px 13px 9px;background:var(--bubble);color:var(--outline);border:2.5px solid var(--outline);border-radius:16px;font:20px/1.15 var(--font-hand);pointer-events:auto;cursor:pointer;box-shadow:3px 4px 0 rgba(0,0,0,.28);transform-origin:50% 100%}
 .bubble::after{content:"";position:absolute;bottom:-9px;left:var(--tail,50%);width:15px;height:15px;margin-left:-7.5px;background:var(--bubble);border-right:2.5px solid var(--outline);border-bottom:2.5px solid var(--outline);transform:rotate(45deg)}
 .bubble.pop{animation:pop .22s cubic-bezier(.3,1.6,.5,1)}
 .btxt{display:block}
@@ -1025,7 +1025,7 @@ html.desktop .studio{bottom:0}
   <div class="ear" id="ear" hidden aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5.5" y="1.8" width="5" height="8.2" rx="2.5"/><path d="M3 7.6a5 5 0 0 0 10 0M8 12.6v2"/></svg></div>
   <div class="heard" id="heard" hidden aria-hidden="true"></div>
   <div class="card" id="card" role="dialog" aria-labelledby="cardTitle" hidden></div>
-  <div class="bubble" id="bubble" role="status" aria-live="polite" hidden><span class="btxt" id="btxt"></span><span class="fb" hidden><button type="button" data-fb="up" aria-label="That was funny" title="Funny! More like this">&#128514;</button><button type="button" data-fb="down" aria-label="Not funny" title="Not funny. Never again">&#128078;</button></span></div>
+  <div class="bubble" id="bubble" role="status" aria-live="polite" title="Click to close" hidden><span class="btxt" id="btxt"></span><span class="fb" hidden><button type="button" data-fb="up" aria-label="That was funny" title="Funny! More like this">&#128514;</button><button type="button" data-fb="down" aria-label="Not funny" title="Not funny. Never again">&#128078;</button></span></div>
   <div class="fx" id="fx" aria-hidden="true"></div>
 
   <nav class="taskbar" id="taskbar" aria-label="Taskbar">
@@ -1208,7 +1208,7 @@ const propG = $('#prop'), PROPS = { phone: $('#pPhone'), mic: $('#pMic'), spray:
 let curProp = null;
 function showProp(k) { if (k === curProp) return; propG.setAttribute('display', k ? 'inline' : 'none'); for (const n in PROPS) PROPS[n].setAttribute('display', n === k ? 'inline' : 'none'); curProp = k; }
 const pt = a => `${f1(a[0])} ${f1(a[1])}`;
-function spr(x, v, tg, w, z, dt) { const n = Math.max(1, Math.ceil(dt * w / 3)), h = dt / n; for (let i = 0; i < n; i++) { v += (w * w * (tg - x) - 2 * z * w * v) * h; x += v * h; } return [x, v]; }
+function spr(x, v, tg, w, z, dt) { const n = Math.max(1, Math.ceil(dt * w)), h = dt / n; for (let i = 0; i < n; i++) { v += (w * w * (tg - x) - 2 * z * w * v) * h; x += v * h; } return Number.isFinite(x) && Number.isFinite(v) ? [x, v] : [tg, 0]; }
 
 /* ---------- hands: fist, open palm, pointing finger, thumbs up ---------- */
 const HAND = {};
@@ -2290,7 +2290,7 @@ petEl.addEventListener('pointerleave', () => { perf.hoverAt = 0; });
 desk.addEventListener('pointerleave', () => { mouse.seen = false; });
 desk.addEventListener('pointerdown', e => {
   userPing();
-  if (studio || e.target.closest('.win,.icons,.taskbar,.studio,.errbox') || onPet(e)) return;
+  if (studio || e.target.closest('.win,.icons,.taskbar,.studio,.errbox,.card,.bubble,.badge') || onPet(e)) return;   // a click on a card or his bubble is for the card, not "run here"
   const r = desk.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
   ring(x, y);
   let best = null;
@@ -2382,9 +2382,10 @@ petEl.addEventListener('contextmenu', e => { e.preventDefault(); if (!studio && 
 if (DESKTOP) {
   let through = true;
   const setThrough = v => { if (v !== through) { through = v; KD.setClickThrough(v); } };
+  addEventListener('focus', () => { through = null; });   // after a file picker or another window: check again on the next mouse move
   addEventListener('mousemove', e => {
     if (drag) { setThrough(false); return; }
-    const el = document.elementFromPoint(e.clientX, e.clientY), hit = el && el.closest('.pet,.win,.studio,.errbox,.card,.fb');
+    const el = document.elementFromPoint(e.clientX, e.clientY), hit = el && el.closest('.pet,.win,.studio,.errbox,.card,.fb,.bubble');
     setThrough(!(hit && (hit !== petEl || paintHit(e.clientX, e.clientY))));
   });
   KD.onWindows(list => setRealWindows(list));
@@ -2423,6 +2424,7 @@ function funMove() {
 function chatter() { setAct('idle', 2.5); say(pick(Math.random() < .35 ? outfit().lines : L.idle)); }
 function decide() {
   const P = findPlat(pet.plat); if (!P) return;
+  if (!cardEl.hidden && !studio) { setAct(Math.random() < .5 ? 'idle' : 'look', rand(2, 4)); return; }   // a card is open: he stands still next to it
   const now = performance.now(), h = hum(), im = INTMULT[(dudeView && dudeView.interrupt) || 'sometimes'] || 1, talkGap = (25000 - 17000 * h) / im, o = outfit();
   if (playing) { setAct('dance', rand(3, 5)); return; }
   if (quiet && !studio) { setAct(Math.random() < .55 ? 'sit' : 'idle', rand(6, 14)); return; }
@@ -3059,6 +3061,9 @@ function showCard(c) {
   if (c.kind === 'q' || c.kind === 'choice') cardTimer = setTimeout(() => { if (card === c && !cardEl.matches(':hover') && !cardEl.contains(document.activeElement)) { hideCard(); flow = null; } }, c.ttl || 180000);
   if (closable) cardTimer = setTimeout(() => { if (card === c && !cardEl.matches(':hover')) hideCard(); }, 75000);
 }
+// Esc closes the card next to him and his speech bubble; a click on the bubble closes it too
+addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (card && !['ask', 'name', 'q', 'choice', 'rec'].includes(card.kind)) hideCard(); bubble.hidden = true; });
+bubble.addEventListener('click', e => { if (e.target.closest('[data-fb]')) return; clearTimeout(bubbleTimer); bubble.hidden = true; bubbleFb = null; });
 cardEl.addEventListener('click', async e => {
   const b = e.target.closest('[data-c]'); if (!b || !card) return;
   const c = card, act = b.dataset.c; userPing();
@@ -3110,6 +3115,9 @@ let cardBox = null;
 function placeCard() {
   if (cardEl.hidden) { cardBox = null; return; }
   const cw = cardEl.offsetWidth, ch = cardEl.offsetHeight, gap = W * .45 + 12;
+  // the card stays where it opened, so its buttons never run away from your mouse. It only moves if he's moved far, or it changes size.
+  if (card && card._at && cardBox && cardBox.w === cw && cardBox.h === ch && Math.abs(pet.x - card._at.x) < 220 && Math.abs(pet.y - card._at.y) < 160) return;
+  if (card) card._at = { x: pet.x, y: pet.y };
   let x = pet.x > deskW / 2 ? pet.x - gap - cw : pet.x + gap;
   if (x < 6 || x + cw > deskW - 6) x = clamp(pet.x - cw / 2, 6, deskW - cw - 6);
   const y = clamp(pet.y - H * .95, 8, Math.max(8, floorY - ch - 8));
