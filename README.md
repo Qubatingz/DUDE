@@ -32,6 +32,12 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 - **Get-to-know-you questions:** what you're building, what you're learning, your dream.
 - **Studies your routine** (on your laptop only): when you start, your busiest hour, the apps and sites you live in, late nights, long sessions.
 - **Learns your humor:** tap &#128514; or &#128078; on his speech bubble. He does more of what you laugh at and never repeats a killed joke.
+- **Remembers your whole laptop** (one permission): every file's name, folder, size and dates, and the text inside your documents (PDF, Word, PowerPoint, text). "Where's the contract from last month?", "what did I download yesterday?", "what does my contract say about payment?", "which file talks about royalties?", "how many beats do I have?", "what's taking up my space?" He reads slowly in the background and keeps it all on your laptop.
+- **Remembers people and plans:** "who is Eric?" or "what about Amahoro?" brings back your sessions, to-dos and what you told him.
+- **Learns what you give him:** tap **Learn** and pick a PDF, Word, PowerPoint or text file, paste a link, or say "learn this: ...". He gives you a short summary, finds the dates (one tap adds them to your calendar), and remembers it: "how much does the artist pay in the contract?"
+- **Laptop scan:** tap **Scan**. Three lists: can be deleted (old installers, copies, unfinished downloads, zips you already unzipped), move to a drive (big old videos and projects), and keep. Shows the space you'd free. He never deletes anything: you click Show and decide.
+- **Music career manager:** "to do: finish the hook", "I need to send the beat to Aline tomorrow", "I finished the hook". Say "my song Amahoro drops on November 20" and he makes a release plan: mix, master, cover art, distributor, playlists, teaser, announcement, release day. Every morning he tells you what's next, every evening he checks what got done.
+- **Question of the day:** a different creative question every day (your sound, your career, your life, a bit of English). He remembers your answers and brings them back later.
 - **Calendar:** "Dude, studio session with Eric Saturday at 3." He reminds you 30 minutes before, pops up even when he's switched off, and tells you what's on every morning. "What's on today?" shows your day.
 - **Quick facts, free:** "Dude, who is Burna Boy?" He looks it up on Wikipedia.
 - **His own voice:** a warm, natural voice (Kokoro, free, runs on your laptop, one-time 130 MB download). Windows voices and your own voice are still there.
@@ -74,6 +80,9 @@ Dude asks before he touches anything. Access to your folders, apps and recent fi
 | `app/memory.js` | What you worked on each day, kept on your laptop. |
 | `app/habits.js` | Learns your routine and tells Dude about moments worth reacting to. |
 | `app/studio.js`, `app/flp.js` | The studio helper: finds and reads FL Studio projects (read-only), reports, renames with undo. |
+| `app/laptop.js` | His memory of the whole laptop (names, folders, sizes, dates), kept fresh while he runs, and the keep / move / delete scan. |
+| `app/docs.js` | Reads the text inside your documents in the background (one at a time) and searches it: "which file talks about...". |
+| `app/knowledge.js`, `app/reader.js` | Learning: reads PDF, Word, PowerPoint, text and web pages, makes a short summary, answers questions from them. |
 | `app/dudevoice.js` | "Dude's voice": his natural voice (voice 1), made on your laptop (sherpa-onnx + Kokoro). |
 | `app/hear.ps1` | Always listening while he's on: Windows speech recognition, one line per sentence, pauses while he talks. |
 | `app/voice.js` | "My voice": copies your voice from a short recording, on your laptop (sherpa-onnx). |

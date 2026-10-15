@@ -27,6 +27,7 @@ const DEFAULTS = {
     recent: false,             // Windows "recent files" list
     memory: true,              // notes, reminders, what you worked on
     projects: false,           // look inside music projects (tempo, time spent, samples), read-only
+    laptop: false,             // remember the whole laptop: every file's name, folder, size and dates, and the text inside documents
     folders: { music: false, documents: false, downloads: false, desktop: false, pictures: false, videos: false, flstudio: false },
     custom: []                 // extra folders you added: [{ path, label }]
   },
@@ -85,7 +86,7 @@ function publicView() {
   const folders = Object.keys(FOLDERS).map(k => ({ key: k, label: FOLDERS[k].label, on: !!s.perms.folders[k], path: (() => { try { return FOLDERS[k].getPath(); } catch (e) { return ''; } })() }));
   return {
     userName: s.userName, onboarded: s.onboarded, mode: s.mode, model: s.model, interrupt: s.interrupt, dnd: s.dnd,
-    perms: { system: s.perms.system, apps: s.perms.apps, recent: s.perms.recent, memory: s.perms.memory, projects: s.perms.projects },
+    perms: { system: s.perms.system, apps: s.perms.apps, recent: s.perms.recent, memory: s.perms.memory, projects: s.perms.projects, laptop: !!s.perms.laptop },
     folders, custom: s.perms.custom.map(c => ({ path: c.path, label: c.label })), hasKey: !!getKey()
   };
 }
@@ -94,7 +95,7 @@ function apply(patch) {
   const s = get();
   for (const k of ['userName', 'mode', 'model', 'interrupt']) if (typeof patch[k] === 'string') s[k] = patch[k].slice(0, 40);
   for (const k of ['onboarded', 'dnd']) if (typeof patch[k] === 'boolean') s[k] = patch[k];
-  if (patch.perms) for (const k of ['system', 'apps', 'recent', 'memory', 'projects']) if (typeof patch.perms[k] === 'boolean') s.perms[k] = patch.perms[k];
+  if (patch.perms) for (const k of ['system', 'apps', 'recent', 'memory', 'projects', 'laptop']) if (typeof patch.perms[k] === 'boolean') s.perms[k] = patch.perms[k];
   if (patch.folders) for (const k in patch.folders) if (k in s.perms.folders) s.perms.folders[k] = !!patch.folders[k];
   if (patch.removeCustom) s.perms.custom = s.perms.custom.filter(c => c.path !== patch.removeCustom);
   save();

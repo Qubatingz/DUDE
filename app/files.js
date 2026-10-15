@@ -172,4 +172,4 @@ function watch(roots, onNew) {
   }
 }
 
-module.exports = { KINDS, search, report, guessKind, timeWindow, fmtSize, watch, forget, getIndex };
+module.exports = { KINDS, KIND_OF, search, report, guessKind, timeWindow, fmtSize, watch, forget, getIndex };

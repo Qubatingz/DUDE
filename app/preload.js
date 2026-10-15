@@ -28,6 +28,14 @@ contextBridge.exposeInMainWorld('kitoDesktop', {
   hearStop: () => ipcRenderer.send('dude:hear:stop'),
   hearPause: on => ipcRenderer.send('dude:hear:pause', !!on),
   onHear: on('dude:hear'),
+  // what he knows: your laptop, and things you gave him to learn
+  laptopStats: () => ipcRenderer.invoke('dude:laptop:stats'),
+  learnPick: () => ipcRenderer.invoke('dude:learn:pick'),
+  learnFile: p => ipcRenderer.invoke('dude:learn:file', p),
+  learnText: (text, title) => ipcRenderer.invoke('dude:learn:text', text, title),
+  learnUrl: url => ipcRenderer.invoke('dude:learn:url', url),
+  knowList: () => ipcRenderer.invoke('dude:know:list'),
+  knowForget: id => ipcRenderer.invoke('dude:know:forget', id),
   // the studio (FL Studio projects)
   studioReport: () => ipcRenderer.invoke('dude:studio:report'),
   studioCurrent: () => ipcRenderer.invoke('dude:studio:current'),

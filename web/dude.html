@@ -330,6 +330,7 @@ details.more[open] summary::before{content:"\25BE  "}
 .start{flex:none;height:38px;display:flex;align-items:center;gap:6px;padding:0 12px 0 6px;border-radius:10px;border:0;background:rgba(255,255,255,.08);color:var(--on-glass);cursor:pointer;font:16px/1 var(--font-display)}
 .start:hover{background:rgba(255,255,255,.14)}
 .start .mini{width:26px;height:32px}
+.flist li.tdone .fname{text-decoration:line-through;color:var(--muted)}
 .mini-p{display:none;object-fit:cover;border-radius:50%;background:#efe9dd;height:auto;aspect-ratio:1}
 .painted-ui .mini-p{display:block}.painted-ui svg.mini{display:none}
 .studio-btn{flex:none;height:38px;display:flex;align-items:center;gap:6px;padding:0 12px;border-radius:10px;border:0;background:var(--folder);color:#3a1d05;font:700 13px var(--font-ui);cursor:pointer}
@@ -540,6 +541,8 @@ html.desktop .studio{bottom:0}
       <div class="bigbtns" id="bigBtns">
         <button class="bb" type="button" data-bb="talk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Talk</span></button>
         <button class="bb" type="button" data-bb="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Today</span></button>
+        <button class="bb" type="button" data-bb="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5v13"/></svg><span>Learn</span></button>
+        <button class="bb" type="button" data-bb="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5M8 10.5h5M10.5 8v5"/></svg><span>Scan</span></button>
         <button class="bb" type="button" data-bb="beats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg><span>Beats</span></button>
         <button class="bb" type="button" data-bb="dance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v6l-3 7M12 13l4 6M8 10l4-2 4 3"/></svg><span>Dance</span></button>
         <button class="bb" type="button" data-bb="fit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3l-4 3 2 4 2-1v12h8V9l2 1 2-4-4-3a4 4 0 0 1-8 0z"/></svg><span>Fit check</span></button>
@@ -714,6 +717,8 @@ html.desktop .studio{bottom:0}
     </div>
 
     <div class="win-body ctrl" data-pane="memory" role="tabpanel" aria-labelledby="tab-memory" hidden>
+      <div class="sec"><h3 class="sec-label">Your laptop</h3><div class="lasttime" id="laptopBox">Not remembering your laptop. Switch on "Remember my whole laptop" in Access.</div></div>
+      <div class="sec"><div class="sec-head"><h3 class="sec-label">Things you gave him to learn</h3><button class="btn sm primary" type="button" id="learnBtn2">Learn something</button></div><ul class="mem" id="knowList"></ul></div>
       <div class="sec"><h3 class="sec-label">Last time</h3><div class="lasttime" id="lastTime">Nothing yet.</div></div>
       <div class="sec">
         <h3 class="sec-label">Notes and reminders</h3>
@@ -2216,10 +2221,15 @@ function handle(raw) {
   if (/sleep|nap|good ?night/.test(t)) return doMove('sleep');
   if (/^(jump|hop)/.test(t)) return doMove('hop');
   if (/^(come|come here|here)\b/.test(t)) return doMove('come');
-  if (/outfit|drip|wear|clothes|style/.test(t)) { const o = outfit(); say(`Today is ${o.day}, so it's ${o.name}. ${o.vibe}`, { voice: true, ms: 5000 }); return; }
+  if (/outfit|drip|wear|clothes|style/.test(t)) { const o = outfit(); say(painted ? pick(['DUDE tee, camo cap, matcha in hand. Iconic, every day.', 'The fit? Painted by hand. Literally.']) : `Today is ${o.day}, so it's ${o.name}. ${o.vibe}`, { voice: true, ms: 5000 }); return; }
   if (/how are (you|u)|how do you feel/.test(t)) { say(isSick() ? pick(SICK[primary()]) : pick(["I'm great. Big head, zero problems.", 'Feeling fresh. Your computer is healthy, so I am healthy.']), { voice: true }); return; }
   if (/^(hi|hello|hey|yo|sup|good (morning|afternoon|evening))\b/.test(t)) { say(pick([`Hey boss! ${petName} at your service.`, 'Yo! I live here, so... always here.']), { voice: true }); return; }
   if (/^remind me/.test(t)) { const what = text.replace(/^remind me\s*(to\s+)?/i, ''); addNote(what); say(`Saved: ${what}. Add "in 10 minutes" and I'll ping you.`, { voice: true, ms: 5000 }); return; }
+  // a question he can't answer with the free brain: say so honestly, don't save it as a note
+  if (/\?\s*$/.test(text) || /^(who|what|where|when|why|how|which|can|could|do|does|did|is|are|will|would|should)\b/i.test(t)) {
+    say(aiOk() ? "Hmm, I'm not sure about that one." : pick(["I don't know that one yet. Give me a file about it and I'll learn it.", "Good question. My free brain doesn't know that. With a Claude key in my Brain tab, I can answer anything."]), { voice: true, reply: true, emo: 'thinking', ms: 6500 });
+    return;
+  }
   addNote(text); say(`Saved in my big head: ${text}`, { voice: true, ms: 4500 });
 }
 $('#talkForm').addEventListener('submit', e => { e.preventDefault(); const i = $('#talkIn'); const v = i.value; i.value = ''; talk(v); });
@@ -2937,16 +2947,24 @@ function chatCtx() {
 }
 
 /* ---- talking to him ---- */
+let chatPending = 0;   // a question is on its way to his brain ("busy" lines only make sense then)
 async function talk(raw) {
   const text = String(raw || '').trim(); if (!text) return;
-  userPing(); wake(true); logChat('you', text);
+  userPing(); wake(true); logChat('you', text.length > 160 ? text.slice(0, 157) + '...' : text);
+  // he asked you something on a card: what you say (or type here) is the answer
+  if (card && card.kind === 'q' && card.voiceAnswer && card.onAnswer) { const f = card.onAnswer; hideCard(); f(text); return; }
+  // a link on its own, or a long pasted text: he learns it
+  if (DESKTOP && /^https?:\/\/\S+$/i.test(text)) { learnNow('url', text); return; }
+  if (DESKTOP && text.length > 400 && !/^(learn|remember|read|study)\b/i.test(text)) { learnNow('text', text); return; }
   if (localFirst(text)) return;
   if (!DESKTOP) { logReply = true; if (!demoBrain(text)) handle(text); logReply = false; return; }
   setEmo('thinking', 30); perf.pop += 1;
   clearTimeout(thinkingTimer);
   thinkingTimer = setTimeout(() => say(pick(['Hmm...', 'Let me think...', 'One sec...']), { emo: 'thinking', ms: 20000, reply: true }), 700);
   let r;
+  chatPending++;
   try { r = await KD.chat(text, chatCtx()); } catch (e) { r = { local: true }; }
+  chatPending = Math.max(0, chatPending - 1);
   clearTimeout(thinkingTimer);
   setBrainBadge(r.brain);
   logReply = true;
@@ -3009,7 +3027,24 @@ function showCard(c) {
       (r.topSamples && r.topSamples.length ? `<div class="card-why">Your signature sounds: ${r.topSamples.map(x => esc(x.name)).join(', ')}.</div>` : '') +
       (r.backups ? `<div class="card-why">FL keeps ${r.backups} autosave backups. I never delete them.</div>` : '');
   }
+  else if (c.kind === 'learned') {
+    const it = c.item, f = it.facts || {};
+    body = `<ul class="recs">${(it.points || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+      + (it.keywords && it.keywords.length ? `<div class="card-why">About: ${esc(it.keywords.slice(0, 5).join(', '))}</div>` : '')
+      + (f.money && f.money.length ? `<div class="card-why">Money: ${esc(f.money.join(', '))}</div>` : '')
+      + (f.dates && f.dates.length ? `<span class="sec-label">Dates in it</span><div class="chips">${f.dates.map(dt => `<button class="chip" type="button" data-c="caladd" data-v="${esc(dt)}" title="Add to your calendar">&#128197; ${esc(dt)}</button>`).join('')}</div>` : '')
+      + `<div class="card-why">Ask me anything about it, like "${esc(c.example || 'what does it say about the date?')}"</div>`;
+  }
+  else if (c.kind === 'scan') {
+    const sec = (title, list, n) => list.length ? `<span class="sec-label">${title}</span><ul class="flist">${list.map(f => `<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="fsub">${esc(f.why)} · ${esc(f.sub)}</span><span class="fbtns"><button class="btn sm" type="button" data-c="show" data-id="${esc(f.id || '')}" aria-label="Show ${esc(f.name)} in its folder">Show</button></span></li>`).join('')}</ul>${n > list.length ? `<div class="card-why">...and ${n - list.length} more.</div>` : ''}` : '';
+    body = `<div class="stats"><div class="stat"><b>${esc(c.delSize)}</b><span>could be deleted (${c.delCount})</span></div><div class="stat"><b>${esc(c.moveSize)}</b><span>could move off (${c.moveCount})</span></div><div class="stat"><b>${c.keep.recent}</b><span>files you use: keep</span></div><div class="stat"><b>${c.keep.music}</b><span>music projects: keep</span></div></div>`
+      + sec('Can be deleted', c.del, c.delCount) + sec('Move to a drive or the cloud', c.move, c.moveCount)
+      + `<div class="card-why">I looked at ${c.totalFiles.toLocaleString('en-US')} files. I never delete anything: click Show, check it, and you decide.</div>`;
+  }
+  else if (c.kind === 'plan') body = `<ul class="flist">${c.steps.map(st => todos.find(t => t.id === st.id) || st).map(taskRow).join('')}</ul><div class="card-why">Every morning I tell you what's next. Say "I finished the mix" and I cross it off.</div>`;
+  else if (c.kind === 'check') body = `<ul class="flist">${c.items.map(id => todos.find(t => t.id === id)).filter(Boolean).map(taskRow).join('')}</ul><div class="card-why">Not done yet? No stress, it stays on your list for tomorrow.</div>`;
   else if (c.kind === 'today') body = (c.items.length ? `<ul class="flist">${c.items.map(e => `<li><span class="fname" title="${esc(e.title)}">${esc(e.title)}</span><span class="fsub">${esc(fmtTime(e.at))}${e.at < Date.now() ? ' \u00b7 done' : ''}</span><span class="fbtns"><button class="btn sm" type="button" data-c="caldel" data-id="${esc(e.id)}" aria-label="Remove ${esc(e.title)}">&#215;</button></span></li>`).join('')}</ul>` : `<div class="card-why">${c.off ? 'Nothing tomorrow yet.' : 'Nothing today yet.'}</div>`)
+    + ((c.tasks || []).length ? `<span class="sec-label">To do</span><ul class="flist">${c.tasks.map(id => todos.find(t => t.id === id)).filter(Boolean).map(taskRow).join('')}</ul>` : '')
     + (c.mission ? `<div class="card-why">Mission: ${esc(c.mission)}</div>` : '')
     + `<form class="talk" data-c="calform" autocomplete="off"><input id="calIn" maxlength="120" placeholder="Studio with Eric Saturday 3pm" aria-label="Add to your calendar"><button class="btn primary" type="submit">Add</button></form><div class="card-row"><button class="btn sm" type="button" data-c="calday" data-v="${c.off ? 0 : 1}">${c.off ? 'Back to today' : 'Tomorrow'}</button></div>`;
   else if (c.kind === 'rec') body = `<div class="card-why">Read this out loud with your normal energy. About 15 seconds, in a quiet room.</div><div class="script">"${esc(c.script)}"</div><div class="card-row"><button class="btn primary" type="button" data-c="rec">&#9679; Start recording</button><button class="btn" type="button" data-c="reccancel">Cancel</button></div>`;
@@ -3017,7 +3052,7 @@ function showCard(c) {
   else if (c.kind === 'name') body = `<div class="card-q">What should I call you?</div><form class="talk" data-c="nameform" autocomplete="off"><input id="nameAsk" maxlength="24" placeholder="Your name" aria-label="Your name"><button class="btn primary" type="submit">Save</button></form>`;
   else if (c.kind === 'welcome') body = c.lines.map(l => `<div>${esc(l)}</div>`).join('') + (c.items && c.items.length ? `<ul class="flist">${c.items.map(f => `<li><span class="fname">${esc(f.name)}</span><span class="fsub">Opened recently</span><span class="fbtns"><button class="btn sm primary" type="button" data-c="open" data-id="${esc(f.id)}">Continue</button></span></li>`).join('')}</ul>` : '');
   const closable = !['ask', 'name', 'q', 'choice', 'rec'].includes(c.kind);
-  cardEl.innerHTML = `<div class="card-h"><span class="card-t" id="cardTitle">${esc(c.title || (c.kind === 'ask' ? 'Can I?' : c.kind === 'name' ? 'Hey there' : c.kind === 'studio' ? 'Your studio' : petName))}</span>${closable ? '<button class="wb" type="button" data-c="close" aria-label="Close">&#215;</button>' : ''}</div><div class="card-b">${body}</div>`;
+  cardEl.innerHTML = `<div class="card-h"><span class="card-t" id="cardTitle">${esc(c.title || (c.kind === 'ask' ? 'Can I?' : c.kind === 'name' ? 'Hey there' : c.kind === 'studio' ? 'Your studio' : c.kind === 'scan' ? 'Laptop scan' : c.kind === 'learned' ? 'Learned: ' + (c.item ? c.item.title : '') : petName))}</span>${closable ? '<button class="wb" type="button" data-c="close" aria-label="Close">&#215;</button>' : ''}</div><div class="card-b">${body}</div>`;
   cardEl.hidden = false; cardEl.classList.remove('pop'); void cardEl.offsetWidth; cardEl.classList.add('pop');
   if (c.kind === 'name') setTimeout(() => { const i = $('#nameAsk'); if (i) i.focus(); }, 50);
   if (c.kind === 'q') setTimeout(() => { const i = $('#qIn'); if (i) i.focus(); }, 50);
@@ -3040,6 +3075,8 @@ cardEl.addEventListener('click', async e => {
     return;
   }
   if (act === 'reccancel') { c.cancelled = true; if (c.rec) c.rec.stop(); hideCard(); c.onDone(null); return; }
+  if (act === 'caladd') { const w = parseWhen(b.dataset.v); if (!w) { say("I couldn't read that date. Tell me, like \"Saturday at 3\".", { emo: 'thinking', reply: true }); return; } const e = calAdd((c.item && c.item.title) || 'Reminder', w.at, 'event'); b.disabled = true; b.textContent = '\u2713 ' + b.dataset.v; say(`Added to your calendar: ${e.title}, ${fmtDay(e.at)}.`, { emo: 'proud', reply: true }); return; }
+  if (act === 'tdone') { const it = todos.find(t => t.id === b.dataset.id); if (it) { todoDone(it); say(pick(['Done! Look at you.', 'Crossed off. Big moves.', "That's how it's done."]), { emo: 'excited', reply: true }); } return; }
   if (act === 'caldel') { cal = cal.filter(e => e.id !== b.dataset.id); saveCal(); showToday({ speak: false, off: c.off }); return; }
   if (act === 'calday') { showToday({ speak: false, off: +b.dataset.v }); return; }
   if (act === 'rename') { const it = c.items && c.items[+b.dataset.i]; if (it) { hideCard(); renameFlow(it); } return; }
@@ -3084,16 +3121,17 @@ function placeCard() {
 $$('.tab').forEach(t => t.addEventListener('click', () => {
   $$('.tab').forEach(x => { const on = x === t; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); });
   $$('#win-pet [data-pane]').forEach(p => { p.hidden = p.dataset.pane !== t.dataset.tab; });
-  if (t.dataset.tab === 'memory') refreshLastTime();
+  if (t.dataset.tab === 'memory') { refreshLastTime(); renderKnow(); }
 }));
 const PERMS = [
   ['system', 'Computer health', 'Battery, processor, storage and internet. He gets sick when something is wrong.'],
   ['apps', 'Which app you\'re using', 'App names and window titles. He stays quiet when you\'re busy and remembers what you worked on.'],
   ['recent', 'Recent files', 'The files you opened lately, so he can say "want to continue?"'],
   ['memory', 'Memory', 'Notes, reminders and what you worked on. Saved on this laptop only.'],
+  ['laptop', 'Remember my whole laptop', 'Every file\'s name, folder, size and dates, and the text inside your documents (PDF, Word, text). Then ask him: "where\'s the contract from last month?", "what did I download yesterday?", "which file talks about royalties?". Saved on this laptop only. He never changes or deletes anything.'],
   ['projects', 'Look inside music projects', 'Tempo, time spent, samples and instruments in your FL Studio projects, so he can tell your beats apart. Read-only.']
 ];
-const DEMO_VIEW = { userName: '', mode: 'everyday', model: 'claude-haiku-5-5', interrupt: 'sometimes', dnd: false, perms: { system: true, apps: false, recent: false, memory: true, projects: false }, folders: [['flstudio', 'FL Studio projects'], ['music', 'Music folder'], ['documents', 'Documents'], ['downloads', 'Downloads'], ['desktop', 'Desktop'], ['pictures', 'Pictures'], ['videos', 'Videos']].map(([key, label]) => ({ key, label, on: false, path: '' })), custom: [], hasKey: false };
+const DEMO_VIEW = { userName: '', mode: 'everyday', model: 'claude-haiku-5-5', interrupt: 'sometimes', dnd: false, perms: { system: true, apps: false, recent: false, memory: true, projects: false, laptop: false }, folders: [['flstudio', 'FL Studio projects'], ['music', 'Music folder'], ['documents', 'Documents'], ['downloads', 'Downloads'], ['desktop', 'Desktop'], ['pictures', 'Pictures'], ['videos', 'Videos']].map(([key, label]) => ({ key, label, on: false, path: '' })), custom: [], hasKey: false };
 const sw = (id, on, label) => `<button class="switch" type="button" role="switch" data-sw="${esc(id)}" aria-checked="${on}" aria-label="${esc(label)}"></button>`;
 function renderView(v) {
   dudeView = v;
@@ -3193,6 +3231,7 @@ function onDudeEvent(ev) {
   if (ev.type === 'active') { lastActiveAt = performance.now(); if (pet.act === 'sleep' && pet.actDur > 1e8 && grounded()) wake(true); return; }
   if (ev.type === 'moment') { lastActiveAt = performance.now(); return onMoment(ev); }
   if (ev.type === 'project') return onNewProject(ev);
+  if (ev.type === 'laptopReady') { renderKnow(); say(`Done! I went through your whole laptop: ${(+ev.files || 0).toLocaleString('en-US')} files. Ask me anything, like "what did I download yesterday?"`, { voice: true, important: true, reply: true, emo: 'proud', ms: 9000 }); return; }
   if (ev.type === 'focus') {
     const was = quiet; quiet = !!ev.quiet; focusInfo = ev;
     if (quiet && !was) { bubble.hidden = true; if (grounded() && ['idle', 'walk', 'look'].includes(pet.act)) setAct('sit', 8); }
@@ -3217,7 +3256,7 @@ if (DESKTOP) {
   });
   KD.onAskDone(id => { if (card && card.kind === 'ask' && card.id === id) { hideCard(); say("I'll take that as a no. All good.", { emo: 'chill', reply: true }); } });
   KD.onCard(c => showCard(Object.assign({ kind: c.type }, c)));
-  KD.onBusy(b => { clearTimeout(thinkingTimer); say(b.text === 'searching' ? pick(['Searching... act natural.', 'Digging through your files. Respectfully.', 'Looking. Give me a sec.']) : b.text === 'studio' ? pick(['Going through your beats...', 'Opening every project. With respect.', 'Checking the studio. Hold the 808.']) : 'Checking everything. Hold still.', { emo: 'thinking', ms: 15000, reply: true }); });
+  KD.onBusy(b => { if (!chatPending) return; clearTimeout(thinkingTimer); say(b.text === 'searching' ? pick(['Searching... act natural.', 'Digging through your files. Respectfully.', 'Looking. Give me a sec.']) : b.text === 'studio' ? pick(['Going through your beats...', 'Opening every project. With respect.', 'Checking the studio. Hold the 808.']) : 'Checking everything. Hold still.', { emo: 'thinking', ms: 15000, reply: true }); });
   KD.onAction(a => {
     if (a.type === 'reminder') addReminder(a.text, a.minutes);
     else if (a.type === 'note') addNote(a.text);
@@ -3580,7 +3619,7 @@ function morning() {
   const c = r ? Object.assign({ text: ruleText(r) }, ruleOpts(r)) : (() => { const x = choose(MORNING[kind], 'morning:'); return x && { text: fill(x.tpl), key: x.key, topic: 'random' }; })();
   if (c) sayThought(c.text, Object.assign(c, { emo: 'excited', important: true }));
   // and what's on your calendar today
-  { const ev = dayEvents(0).filter(e => e.at > Date.now()); if (ev.length) setTimeout(() => say(`Today: ${ev.map(e => `${e.title} at ${fmtTime(e.at)}`).join(', ')}.`, { voice: true, important: true, emo: 'proud', ms: 8000 }), 3600); }
+  { const ev = dayEvents(0).filter(e => e.at > Date.now()), td = todosDue(0); if (ev.length || td.length) setTimeout(() => { const parts = []; if (ev.length) parts.push(`Today: ${ev.map(e => `${e.title} at ${fmtTime(e.at)}`).join(', ')}.`); if (td.length) parts.push(`To do: ${td.slice(0, 3).map(x => x.text).join('; ')}${td.length > 3 ? `, and ${td.length - 3} more` : ''}.`); say(parts.join(' '), { voice: true, important: true, emo: 'proud', ms: 10000 }); }, 3600); }
   if (grounded()) setAct('wave', 2.2);
   flow = 'morning';
   setTimeout(() => {
@@ -3631,6 +3670,8 @@ function lifeTick() {
   if (day.wordSoon && !day.wordSaid && topicOn('english')) { day.wordSoon = 0; sayThought(englishLine().text, { word: true, topic: 'english', key: 'en:word' }); return; }
   if (teach.triggers.daytime && !day.nightDone && h < 5) { night(); return; }
   if (day.mission && !day.missionChecked && h >= 19) { missionCheck(); return; }
+  if (!day.eveningDone && h >= 19 && h < 23 && todosDue(0).length && cardEl.hidden) { eveningCheck(); return; }
+  if (h >= 10 && h < 22 && (day.qCount || 0) < qPerDay() && Date.now() - (qState.lastAt || 0) > 3 * 36e5 && cardEl.hidden && bubble.hidden && now - thinkState.bootAt > 90000 && !(teach && needsInterview())) { dailyQuestion(); return; }
   if (now >= thinkState.next) think('random');
 }
 setInterval(lifeTick, 15000);
@@ -3739,9 +3780,16 @@ const CRISIS = /\b(kill myself|suicid\w*|end my life|want to die|don'?t want to 
 function localFirst(text) {
   const t = text.toLowerCase().trim(); let m;
   if (CRISIS.test(t)) { thinkState.calm = null; reply(`${N() === 'boss' ? 'Hey' : N()}, that sounds really heavy. You don't have to carry it alone. Please talk to someone you trust right now, or call a local crisis line or emergency number. I'm here, but you deserve real support.`, { emo: 'concerned', ms: 16000 }); return true; }
+  // learn this: he reads it, summarizes it and remembers it (before the calendar sees the dates in it)
+  if (DESKTOP && (m = text.match(/^(?:please\s+)?(?:learn|remember|study|read|summari[sz]e)\s+this\s*[:,-]\s*([\s\S]{20,})$/i))) { learnNow('text', m[1]); return true; }
+  if (DESKTOP && (m = text.match(/^(?:please\s+)?(?:learn|read|study|summari[sz]e)\s+(?:this\s+)?(?:link|page|article|website)?\s*[:,-]?\s*(https?:\/\/\S+)\s*$/i))) { learnNow('url', m[1]); return true; }
   // switch off / stop listening, your calendar, quick facts
   if (powerCmd(t)) return true;
+  if (releaseCmd(text)) return true;
+  if (todoCmd(text)) return true;
+  if (journalCmd(text)) return true;
   if (calendarCmd(text)) return true;
+  if (recallCmd(text)) return true;
   if (factCmd(text)) return true;
   // teaching him by talking: "when I say X, say Y" / "when I say X, do a backflip"
   if ((m = text.match(/^when i say ["“']?(.+?)["”']?,?\s+(?:you )?(say|answer|reply|tell me|do|dance)[:,]?\s+(.+)$/i))) {
@@ -4275,16 +4323,49 @@ $('#bigBtns').addEventListener('click', e => {
   const b = e.target.closest('[data-bb]'); if (!b) return;
   userPing();
   const k = b.dataset.bb;
-  if (!dudeOn && !['voice', 'look', 'today'].includes(k)) { setPower(true); return; }
+  if (!dudeOn && !['voice', 'look', 'today', 'learn'].includes(k)) { setPower(true); return; }
   if (k === 'talk') { if (DESKTOP) listenNow(); else $('#talkIn').focus(); }
   else if (k === 'today') showToday({ speak: dudeOn });
   else if (k === 'beats') talk('show my beats');
+  else if (k === 'learn') learnPick();
+  else if (k === 'scan') talk('scan my laptop');
   else if (k === 'dance') doMove(pick(['noodle', 'shimmy', 'runningman', 'guitar', 'robot']));
   else if (k === 'fit') doMove('fitcheck');
   else if (k === 'voice') toggleVoice();
   else if (k === 'look') setLook(painted ? 'cartoon' : 'painted', true);
   else if (k === 'studio') enterStudio();
 });
+
+/* ================= learning: give him a file, a link or some text, he summarizes it and remembers ================= */
+function learnedShow(it, how) {
+  if (!it || it.canceled) return;
+  if (it.error) { say(it.error, { emo: 'concerned', reply: true, ms: 7000 }); return; }
+  const ex = it.facts && it.facts.dates && it.facts.dates.length ? `when is ${it.title.toLowerCase().split(' ').slice(0, 3).join(' ')}?` : it.keywords && it.keywords[0] ? `what does it say about ${it.keywords[0]}?` : '';
+  showCard({ kind: 'learned', item: it, example: ex });
+  say(`Got it. ${it.spoken || ''}`.slice(0, 400), { voice: true, reply: true, emo: 'smug', ms: Math.max(6000, (it.spoken || '').length * 75) });
+  renderKnow();
+}
+async function learnPick() {
+  if (!DESKTOP) { say('In the Windows app, give me a PDF, Word file or a link and I read it, summarize it and remember it.', { emo: 'cheeky', reply: true, ms: 7000 }); return; }
+  wake(true); say(pick(['Give me something to read.', 'Feed my brain.', "What am I learning today?"]), { emo: 'excited', reply: true });
+  const it = await KD.learnPick();
+  if (it && !it.canceled && !it.error) say(pick(['Reading...', 'Studying. Quiet please.', 'Reading it now...']), { emo: 'thinking', reply: true, ms: 9000 });
+  learnedShow(it);
+}
+async function learnNow(kind, v) {
+  say(kind === 'url' ? pick(['Opening that page...', 'Reading that page...']) : 'Reading it...', { emo: 'thinking', reply: true, ms: 15000 });
+  learnedShow(kind === 'url' ? await KD.learnUrl(v) : await KD.learnText(v));
+}
+async function renderKnow() {
+  const ul = $('#knowList'); if (!ul) return;
+  if (!DESKTOP) { ul.innerHTML = '<li><span class="tag">Example</span><span class="txt">Contract with Aline (PDF)</span></li>'; return; }
+  const L = await KD.knowList().catch(() => []);
+  ul.innerHTML = L.length ? L.slice(0, 20).map(k => `<li><span class="tag">${esc(k.kind.toUpperCase())}</span><span class="txt">${esc(k.title)}</span><button class="xbtn" type="button" data-kforget="${esc(k.id)}" aria-label="Forget ${esc(k.title)}">&#215;</button></li>`).join('') : '<li><span class="txt">Nothing yet. Give him a file, a link or a note.</span></li>';
+  const lb = $('#laptopBox'), st = await KD.laptopStats().catch(() => null);
+  if (lb && st) lb.textContent = !st.allowed ? 'Not remembering your laptop. Switch on "Remember my whole laptop" in Access.' : st.state === 'building' ? `Going through your laptop... ${st.files.toLocaleString('en-US')} files so far.` : st.files ? `He knows ${st.files.toLocaleString('en-US')} files on this laptop${st.docsRead ? ` and has read ${st.docsRead.toLocaleString('en-US')} documents` : ''}${st.docsPending ? ` (${st.docsPending.toLocaleString('en-US')} more to read)` : ''}. Ask "where is...", "which file talks about...", or tap Scan.` : 'He starts learning your laptop the first time you ask about it.';
+}
+$('#knowList').addEventListener('click', async e => { const b = e.target.closest('[data-kforget]'); if (!b) return; userPing(); await KD.knowForget(b.dataset.kforget); renderKnow(); say('Forgotten. Like it never happened.', { emo: 'chill', reply: true }); });
+$('#learnBtn2').addEventListener('click', () => { userPing(); learnPick(); });
 
 /* ================= calendar: your sessions, and what's on today ================= */
 let cal = store.get('cal', []), calCheckAt = 0;
@@ -4299,7 +4380,14 @@ function parseWhen(text, nowD) {
   const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const part = /\b(?:this |in the |tomorrow )?(morning|afternoon|evening|night|tonight)\b/i.exec(rest);
   const partOfDay = part ? part[1].toLowerCase() : '';
-  if (/\b(today|tonight|this (morning|afternoon|evening))\b/i.test(rest)) { day = new Date(base); hadDay = true; cut(/\b(today|tonight|this (morning|afternoon|evening))\b/ig); }
+  const MON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const mk = (y, mo, dd) => { let dt = new Date(y == null ? now.getFullYear() : y < 100 ? 2000 + y : y, mo, dd); if (y == null && dt.getTime() < base.getTime() - 864e5) dt = new Date(now.getFullYear() + 1, mo, dd); return dt.getMonth() === mo ? dt : null; };
+  if ((m = /\b(?:on |the )?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?(?:\s+(\d{4}))?\b/i.exec(rest))) { day = mk(m[3] ? +m[3] : null, MON.indexOf(m[2].toLowerCase()), +m[1]); hadDay = !!day; cut(m[0]); }
+  else if ((m = /\b(?:on )?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b/i.exec(rest))) { day = mk(m[3] ? +m[3] : null, MON.indexOf(m[1].toLowerCase()), +m[2]); hadDay = !!day; cut(m[0]); }
+  else if ((m = /\b(\d{4})-(\d{2})-(\d{2})\b/.exec(rest))) { day = mk(+m[1], +m[2] - 1, +m[3]); hadDay = !!day; cut(m[0]); }
+  else if ((m = /\b(?:on )?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/.exec(rest))) { day = mk(m[3] ? +m[3] : null, +m[2] - 1, +m[1]); hadDay = !!day; cut(m[0]); }   // day/month, like in Rwanda
+  if (day) {}
+  else if (/\b(today|tonight|this (morning|afternoon|evening))\b/i.test(rest)) { day = new Date(base); hadDay = true; cut(/\b(today|tonight|this (morning|afternoon|evening))\b/ig); }
   else if (/\b(tomorrow|tmrw|tmr)\b/i.test(rest)) { day = new Date(base); day.setDate(day.getDate() + 1); hadDay = true; cut(/\b(tomorrow|tmrw|tmr)( (morning|afternoon|evening|night))?\b/ig); }
   else if ((m = /\b(?:on |this |next |coming )?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)s?\b/i.exec(rest))) {
     const target = DAYNAMES.indexOf(m[1].toLowerCase());
@@ -4332,6 +4420,7 @@ function calTitle(rest) {
   t = t.replace(/^\s*(?:add|put|schedule|book|plan|set up|create|make|save|note)\b\s*(?:a |an |my |the )?/i, ' ');
   t = t.replace(/^\s*(?:i have|i've got|i got|i'?ve|there'?s|we have|we've got|i need to go to|i'?m going to|i will go to|i am going to)\s+(?:a |an |my |the )?/i, ' ');
   t = t.replace(/^\s*remind me\s+(?:to |that |about |of )?/i, ' ');
+  t = t.replace(/^\s*i (?:need|have|gotta|got|must) to\s+/i, ' ');
   t = t.replace(/\b(?:to|on|in|into) (?:my |the )?(?:calendar|schedule|agenda|plan)\b/ig, ' ');
   t = t.replace(/^\s*(?:to|for|on|at)\s+/i, ' ');
   t = t.replace(/\s+(?:to|for|on|at)\s*$/i, ' ');
@@ -4375,15 +4464,20 @@ function calendarCmd(text, forceAdd) {
   return true;
 }
 function showToday(o = {}) {
-  const off = o.off || 0, ev = dayEvents(off), when = off ? 'Tomorrow' : 'Today';
+  const off = o.off || 0, ev = dayEvents(off), when = off ? 'Tomorrow' : 'Today', td = todosDue(off);
   const mission = !off && typeof day !== 'undefined' && day && day.mission ? day.mission : '';
   if (o.speak) {
     const list = ev.filter(e => off || e.at > Date.now() - 36e5).map(e => `${e.title} at ${fmtTime(e.at)}`);
-    const text = list.length ? `${when}: ${list.join(', ')}.${mission ? ` Your mission: ${mission}.` : ''}` : mission ? `Nothing else on the calendar. Your mission today: ${mission}.` : off ? 'Tomorrow is empty so far.' : 'Nothing on your calendar today. Tell me, like: "studio session with Eric at 3".';
-    reply(text, { emo: list.length ? 'proud' : 'chill', ms: Math.max(5000, text.length * 80) });
+    const parts = [];
+    if (list.length) parts.push(`${when}: ${list.join(', ')}.`);
+    if (td.length) parts.push(`To do: ${td.slice(0, 3).map(x => x.text).join('; ')}${td.length > 3 ? `, and ${td.length - 3} more` : ''}.`);
+    if (mission) parts.push(`Your mission: ${mission}.`);
+    const text = parts.length ? parts.join(' ') : off ? 'Tomorrow is empty so far.' : 'Nothing on your list today. Tell me, like: "studio session with Eric at 3", or "to do: finish the hook".';
+    reply(text, { emo: parts.length ? 'proud' : 'chill', ms: Math.max(5000, text.length * 80) });
   }
-  showCard({ kind: 'today', title: when, items: ev, mission, off });
+  showCard({ kind: 'today', title: when, items: ev, tasks: td.map(x => x.id), mission, off });
 }
+const taskRow = t => `<li class="${t.done ? 'tdone' : ''}"><span class="fname" title="${esc(t.text)}">${esc(t.text)}</span><span class="fsub">${t.done ? 'Done \u2713' : t.due == null ? 'Anytime' : t.due < dayStart() ? 'Late: ' + esc(fmtDay(t.due)) : esc(fmtDay(t.due))}</span><span class="fbtns">${t.done ? '' : `<button class="btn sm primary" type="button" data-c="tdone" data-id="${esc(t.id)}" aria-label="Done: ${esc(t.text)}">Done</button>`}</span></li>`;
 function calTick() {
   const now = Date.now(); if (now < calCheckAt) return; calCheckAt = now + 5000;
   let changed = false;
@@ -4402,9 +4496,186 @@ function calAlert(e, mins) {
   setTimeout(() => { wake(true); say(text, { voice: true, important: true, reply: true, ms: 10000, emo: 'excited' }); if (grounded()) setAct('wave', 3); stars(pet.x, pet.y - H, 10); }, wasOff ? 1300 : 0);
 }
 
+/* ================= your to-do list and release plans: the music career manager ================= */
+let todos = store.get('todos', []);
+const saveTodos = () => store.set('todos', todos);
+const dayStart = (ms = Date.now()) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
+function todoAdd(text, due, from) {
+  const t = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), text: String(text).slice(0, 120), due: due == null ? null : dayStart(due), done: false, from: from || '', at: Date.now() };
+  todos.push(t); saveTodos(); return t;
+}
+// today = due today, late ones, and things without a date; tomorrow = due tomorrow
+function todosDue(off = 0) {
+  const start = dayStart() + off * 864e5, end = start + 864e5;
+  return todos.filter(t => !t.done && (t.due == null ? off === 0 : off === 0 ? t.due < end : t.due >= start && t.due < end)).sort((a, b) => (a.due ?? 0) - (b.due ?? 0));
+}
+function todoMatch(q) {
+  const ws = String(q).toLowerCase().split(/\W+/).filter(w => w.length > 2 && !/^(the|my|and|with|for|that|this|did|done|finished|finish|have|just|was|all)$/.test(w));
+  let best = null, sc = 0;
+  for (const t of todos) if (!t.done) { const s = ws.filter(w => t.text.toLowerCase().includes(w)).length; if (s > sc) { sc = s; best = t; } }
+  return best;
+}
+function todoDone(it) { it.done = true; it.doneAt = Date.now(); saveTodos(); stars(pet.x, pet.y - H * .8, 10); if (card && ['today', 'plan', 'check'].includes(card.kind)) refreshTaskCard(); }
+function refreshTaskCard() { if (!card) return; if (card.kind === 'today') showToday({ speak: false, off: card.off }); else if (card.kind === 'plan') showCard(Object.assign({}, card, { steps: todos.filter(t => t.from === card.from) })); else if (card.kind === 'check') showCard(Object.assign({}, card)); }
+function todoCmd(text) {
+  const raw = text.replace(/^(?:hey |yo |ok |okay )?(?:dude|dood)[,!]?\s+/i, '').trim(), t = raw.toLowerCase(); let m;
+  if (/\b(to[- ]?do|todo) ?list\b|\bmy (to[- ]?dos?|todos?|tasks)\b|\bwhat('?s| is) on my list\b/.test(t) && !/\b(add|put|remove|delete)\b/.test(t) && !/:/.test(t)) { showToday({ speak: true }); return true; }
+  // "I finished the hook" / "done with the cover art" / "the mix is done"
+  if ((m = t.match(/^(?:i(?:'ve| have)? )?(?:just )?(?:finished|done with|completed|i did|crossed off|ticked off|tick off|check off|mark)\s+(.+?)(?:\s+(?:as )?(?:done|finished))?[.!]*$/)) || (m = t.match(/^(.+?)\s+(?:is|are) (?:done|finished|complete|ready)[.!]*$/))) {
+    const it = todoMatch(m[1]);
+    if (it) { todoDone(it); reply(pick([`Crossed off: ${it.text}. Big moves!`, `Done: ${it.text}. Look at you go.`, `${it.text}: done. I'm proud. Don't tell anyone.`]), { emo: 'excited' }); return true; }
+    return false;
+  }
+  // "take X off my list"
+  if ((m = t.match(/^(?:remove|delete|take)\s+(.+?)\s+(?:off|from) (?:my |the )?(?:to[- ]?do |todo |task )?list/))) {
+    const it = todoMatch(m[1]); if (!it) return false;
+    todos = todos.filter(x => x !== it); saveTodos(); reply(`Removed: ${it.text}.`, { emo: 'chill' }); refreshTaskCard(); return true;
+  }
+  // add: "add X to my to-do list", "to do: X", "I need to X tomorrow", "remind me to X" (no time)
+  let what = null, forDay = '';
+  if ((m = raw.match(/^(?:please\s+)?(?:add|put)\s+(.+?)\s+(?:to|on|in) (?:my |the )?(?:to[- ]?do|todo|task)s?(?: list)?(?:\s+for\s+(.+?))?[.!]*$/i))) { what = m[1]; forDay = m[2] || ''; }
+  else if ((m = raw.match(/^(?:to[- ]?do|todo|task)\s*[:,-]\s*(.+)$/i))) what = m[1];
+  else if ((m = raw.match(/^i (?:need|have|gotta|got|must) to\s+(.+)$/i)) && !/\b(find|search|look for|where|open|show|know|talk|sleep|go to the toilet|pee|eat)\b/i.test(m[1])) what = m[1];
+  else if ((m = raw.match(/^remind me to\s+(.+)$/i)) && !parseWhen(m[1])) what = m[1];
+  if (!what) return false;
+  const w = parseWhen(what + (forDay ? ' ' + forDay : ''));
+  if (w && w.hadTime) return calendarCmd(raw, true);   // it has a time: that's a calendar thing, with a reminder
+  let due = dayStart();
+  if (w && w.hadDay) { due = w.at; what = w.rest; }
+  what = what.replace(/^(to|that)\s+/i, '').replace(/[.!]+$/, '').trim();
+  if (!what) return false;
+  const it = todoAdd(what.charAt(0).toUpperCase() + what.slice(1), due);
+  reply(pick([`On your list${dayStart(due) !== dayStart() ? ' for ' + fmtDay(due) : ''}: ${it.text}.`, `Added${dayStart(due) !== dayStart() ? ' for ' + fmtDay(due) : ''}: ${it.text}. I'll check on you.`]), { emo: 'proud' });
+  refreshTaskCard();
+  return true;
+}
+// release plans: "my song Amahoro drops on November 20"
+const REL_STEPS = [[-28, 'Finish the final mix'], [-21, 'Master the song'], [-21, 'Make the cover art'], [-14, 'Upload it to your distributor'], [-14, 'Pitch it to playlists, radio and DJs'], [-10, 'Shoot a short teaser for TikTok and Reels'], [-7, 'Announce the release date'], [-3, 'Post the teaser'], [-1, 'Remind your fans it drops tomorrow'], [0, 'Release day: post everywhere and go live'], [3, 'Check the numbers and thank your fans']];
+function releaseCmd(text) {
+  const t = text.replace(/^(?:hey |yo |ok |okay )?(?:dude|dood)[,!]?\s+/i, '').trim();
+  const m = t.match(/\b(?:my\s+)?(?:new\s+)?(song|single|track|ep|album|mixtape|music video|video)\s+(?:called\s+|named\s+)?["“']?([^"”']+?)["”']?\s+(?:drops|is dropping|will drop|releases|is releasing|will release|comes out|is coming out|will come out|goes live|launches|is out)\b\s*(.*)$/i)
+    || t.match(/^(?:i(?:'m| am) )?releas(?:e|ing)\s+(?:my\s+)?(?:(song|single|track|ep|album|mixtape)\s+)?["“']?([^"”']+?)["”']?\s+on\s+(.+)$/i);
+  if (!m) { if (/\bplan (?:my|a|the|our) (?:new )?(?:release|drop|single|song|ep)\b/i.test(t)) { askRelease(); return true; } return false; }
+  const name = m[2].trim().replace(/^(the|my)\s+/i, ''), w = parseWhen(m[3] || '');
+  if (!w || !w.hadDay) { askRelease(name); return true; }
+  makeReleasePlan(name, w.at); return true;
+}
+function makeReleasePlan(name, at) {
+  const key = 'release:' + name.toLowerCase(), rel = dayStart(at), today = dayStart();
+  if (rel < today) { reply(`That date already passed. When does "${name}" drop?`, { emo: 'thinking' }); return; }
+  todos = todos.filter(x => x.from !== key); cal = cal.filter(e => e.release !== key);   // planning it again replaces the old plan
+  let late = 0; const steps = [];
+  for (const [n, txt] of REL_STEPS) { let due = rel + n * 864e5; if (due < today) { if (n >= 0) continue; due = today; late++; } steps.push(todoAdd(`${txt}: ${name}`, due, key)); }
+  saveTodos();
+  const e = calAdd(`"${name}" drops!`, rel + 10 * 36e5, 'event'); e.release = key; saveCal();
+  showCard({ kind: 'plan', title: `Release plan: ${name}`, from: key, steps });
+  reply(`Release plan for "${name}" is ready: ${steps.length} steps, up to ${fmtDay(rel)}.${late ? ` You're behind on ${late}, so I put ${late === 1 ? 'it' : 'them'} on today.` : ''} I'll tell you what's next every morning.`, { emo: 'proud', ms: 9000 });
+  stars(pet.x, pet.y - H * .8, 14);
+}
+function askRelease(name) {
+  flow = 'release';
+  const q = name ? `When does "${name}" drop?` : "What's the song called, and when does it drop?";
+  say(q, { emo: 'excited', voice: true, reply: true, ms: 60000 });
+  showCard({ kind: 'q', title: 'Plan a release', question: q, placeholder: name ? 'e.g. November 20' : 'e.g. Amahoro on November 20', submit: 'Make the plan', voiceAnswer: true, onAnswer: v => {
+    flow = null; if (!v) return;
+    const mm = name ? null : v.match(/^["“']?(.+?)["”']?\s+(?:on|drops on|drops|comes out on|in)\s+(.+)$/i);
+    const nm = (name || (mm && mm[1]) || '').trim(), w = parseWhen(name ? v : mm ? mm[2] : v);
+    if (!nm) { say('What is the song called? Say it like "Amahoro on November 20".', { emo: 'thinking', reply: true }); askRelease(); return; }
+    if (!w || !w.hadDay) { say('I need a date, like "November 20".', { emo: 'thinking', reply: true }); askRelease(nm); return; }
+    makeReleasePlan(nm, w.at);
+  } });
+}
+// evening: what got done today?
+function eveningCheck() {
+  rollDay(); day.eveningDone = true; saveDay();
+  const td = todosDue(0); if (!td.length) return;
+  flow = 'evening';
+  say(pick([`Evening check! ${td.length} thing${td.length > 1 ? 's' : ''} on today's list. What got done?`, `Day's almost over. Let's see the list. Tap what you finished.`]), { emo: 'thinking', voice: true, reply: true, important: true, ms: 9000 });
+  showCard({ kind: 'check', title: 'How did today go?', items: td.map(x => x.id) });
+  setTimeout(() => { if (flow === 'evening') flow = null; }, 120000);
+}
+
+/* ================= a creative question every day, and he remembers your answers ================= */
+const DAILY_Q = [
+  ['music', 'If your next beat was a movie scene, what would be happening in it?'], ['music', "What's one sound you've never used in a beat but want to try?"],
+  ['music', 'Which song do you wish YOU made? Why that one?'], ['music', 'What BPM is your mood today?'], ['music', 'If you could only use 3 instruments for a whole EP, which 3?'],
+  ['music', "What's a beat you started and never finished? What stopped you?"], ['music', 'Which artist would sound crazy on your beats?'], ['music', 'Describe your sound in three words.'],
+  ['music', 'Which part of making music do you avoid: mixing, drums or melodies?'], ['music', "What's the last thing that inspired a beat? A song, a place, a feeling?"],
+  ['music', 'If you made a song about today, what would the title be?'], ['music', "Afrobeats, amapiano, trap or something new: what's calling you this week?"],
+  ['career', "Who's one person in music you should message this week?"], ['career', 'Where do you want your music to be one year from now?'],
+  ['career', "What's one thing that would make you more money from music this month?"], ['career', 'Which DJ or radio show would you love to hear your song on?'],
+  ['career', "What's your next release? Even a rough idea counts."], ['career', "What's one skill that would level up your career if you learned it?"],
+  ['career', 'Who are your first 100 fans? Where do they hang out?'], ['career', 'What would you do with one million francs for your music?'],
+  ['career', "What's a collab you're scared to ask for? Why?"], ['career', 'What would your day look like if your project was already big?'],
+  ['life', "What was the best part of your day so far?"], ['life', "What's something you're proud of this week?"], ['life', 'What are you overthinking right now? Say it out loud.'],
+  ['life', 'Who made you laugh recently?'], ['life', 'If today had a soundtrack, what song is playing?'], ['life', "What's one thing you want to stop doing?"],
+  ['life', 'What would 30-year-old you tell you right now?'], ['life', "What's a small win from yesterday?"], ['life', 'Where is your favorite place to think?'],
+  ['fun', 'Be honest: how many unfinished beats do you have?'], ['fun', 'What snack powers your best studio sessions?'], ['fun', 'If you were a sample, what would you sound like?'],
+  ['fun', "Matcha or coffee? Choose carefully. I'm holding a matcha."], ['fun', 'Which emoji describes your week?'], ['fun', 'If I had my own song, what would it be called?'],
+  ['english', "Tell me about your day in three sentences, in English. I'll help if you want."], ['english', "What's a new English word you heard this week?"],
+  ['english', "Describe your favorite song in English, like you're telling a friend."]
+];
+let journal = store.get('journal', []), qState = store.get('qstate', { asked: [], lastAt: 0 });
+const saveJournal = () => { store.set('journal', journal.slice(-400)); store.set('qstate', qState); };
+const qPerDay = () => ({ rarely: 1, sometimes: 2, often: 3 })[(dudeView && dudeView.interrupt) || 'sometimes'] || 2;
+function dailyQuestion() {
+  rollDay(); day.qCount = (day.qCount || 0) + 1; saveDay(); qState.lastAt = Date.now();
+  let q, cat, follow = null;
+  // sometimes, he comes back to something you told him before
+  const old = journal.filter(j => j.a && j.a.length > 3 && Date.now() - j.at > 3 * 864e5 && !j.followed);
+  if (old.length && Math.random() < .3) { follow = pick(old); follow.followed = true; q = `Remember you told me: "${follow.a.slice(0, 80)}"? Is that still true, or did it change?`; cat = 'follow'; }
+  else {
+    const cats = isMusicy() ? ['music', 'career', 'music', 'life', 'fun', 'career', 'english'] : ['life', 'career', 'fun', 'music', 'english'];
+    const want = cats[(qState.asked.length) % cats.length];
+    let pool = DAILY_Q.filter(x => !qState.asked.includes(x[1]) && (x[0] !== 'english' || topicOn('english')));
+    if (!pool.length) { qState.asked = []; pool = DAILY_Q.slice(); }
+    const inCat = pool.filter(x => x[0] === want); [cat, q] = pick(inCat.length ? inCat : pool);
+    qState.asked.push(q);
+  }
+  saveJournal(); flow = 'question';
+  say(q, { emo: 'thinking', voice: true, reply: true, ms: 60000 });
+  showCard({ kind: 'q', title: 'Question of the day', question: q, placeholder: 'Type, or just say it', submit: 'Answer', voiceAnswer: true, ttl: 240000, onAnswer: v => {
+    flow = null;
+    if (!v) { say(pick(['All good. Another time.', 'Skipping is allowed. Mysterious. I like it.']), { emo: 'chill', reply: true }); return; }
+    journal.push({ q, a: v.slice(0, 300), cat, at: Date.now() }); saveJournal();
+    const react = { music: ['Ooh. I can hear that already.', "That's a whole vibe. Noted.", 'Okay producer! Writing that down.'], career: ['Big thinking. I like it.', "Noted. I'll remind you of that when it matters.", "That's the plan then. I'm holding you to it."], life: ['Thanks for telling me. I keep it in my big head.', "That's real. I like that.", 'Noted. You are deeper than your beats. Almost.'], fun: ['Ha! Respect.', 'Iconic answer.', "I'm laughing. Inside. Where it counts."], english: ['Nice English! Keep going like that.', "Good! That's how you get better: every day a little."], follow: ['Love the update.', 'Growth! I see it.', 'Good to know. Updated my big head.'] };
+    say(pick(react[cat] || react.life), { emo: cat === 'fun' ? 'laugh' : 'happy', voice: true, reply: true });
+  } });
+}
+function journalCmd(text) {
+  const m = text.toLowerCase().match(/\bwhat did i (?:tell|say to|told) you about\s+(.+?)\??$/) || text.toLowerCase().match(/\bwhat did i say about\s+(.+?)\??$/);
+  if (!m) return false;
+  const ws = m[1].split(/\W+/).filter(w => w.length > 2);
+  const hits = journal.filter(j => ws.some(w => (j.q + ' ' + j.a).toLowerCase().includes(w))).slice(-2);
+  if (!hits.length) return false;
+  const j = hits[hits.length - 1];
+  reply(`${fmtDay(j.at).replace(/^on /, 'On ').replace(/^./, c => c.toUpperCase())}, you said: "${j.a}"`, { emo: 'smug', ms: 8000 });
+  return true;
+}
+
+/* ================= "who is Eric?" "what about Amahoro?": everything he remembers about it ================= */
+function recallCmd(text) {
+  const m = text.match(/^(?:hey |yo )?(?:dude[,!]?\s+)?(?:who(?:'s| is| was)|what about|what do you know about|anything (?:about|on)|tell me (?:about|everything about)|remind me about)\s+(.+?)[?.!]*$/i);
+  if (!m) return false;
+  const q = m[1].replace(/^(the|my|a|an)\s+/i, '').trim(); if (q.length < 2) return false;
+  const re = new RegExp(`\\b${escRe(q)}`, 'i'), now = Date.now(), bits = [];
+  for (const e of cal.filter(e => e.at > now - 36e5 && re.test(e.title)).slice(0, 2)) bits.push(`${e.title.replace(/[!.]+$/, '')}, ${fmtDay(e.at)} at ${fmtTime(e.at)}`);
+  const td = todos.filter(t => !t.done && re.test(t.text)).slice(0, 2);
+  if (td.length) bits.push(`on your list: ${td.map(t => t.text + (t.due != null ? ` (${fmtDay(t.due)})` : '')).join('; ')}`);
+  const j = journal.filter(x => re.test(x.a)).slice(-1)[0];
+  if (j) bits.push(`${fmtDay(j.at)} you told me: "${j.a.slice(0, 90)}"`);
+  const n = notes.filter(x => !x.ex && re.test(x.t))[0];
+  if (n) bits.push(`your note: "${n.t.slice(0, 80)}"`);
+  if (!bits.length) return false;   // nothing in his calendar or notes: the brain looks in your documents, then Wikipedia
+  const cap = x => x.charAt(0).toUpperCase() + x.slice(1);
+  const out = `${cap(q)}: ${bits.map(cap).join('. ')}.`;
+  reply(out, { emo: 'smug', ms: Math.max(6000, out.length * 75) });
+  return true;
+}
+
 /* ================= quick facts from Wikipedia (free, no key needed) ================= */
 function factCmd(text) {
-  if (aiOk()) return false;   // with the Claude brain he answers these himself
+  if (aiOk() || DESKTOP) return false;   // the Windows app checks what you gave him to learn first, then Wikipedia   // with the Claude brain he answers these himself
   const m = text.match(/^(?:hey |yo )?(?:who|what)(?:\s+(?:is|was|are|were)|'s|’s)\s+(.+?)[?.!]*$/i) || text.match(/^(?:tell me about|do you know|look up|search for|search|google|wikipedia)\s+(.+?)[?.!]*$/i);
   if (!m) return false;
   const q = m[1].replace(/^(a|an|the)\s+/i, '').trim();
@@ -4628,6 +4899,6 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__kito = { get paintCur() { return paintCur; }, sipNow() { paintSip = true; }, setLook, enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard, think, morning, night, interview, missionCheck, onDudeEvent, lifeTick, rateLine, get teach() { return teach; }, get taste() { return taste; }, get day() { return day; }, get thinkState() { return thinkState; }, get flow() { return flow; }, canSpeakNow, lineFor, wordToday, playRule, studioThought, onFlOpened, renameFlow, nameAll, learnMyVoice, get myVoice() { return myVoice; }, playSamples, _hurry() { lastReplyAt = -1e9; thinkState.bootAt -= 1e6; thinkState.lastApp = -1e9; thinkState.ruleAt = {}; } };
+window.__kito = { get paintCur() { return paintCur; }, sipNow() { paintSip = true; }, dailyQuestion, eveningCheck, get todos() { return todos; }, get journal() { return journal; }, setLook, enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard, think, morning, night, interview, missionCheck, onDudeEvent, lifeTick, rateLine, get teach() { return teach; }, get taste() { return taste; }, get day() { return day; }, get thinkState() { return thinkState; }, get flow() { return flow; }, canSpeakNow, lineFor, wordToday, playRule, studioThought, onFlOpened, renameFlow, nameAll, learnMyVoice, get myVoice() { return myVoice; }, playSamples, _hurry() { lastReplyAt = -1e9; thinkState.bootAt -= 1e6; thinkState.lastApp = -1e9; thinkState.ruleAt = {}; } };
 })();
 </script>

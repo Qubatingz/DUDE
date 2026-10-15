@@ -16,6 +16,11 @@ mkdir -p resources/app/node_modules
 for p in sherpa-onnx-node sherpa-onnx-win-x64; do
   (cd resources/app/node_modules && npm pack $NPM_FLAGS --silent "$p@$SHERPA" > /dev/null && mkdir -p $p && tar xzf $p-$SHERPA.tgz -C $p --strip-components=1 && rm $p-$SHERPA.tgz)
 done
+# the PDF reader for "learn this file" (pdf.js, Apache-2.0): only the parts that read text
+PDFJS=${PDFJS_VERSION:-4.10.38}
+(cd resources/app/node_modules && npm pack $NPM_FLAGS --silent "pdfjs-dist@$PDFJS" > /dev/null && mkdir -p pdfjs-tmp && tar xzf pdfjs-dist-$PDFJS.tgz -C pdfjs-tmp --strip-components=1 \
+  && mkdir -p pdfjs-dist/legacy/build && cp pdfjs-tmp/package.json pdfjs-tmp/LICENSE pdfjs-dist/ && cp pdfjs-tmp/legacy/build/pdf.mjs pdfjs-tmp/legacy/build/pdf.worker.mjs pdfjs-dist/legacy/build/ \
+  && rm -rf pdfjs-tmp pdfjs-dist-$PDFJS.tgz)
 { printf '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<link rel="stylesheet" href="fonts/fonts.css">\n</head>\n<body>\n'
   grep -v "fonts.googleapis.com\|fonts.gstatic.com" ../../web/dude.html
   printf '\n</body>\n</html>\n'; } > resources/app/index.html

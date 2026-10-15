@@ -11,6 +11,8 @@ const memory = require('./memory');
 const habits = require('./habits');
 const voice = require('./voice');
 const dudeVoice = require('./dudevoice');
+const laptop = require('./laptop');
+const knowledge = require('./knowledge');
 const studio = require('./studio');
 const { readFlp } = require('./flp');
 const { createBrain } = require('./brain');
@@ -110,11 +112,26 @@ async function openPath(p, how) {
 }
 
 /* ================= the brain ================= */
-const brain = createBrain({ settings, files, memory, habits, studio, openInFl: p => openInFl(p), status, ask, open: openPath, net, emit: (type, payload) => send('dude:' + type, payload) });
+const laptopDone = st => send('dude:event', { type: 'laptopReady', files: st.files });
+const brain = createBrain({ settings, files, memory, habits, studio, laptop, laptopDone, knowledge, openInFl: p => openInFl(p), status, ask, open: openPath, net, emit: (type, payload) => send('dude:' + type, payload) });
 ipcMain.handle('dude:chat', (e, text, ctx) => brain.chat(String(text || '').slice(0, 600), ctx || {}));
 ipcMain.handle('dude:thought', (e, req, ctx) => brain.thought(req || {}, ctx || {}));
 ipcMain.handle('dude:habits', () => settings.get().perms.memory ? habits.learned() : { off: true, insights: [] });
 ipcMain.handle('dude:open', async (e, a) => { const f = brain.results.get(a && a.id); if (!f) return 'gone'; return openPath(f.path, a.how === 'show' ? 'show' : 'open'); });
+
+/* ================= what he knows: your whole laptop, and things you gave him to learn ================= */
+ipcMain.handle('dude:laptop:stats', () => Object.assign({ allowed: !!settings.get().perms.laptop }, laptop.stats()));
+const learnErr = e => ({ error: String((e && e.message) || e) });
+ipcMain.handle('dude:learn:pick', async () => {
+  const r = await dialog.showOpenDialog(win, { title: 'Give Dude something to learn', properties: ['openFile'], filters: [{ name: 'Things Dude can read', extensions: ['pdf', 'docx', 'pptx', 'txt', 'md', 'rtf', 'csv', 'html', 'htm', 'srt', 'lrc', 'json'] }] });
+  if (r.canceled || !r.filePaths[0]) return { canceled: true };
+  try { return await knowledge.learnFile(r.filePaths[0]); } catch (e) { return learnErr(e); }
+});
+ipcMain.handle('dude:learn:file', async (e, p) => { try { return await knowledge.learnFile(String(p || '')); } catch (err) { return learnErr(err); } });
+ipcMain.handle('dude:learn:text', (e, text, title) => { try { return knowledge.learnText(String(text || '').slice(0, 400000), title ? String(title).slice(0, 90) : ''); } catch (err) { return learnErr(err); } });
+ipcMain.handle('dude:learn:url', async (e, url) => { try { return await knowledge.learnUrl(String(url || '')); } catch (err) { return learnErr(err); } });
+ipcMain.handle('dude:know:list', () => knowledge.list());
+ipcMain.handle('dude:know:forget', (e, id) => knowledge.forget(String(id || '')));
 
 /* ================= settings & permissions ================= */
 ipcMain.handle('dude:settings', () => settings.publicView());
@@ -134,7 +151,7 @@ ipcMain.handle('dude:folder:add', async () => {
   if (!r.canceled && r.filePaths[0]) { settings.addCustomFolder(r.filePaths[0]); afterSettings(); }
   return settings.publicView();
 });
-ipcMain.handle('dude:memory:wipe', async () => { memory.wipe(); studio.forget(); brain.reset(); await voice.forget(); return true; });
+ipcMain.handle('dude:memory:wipe', async () => { memory.wipe(); studio.forget(); laptop.wipe(); knowledge.wipe(); brain.reset(); await voice.forget(); return true; });
 
 /* ================= the studio: FL Studio projects (see studio.js) ================= */
 // Dude's own suggestions come through here; they never ask for new permissions (the brain does that).
@@ -188,6 +205,8 @@ ipcMain.handle('dude:dv:status', () => dudeVoice.status());
 ipcMain.handle('dude:dv:prepare', () => dudeVoice.prepare(dvEmit));
 ipcMain.handle('dude:dv:say', (e, text, speed) => dudeVoice.say(text, speed));
 function afterSettings() {
+  // his memory of the whole laptop: on when you allow it, forgotten completely when you switch it off
+  if (settings.get().perms.laptop) laptop.ensure(laptopDone); else if (laptop.stats().state !== 'idle' || laptop.stats().files) laptop.wipe();
   const roots = settings.grantedFolders();
   if (process.env.DUDE_DEBUG) console.log('[watch]', roots.map(r => r.path).join(' | '));
   files.watch(roots, onNewFile);
@@ -385,6 +404,6 @@ app.whenReady().then(() => {
   screen.on('display-removed', fitToScreen);
 });
 app.on('second-instance', () => cmd('wake'));   // opening Dude again switches him on
-app.on('before-quit', () => { quitting = true; hearStop(); memory.save(); if (watcher) { try { watcher.kill(); } catch (e) {} } });
+app.on('before-quit', () => { quitting = true; hearStop(); laptop.stop(); laptop.flush(); memory.save(); if (watcher) { try { watcher.kill(); } catch (e) {} } });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => app.quit());

@@ -25,6 +25,9 @@ const TOOLS = [
   { name: 'music_projects', description: 'Find his FL Studio projects (.flp) by anything he remembers: part of the name, a sample, an instrument, a pattern name, the tempo ("140 bpm"), or when he worked on it. Also lists the most recent, the most worked-on, the untitled ones, or the unfinished ones (lots of work, no export). Shows them as a clickable list with Open, Show and Rename. Asks permission for folders and for looking inside projects by itself.', input_schema: { type: 'object', properties: { query: { type: 'string', description: 'Words he remembers, e.g. "log drum", "amapiano", "140 bpm". Empty = all.' }, when: { type: 'string', description: 'Optional: today, yesterday, this week, last week, a weekday, "3 days".' }, sort: { type: 'string', enum: ['recent', 'worked', 'untitled', 'unfinished'] } } } },
   { name: 'studio_report', description: 'Overview of his FL Studio projects: how many, untitled ones, piles of versions, unfinished beats with lots of work, old forgotten projects, favorite tempo, most-used samples and instruments, autosave backups. Shown as a card with buttons.', input_schema: { type: 'object', properties: {} } },
   { name: 'rename_project', description: 'Rename one FL Studio project (by its id from the latest project list) so he can find it later. Only after he agreed to a name. Dude asks him to confirm, renames it in its own folder, and he can say "undo".', input_schema: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string', description: 'New name, without .flp' } }, required: ['id', 'name'] } },
+  { name: 'laptop_memory', description: "His memory of the WHOLE laptop: every file's name, folder, size and dates, plus the text inside his documents (PDF, Word, PowerPoint, text). action=find: search by name, kind and time (query, when). action=inside: search the text inside his documents (query), returns the sentence that matches. action=ask_doc: what one document (document = words from its name) says about something (question). action=during: what arrived on the laptop or changed during a time like 'yesterday' or 'last week' (when; downloads_only for downloads). action=counts: how many beats, songs, photos, videos, documents. action=biggest: biggest files and folders. action=recent: files changed most recently. Results are shown to him as a clickable list. Asks his permission the first time.", input_schema: { type: 'object', properties: { action: { type: 'string', enum: ['find', 'inside', 'ask_doc', 'during', 'counts', 'biggest', 'recent'] }, query: { type: 'string' }, document: { type: 'string' }, question: { type: 'string' }, when: { type: 'string' }, downloads_only: { type: 'boolean' } }, required: ['action'] } },
+  { name: 'laptop_scan', description: 'Scan the whole laptop and suggest what can be deleted (old installers, duplicates, unfinished downloads, unzipped zips), what to move off the laptop (big old videos, old projects) and what to keep, with how much space it frees. Shown as a card with Show buttons. Never deletes anything; he decides.', input_schema: { type: 'object', properties: {} } },
+  { name: 'learned', description: 'Things he gave you to learn (files, notes, web pages). action=ask: find the answer to a question in them (question). action=list: what you have learned. action=learn: learn something new from a web link (url), from text (text, title) or from a file in the latest search results (id).', input_schema: { type: 'object', properties: { action: { type: 'string', enum: ['ask', 'list', 'learn'] }, question: { type: 'string' }, url: { type: 'string' }, text: { type: 'string' }, title: { type: 'string' }, id: { type: 'string' } }, required: ['action'] } },
   { name: 'teach_dude', description: 'Save something the user teaches you about himself or about how you should behave. kind=fact: a fact about him ("I make beats at night"). kind=rule: when something happens, say a line and/or do a move (when=app needs the app or website name; when=say needs the phrase he will say to you). kind=topic_on/topic_off: what you talk about by yourself. kind=talk_more/talk_less: how often you speak up by yourself. kind=about: his project, what it is, what he is learning, or his dream.', input_schema: { type: 'object', properties: { kind: { type: 'string', enum: ['fact', 'rule', 'topic_on', 'topic_off', 'talk_more', 'talk_less', 'about'] }, fact: { type: 'string' }, when: { type: 'string', enum: ['say', 'app', 'morning', 'night', 'back', 'win', 'anytime'] }, app: { type: 'string' }, phrase: { type: 'string' }, say: { type: 'string' }, move: { type: 'string', enum: ['noodle', 'backflip', 'moonwalk', 'dab', 'robot', 'flex', 'shimmy', 'headspin', 'guitar'] }, topic: { type: 'string', enum: ['hustle', 'english', 'roast', 'calm', 'random'] }, field: { type: 'string', enum: ['project', 'what', 'learning', 'dream'] }, value: { type: 'string' } }, required: ['kind'] } }
 ];
 const TOPIC_TEXT = {
@@ -67,6 +70,86 @@ function createBrain(d) {
     if (ok) d.settings.grantFolder(key);
     return ok;
   }
+  /* ---------- his memory of the whole laptop ---------- */
+  async function needLaptop() {
+    if (d.settings.get().perms.laptop) return true;
+    const ok = await d.ask('laptop', 'Can I remember your whole laptop?', "I'll keep a map of your files (names, folders, sizes, dates) and read the text inside your documents (PDF, Word, text), so you can ask me about them. It all stays on this laptop. I never change or delete anything, and you can switch it off in the Access tab.");
+    if (ok) d.settings.grantPerm('laptop');
+    return ok;
+  }
+  async function laptopOk() { if (!(await needLaptop())) return 'denied'; return d.laptop.ensure(d.laptopDone) ? 'ok' : 'building'; }
+  const fmt = b => d.files.fmtSize(b);
+  const fileItems = list => keep(list).map(f => ({ id: f.id, name: f.name, sub: `${f.folder} · ${rel(f.mtime)} · ${fmt(f.size)}`, folder: f.folder, modified: rel(f.mtime), size: fmt(f.size) }));
+  const KIND_NAME = { music: 'beats', audio: 'songs and audio', document: 'documents', image: 'photos and images', video: 'videos', program: 'programs', archive: 'zip files', other: 'other files' };
+  function whenLabel(w) { const m = String(w || '').toLowerCase().match(/\b(today|yesterday|this week|last week|this month|last month|this year|(?:on )?(?:mon|tues|wednes|thurs|fri|satur|sun)day|(?:in the )?(?:last|past) \d+ (?:days?|weeks?)|\d+ (?:days?|weeks?)(?: ago)?)\b/); const t = m ? m[0] : ''; return t ? t.replace(/^./, c => c.toUpperCase()) : 'Today'; }
+  async function laptopTool(input) {
+    const st = await laptopOk();
+    if (st === 'denied') return { error: 'permission_denied' };
+    if (st === 'building') return { error: 'still_learning', files_so_far: d.laptop.stats().files, note: 'He is going through the laptop for the first time. Tell him it takes a few minutes and you will say when you are done.' };
+    const a = input.action || 'find';
+    if (a === 'find') {
+      const r = d.laptop.find(input.query || '', { when: input.when || '' }), items = fileItems(r.results);
+      d.emit('card', { type: 'files', title: r.count ? `Found ${r.count} file${r.count > 1 ? 's' : ''}` : 'Nothing found', note: 'Searched your whole laptop', items });
+      return { count: r.count, results: items.map(({ id, name, folder, modified, size }) => ({ id, name, folder, modified, size })) };
+    }
+    if (a === 'inside') {
+      const st2 = d.laptop.stats();
+      const hits = d.laptop.docs.search(input.query || '', { needSnippet: true, limit: 6 }).map(h => Object.assign({}, d.laptop.itemOf(h.path) || { path: h.path, name: path.basename(h.path), folder: path.dirname(h.path), mtime: 0, size: 0 }, { snippet: h.snippet, hits: h.hits, words: h.words, score: h.score }));
+      const items = keep(hits).map(f => ({ id: f.id, name: f.name, sub: `"${f.snippet.length > 110 ? f.snippet.slice(0, 107).replace(/\s\S*$/, '') + '...' : f.snippet}"`, folder: f.folder, snippet: f.snippet, hits: f.hits, words: f.words, score: f.score }));
+      if (items.length && !input.quiet) d.emit('card', { type: 'files', title: `Found inside ${items.length} document${items.length > 1 ? 's' : ''}`, note: `I searched the text of ${st2.docsRead} documents`, items });
+      return { count: items.length, documents_read: st2.docsRead, still_reading: st2.docsPending, results: items.map(({ id, name, folder, snippet, hits, words, score }) => ({ id, name, folder, says: snippet, hits, words, score })) };
+    }
+    if (a === 'ask_doc') {
+      const cands = d.laptop.find(input.document || '', { kind: 'document', limit: 20 }).results.filter(x => d.laptop.docs.has(x.path));
+      if (!cands.length) return { found_document: false, documents_read: d.laptop.stats().docsRead };
+      const f = cands[0], h = d.laptop.docs.search(input.question || '', { path: f.path, needSnippet: true })[0];
+      const items = fileItems([f]);
+      d.emit('card', { type: 'files', title: f.name, note: h ? `It says: "${h.snippet}"` : `Nothing about "${input.question}" inside`, items });
+      return { document: f.name, folder: f.folder, says: h ? h.snippet : null };
+    }
+    if (a === 'during') {
+      const r = d.laptop.during(input.when || 'today', { downloads: !!input.downloads_only }), items = fileItems(r.added.concat(r.edited));
+      d.emit('card', { type: 'files', title: `${whenLabel(input.when)}: ${r.addedCount} new, ${r.editedCount} changed`, note: input.downloads_only ? 'Your Downloads folder' : 'Your whole laptop', items });
+      return { new_files: r.addedCount, changed_files: r.editedCount, new_by_kind: Object.fromEntries(Object.entries(r.byKind).map(([k, n]) => [KIND_NAME[k] || k, n])), files: items.map(({ id, name, folder, modified }) => ({ id, name, folder, modified })) };
+    }
+    if (a === 'counts') { const c = d.laptop.counts(); return { total_files: c.total, by_kind: Object.fromEntries(Object.entries(c.count).map(([k, n]) => [KIND_NAME[k] || k, { files: n, size: fmt(c.size[k]) }])) }; }
+    if (a === 'biggest') { const b = d.laptop.biggest(8), items = fileItems(b.files); d.emit('card', { type: 'files', title: 'Biggest files', note: 'Biggest folders: ' + b.folders.map(f => `${f.name} (${fmt(f.size)})`).join(', '), items }); return { biggest_files: items.map(({ id, name, folder, size }) => ({ id, name, folder, size })), biggest_folders: b.folders.map(f => ({ name: f.name, size: fmt(f.size) })) }; }
+    if (a === 'recent') { const items = fileItems(d.laptop.recent(8)); d.emit('card', { type: 'files', title: 'Changed most recently', items }); return { files: items.map(({ id, name, folder, modified }) => ({ id, name, folder, modified })) }; }
+    return { error: 'unknown_action' };
+  }
+  async function scanTool() {
+    const st = await laptopOk();
+    if (st === 'denied') return { error: 'permission_denied' };
+    if (st === 'building') return { error: 'still_learning', files_so_far: d.laptop.stats().files };
+    d.emit('busy', { text: 'checking' });
+    const r = d.laptop.scan();
+    const del = keep(r.del.concat(r.move)), dl = del.slice(0, r.del.length), mv = del.slice(r.del.length);
+    const it = f => ({ id: f.id, name: f.name, sub: `${f.folder} · ${fmt(f.size)}`, why: f.why });
+    d.emit('card', { type: 'scan', totalFiles: r.totalFiles, delCount: r.delCount, delSize: fmt(r.delSize), moveCount: r.moveCount, moveSize: fmt(r.moveSize), keep: r.keep, del: dl.map(it), move: mv.map(it) });
+    return { files_looked_at: r.totalFiles, can_delete: { count: r.delCount, space: fmt(r.delSize), examples: dl.slice(0, 5).map(f => `${f.name} (${f.why})`) }, move_off_laptop: { count: r.moveCount, space: fmt(r.moveSize), examples: mv.slice(0, 4).map(f => `${f.name} (${f.why})`) }, keep: r.keep };
+  }
+  /* ---------- things he gave you to learn ---------- */
+  async function learnTool(input) {
+    let r;
+    if (input.url) r = await d.knowledge.learnUrl(input.url);
+    else if (input.text) r = d.knowledge.learnText(input.text, input.title || '');
+    else if (input.id) { const f = results.get(input.id); if (!f) return { error: 'unknown_id' }; r = await d.knowledge.learnFile(f.path); }
+    else return { error: 'nothing_to_learn' };
+    d.emit('card', { type: 'learned', item: r });
+    return { learned: r.title, summary: r.points, about: r.keywords, dates: r.facts.dates, money: r.facts.money };
+  }
+  async function wiki(q) {
+    try {
+      const sr = await (await d.net.fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=1&format=json`)).json();
+      const title = sr && sr.query && sr.query.search && sr.query.search[0] && sr.query.search[0].title; if (!title) return null;
+      const sm = await (await d.net.fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, '_'))}`)).json();
+      const ex = sm && sm.extract; if (!ex) return null;
+      const sents = ex.match(/[^.!?]+[.!?]+/g) || [ex]; let out = sents[0]; if (out.length < 90 && sents[1]) out += sents[1];
+      return out.replace(/\s+/g, ' ').trim().slice(0, 320);
+    } catch (e) { return null; }
+  }
+  function dayKeyOf(ms) { const x = new Date(ms); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); }
+
   async function tool(name, input = {}) {
     const s = d.settings.get();
     try {
@@ -134,6 +217,13 @@ function createBrain(d) {
         results.set(input.id, Object.assign({}, f, { path: r.path, name: r.name + '.flp' }));
         return { done: true, from: r.from, to: r.name };
       }
+      if (name === 'laptop_memory') return await laptopTool(input);
+      if (name === 'laptop_scan') return await scanTool();
+      if (name === 'learned') {
+        if (input.action === 'learn') return await learnTool(input);
+        if (input.action === 'list') return { learned: d.knowledge.list().slice(0, 30).map(k => ({ title: k.title, kind: k.kind, added: rel(k.addedAt) })) };
+        const k = d.knowledge.ask(input.question || ''); return k ? { answer_from: k.title, text: k.answer } : { found: false };
+      }
       if (name === 'teach_dude') { const t = {}; for (const k of ['kind', 'fact', 'when', 'app', 'phrase', 'say', 'move', 'topic', 'field', 'value']) if (input[k] != null) t[k] = String(input[k]).slice(0, 160); d.emit('action', Object.assign({ type: 'teach' }, t)); return { done: true }; }
     } catch (e) { return { error: String(e.message || e) }; }
     return { error: 'unknown_tool' };
@@ -188,6 +278,8 @@ How to answer:
 - Permission comes first. You can only see what the user allowed. The tools ask for permission themselves; if a tool says permission_denied, accept it kindly and offer another way.
 - You can't delete, move or rename files. Never pretend you did something you didn't.
 - When a search finds files, the app shows them as a clickable list, so just say what you found in a few words and offer to open the best match.
+- You remember his whole laptop (laptop_memory: file names, folders, sizes and dates, and the text inside his documents: use action=inside or ask_doc for what a document says) and can scan it (laptop_scan) for things to delete or move off. You also know everything he gave you to learn (learned): check it first when he asks about something he gave you.
+- His calendar, to-do list and release plans are handled by the app itself before you see the message, so don't claim you added a calendar event.
 - You are also his studio assistant. He makes beats in FL Studio and forgets project names. Use music_projects to find a project by anything he remembers (a sample, an instrument, the tempo, when), and studio_report for an overview. Suggest clear names for untitled projects; rename only with rename_project after he agrees.
 - Use ${nm === 'the user' ? 'their name' : nm} now and then, not every message.
 
@@ -274,6 +366,91 @@ ${learning ? `- ${nm} is learning English. Use simple words. When he practices (
       if (f) { const err = await d.open(f.path, 'open'); return err ? { say: `Hmm, Windows wouldn't open "${f.name}".`, mood: 'concerned' } : { say: `Opening "${f.name}". Let's work.`, mood: 'excited' }; }
     }
     if (/^(show|show me)( it)? in (the )?folder|^show it$/.test(t) && results.size) { const f = results.get('f1'); await d.open(f.path, 'show'); return { say: 'There it is, in its natural habitat.', mood: 'smug' }; }
+    // learning: a link, pasted text, or a file from the last list
+    const learnSay = r => r.error ? { say: r.error === 'unknown_id' ? 'That list is old. Find the file again?' : String(r.error), mood: 'concerned' } : { say: `Learned "${r.learned}". ${(r.summary || []).slice(0, 2).join(' ')}`.slice(0, 420), mood: 'smug' };
+    try {
+      if ((m = text.match(/^(?:please\s+)?(?:learn|read|study|remember|summari[sz]e)\s+(?:this\s+)?(?:link|page|article|website)?\s*[:,-]?\s*(https?:\/\/\S+)/i))) return learnSay(await learnTool({ url: m[1] }));
+      if ((m = text.match(/^(?:please\s+)?(?:learn|remember|study|read|summari[sz]e)\s+this\s*[:,-]\s*([\s\S]{20,})$/i))) return learnSay(await learnTool({ text: m[1] }));
+      if (results.size && (m = t.match(/^(?:learn|read|study|summari[sz]e)\s+(?:it|that|this|this file|that file|the (?:first|top|1st) one|number (\d))\b/))) return learnSay(await learnTool({ id: 'f' + (m[1] || 1) }));
+    } catch (e) { return { say: String(e.message || e), mood: 'concerned' }; }
+    if (/^(what (have you|did you) learn(ed)?|what (did|have) i (give|gave|taught|teach) you)\b/.test(t)) {
+      const L = d.knowledge.list();
+      return { say: L.length ? `I've learned ${L.length} thing${L.length > 1 ? 's' : ''}. Latest: ${L.slice(0, 3).map(k => `"${k.title}"`).join(', ')}. Ask me anything about them.` : "Nothing yet. Tap Learn and give me a file, or paste a link and say \"learn this\".", mood: 'smug' };
+    }
+    // the laptop scan
+    if (/\b(scan|clean ?up|check)\b.*\b(laptop|computer|pc)\b|\bwhat can i (delete|remove|throw away|get rid of)\b|\bfree (up )?(some )?(space|storage)\b|\b(useless|junk) files\b|\bdeclutter\b/.test(t)) {
+      const r = await scanTool();
+      if (r.error === 'permission_denied') return { say: "No problem. I won't look. Switch on \"Remember my whole laptop\" in my Access tab when you're ready.", mood: 'chill' };
+      if (r.error) return { say: `Still learning your laptop (${r.files_so_far} files so far). Ask me again in a few minutes.`, mood: 'thinking' };
+      const parts = [];
+      if (r.can_delete.count) parts.push(`${r.can_delete.count} thing${r.can_delete.count > 1 ? 's' : ''} you could delete (${r.can_delete.space})`);
+      if (r.move_off_laptop.count) parts.push(`${r.move_off_laptop.count} big thing${r.move_off_laptop.count > 1 ? 's' : ''} to move off (${r.move_off_laptop.space})`);
+      return { say: parts.length ? `I looked at ${r.files_looked_at} files. ${parts.join(', and ')}. Check the list, I won't delete anything.` : `I looked at ${r.files_looked_at} files. Honestly? Your laptop is clean. Respect.`, mood: parts.length ? 'thinking' : 'proud' };
+    }
+    // his memory of the whole laptop
+    const lapErr = r => r.error === 'permission_denied' ? { say: "Okay, I won't look. Switch on \"Remember my whole laptop\" in my Access tab anytime.", mood: 'chill' } : { say: `Still going through your laptop (${r.files_so_far} files so far). Give me a few minutes.`, mood: 'thinking' };
+    // what's written inside your documents
+    if ((m = t.match(/^(?:what|wat) (?:does|did|do|is) (?:it say in |written in )?(?:my |the |that |this )?(.+?) (?:say|says|said|written) (?:about|on|for) (.+?)[?.!]*$/))) {
+      const docName = m[1].trim(), q = m[2].trim();
+      const li = d.knowledge.findItem(docName);   // something he gave you to learn?
+      if (li) { const k = d.knowledge.ask(q, { id: li.id }); if (k) return { say: `"${li.title}" says: ${k.answer}`.slice(0, 480), mood: 'smug' }; }
+      if (s.perms.laptop) {
+        const r = await laptopTool({ action: 'ask_doc', document: docName, question: q });
+        if (r.error) return lapErr(r);
+        if (r.says) return { say: `"${r.document}" says: ${r.says}`.slice(0, 480), mood: 'smug' };
+        if (r.document) return { say: `I read "${r.document}", but I don't see anything about ${q} in it.`, mood: 'thinking' };
+      }
+      if (li) return { say: `I read "${li.title}", but I don't see anything about ${q} in it.`, mood: 'thinking' };
+      return { say: s.perms.laptop ? `I can't find a document called "${docName}" that I've read. Give it to me with Learn?` : `Give me that document with the Learn button, or switch on "Remember my whole laptop" in Access, and I'll read it.`, mood: 'thinking' };
+    }
+    if ((m = t.match(/\b(?:which|what|any|find (?:the|a|my)?) ?(?:file|files|doc|docs|document|documents|pdf|pdfs|notes?)\b(?: (?:that|where|which))? ?(?:talks? about|mentions?|says?|has|have|contains?|is about|are about|about|with)\s+(.+?)[?.!]*$/)) || (m = t.match(/^(?:search|look) (?:inside|in|through) (?:my |all my )?(?:files|documents|docs) for\s+(.+?)[?.!]*$/))) {
+      const q = m[1].replace(/^(the|a|an)\s+/, '');
+      const r = await laptopTool({ action: 'inside', query: q });
+      if (r.error) return lapErr(r);
+      if (!r.count) return { say: r.still_reading ? `Nothing about "${q}" yet. I'm still reading your documents (${r.still_reading} to go).` : `None of your ${r.documents_read} documents talk about "${q}".`, mood: 'thinking' };
+      return { say: (`"${r.results[0].name}" talks about it: ${r.results[0].says}`.slice(0, 400)) + (r.count > 1 ? ` And ${r.count - 1} more in the list.` : ''), mood: 'smug' };
+    }
+    if (/\bwhat (did|have) i (just )?download(ed)?\b|\bmy (latest |recent |new )?downloads\b|\bdownloaded (today|yesterday|this week|last week)\b/.test(t)) {
+      const when = d.files.timeWindow(t) ? t : 'last 7 days';
+      const r = await laptopTool({ action: 'during', when, downloads_only: true });
+      if (r.error) return lapErr(r);
+      return { say: r.new_files ? `${r.new_files} new download${r.new_files > 1 ? 's' : ''}. The latest: "${r.files[0].name}".` : "Nothing new in Downloads then. Peaceful.", mood: 'happy' };
+    }
+    if (/\bwhat did i (do|make|work on|create|save|change)\b/.test(t) && d.files.timeWindow(t) && s.perms.laptop) {
+      const r = await laptopTool({ action: 'during', when: t });
+      if (r.error) return lapErr(r);
+      const win = d.files.timeWindow(t), sum = s.perms.memory ? d.memory.summary(dayKeyOf(win[0])) : null;
+      const bits = [];
+      if (sum && sum.apps.length) bits.push(`you spent most of the time in ${sum.apps[0].app} (${sum.apps[0].time})`);
+      if (sum && sum.working.length) bits.push(`worked on "${sum.working[0].title}"`);
+      if (r.new_files) bits.push(`${r.new_files} new file${r.new_files > 1 ? 's' : ''} came in`);
+      if (r.changed_files) bits.push(`you changed ${r.changed_files}`);
+      return { say: bits.length ? `${whenLabel(t)}: ${bits.join(', ')}.` : "That day was quiet on the laptop. Rest day? Respect.", mood: 'thinking' };
+    }
+    if ((m = t.match(/\bhow many (beats|projects|songs|tracks|photos|pictures|images|videos|documents|docs|pdfs|files|screenshots)\b/))) {
+      const r = await laptopTool({ action: 'counts' });
+      if (r.error) return lapErr(r);
+      const map = { beats: 'beats', projects: 'beats', songs: 'songs and audio', tracks: 'songs and audio', photos: 'photos and images', pictures: 'photos and images', images: 'photos and images', screenshots: 'photos and images', videos: 'videos', documents: 'documents', docs: 'documents', pdfs: 'documents' };
+      if (m[1] === 'files') return { say: `${r.total_files.toLocaleString('en-US')} files on your laptop. I know every one of them.`, mood: 'smug' };
+      const k = r.by_kind[map[m[1]]];
+      return { say: k ? `You have ${k.files.toLocaleString('en-US')} ${map[m[1]]} (${k.size}).` : `I don't see any ${m[1]} on your laptop.`, mood: 'smug' };
+    }
+    if (/\b(biggest|largest|heaviest) (files?|folders?)\b|\bwhat('?s| is) (taking|using|eating) (up )?(all )?(my )?(space|storage)\b/.test(t)) {
+      const r = await laptopTool({ action: 'biggest' });
+      if (r.error) return lapErr(r);
+      return { say: `The biggest one is "${r.biggest_files[0].name}" (${r.biggest_files[0].size}). Biggest folder: ${r.biggest_folders[0].name} (${r.biggest_folders[0].size}).`, mood: 'thinking' };
+    }
+    if (/\b(newest|latest|most recent) files\b|\bwhat (did i|have i) (change|edit|save)d? (recently|lately)\b/.test(t)) {
+      const r = await laptopTool({ action: 'recent' });
+      if (r.error) return lapErr(r);
+      return { say: `Latest: "${r.files[0].name}", ${r.files[0].modified}.`, mood: 'happy' };
+    }
+    if ((m = t.match(/\bwhen did i (?:last )?(?:open|edit|change|save|download|make|get|create|work on)\s+(?:the |my |that )?(.+?)\??$/))) {
+      const r = await laptopTool({ action: 'find', query: m[1] });
+      if (r.error) return lapErr(r);
+      if (!r.count) return { say: `I can't find anything called "${m[1]}" on your laptop.`, mood: 'concerned' };
+      return { say: `"${r.results[0].name}" was last changed ${r.results[0].modified}. It's in ${r.results[0].folder}.`, mood: 'happy' };
+    }
     // the studio: FL Studio projects (the tools show the cards)
     const noFolder = { say: 'No problem. Give me the folder where you save your beats in my Access tab, and I will track them.', mood: 'chill' };
     if (/(what|which) (project|beat|song|track)\b.*\b(working on|was i|did i (make|work)|last)|\blast (project|beat)\b|where did i stop\b.*\b(fl|beat|project)|my (last|latest) (beat|project)/.test(t)) {
@@ -304,6 +481,16 @@ ${learning ? `- ${nm} is learning English. Use simple words. When he practices (
     if (/\b(find|search|look for|where('?s| is| are| did i (put|save))|locate|show me my|open my)\b/.test(t)) {
       const kind = d.files.guessKind(t);
       const q = t.replace(/^.*?\b(find|search for|search|look for|where('?s| is| are| did i (put|save))|locate|show me my|show me|open my)\b\s*/, '').replace(/\?$/, '');
+      {
+        const L = await laptopTool({ action: 'find', query: q, when: t });
+        if (L.error === 'still_learning') return lapErr(L);
+        if (L.error === 'permission_denied' && !d.settings.grantedFolders().length) return lapErr(L);   // no to the whole laptop: only folders he allowed
+        if (!L.error && !L.count && q.trim()) {   // nothing is called that: maybe a document talks about it
+          const I = await laptopTool({ action: 'inside', query: q });
+          if (!I.error && I.count) return { say: `Nothing is called "${q}", but "${I.results[0].name}" talks about it: ${I.results[0].says}`.slice(0, 420), mood: 'cheeky' };
+        }
+        if (!L.error) return L.count ? { say: L.count === 1 ? `Found it: "${L.results[0].name}" in ${L.results[0].folder}. Want me to open it?` : `I found ${L.count} files. Best match: "${L.results[0].name}" in ${L.results[0].folder}, ${L.results[0].modified}. Want me to open it?`, mood: 'cheeky' } : { say: `I know your whole laptop and there's nothing like "${q}". Try other words?`, mood: 'concerned' };
+      }
       const r = await tool('search_files', { query: q, kind, when: t });
       if (r.error === 'permission_denied') return { say: `No problem. I won't look. If you change your mind, switch it on in my Access tab.`, mood: 'chill' };
       if (!r.count) return { say: `I looked in ${r.searched.join(', ')} and found nothing like that. Try other words, or give me another folder in the Access tab.`, mood: 'concerned' };
@@ -331,6 +518,22 @@ ${learning ? `- ${nm} is learning English. Use simple words. When he practices (
       if (L && L.working.length) return { say: `${L.when} you were working on "${L.working[0].title}" in ${L.working[0].app}. Want to keep going?`, mood: 'happy' };
       if (L && L.apps.length) return { say: `${L.when} you spent most of your time in ${L.apps[0].app} (${L.apps[0].time}).`, mood: 'happy' };
       return { say: s.perms.apps ? `I don't remember much yet. Give me a day of watching... I mean, helping.` : `Switch on app access in my Access tab and I'll remember what you worked on.`, mood: 'thinking' };
+    }
+    // maybe it's in something you gave him to learn
+    const k = d.knowledge.ask(text);
+    if (k && k.score > 1.4) return { say: `From "${k.title}": ${k.answer}`.slice(0, 480), mood: 'smug' };
+    if (s.perms.laptop && d.laptop.stats().state === 'ready' && (/\?\s*$/.test(text) || /^(who|what|when|where|how|which)\b/.test(t))) {
+      const I = await laptopTool({ action: 'inside', query: text, quiet: true });
+      const b = !I.error && I.results && I.results[0];
+      if (b && b.hits >= 2 && b.hits / b.words >= .66) { await laptopTool({ action: 'inside', query: text }); return { say: `From "${b.name}": ${b.says}`.slice(0, 480), mood: 'smug' }; }
+    }
+    // quick facts from Wikipedia (free)
+    if ((m = text.match(/^(?:hey |yo )?(?:who|what)(?:\s+(?:is|was|are|were)|'s|’s)\s+(.+?)[?.!]*$/i) || text.match(/^(?:tell me about|look up|search for|google|wikipedia)\s+(.+?)[?.!]*$/i))) {
+      const q = m[1].replace(/^(a|an|the)\s+/i, '').trim();
+      if (q && q.split(/\s+/).length <= 8 && !/^(you|your name|my name|me|i|this|that|it|up|going on|happening|the time|time|today|the date|the weather|weather|new|wrong|on today|on tomorrow|my plan|the plan|next)$/i.test(q)) {
+        const w = await wiki(q);
+        if (w) return { say: w, mood: 'smug' };
+      }
     }
     return { local: true };
   }
