@@ -21,7 +21,17 @@ TALK TO HIM
 - Or right-click him (Ctrl+Shift+D) and type in his panel.
 - His calendar: "Dude, studio session with Eric Saturday at 3".
   "Dude, what's on today?"
-- The first time he talks, his new voice downloads (about 130 MB, one time).
+
+HIS VOICE AND HIS EARS (the first time you start him)
+- He downloads his real voice (about 130 MB) and his ears (about 120 MB), one time.
+  A small bar next to him shows how far it is. If the internet drops, he waits
+  and continues where he stopped.
+- Until his voice is ready he talks in bubbles (no robot voice). Until his ears
+  are ready, Windows listens for him.
+- Not working? Say "Dude, can you hear me?" or "Dude, why do you sound like a robot?"
+  and he tells you what's wrong. "Dude, fix your voice" tries again.
+- Brain tab > His voice > Problem log opens a small file that shows what went
+  wrong. Send that file to whoever is fixing him.
 
 HE REMEMBERS AND LEARNS
 - "Where's the contract from last month?" "What did I download yesterday?"
@@ -103,9 +113,12 @@ PLAY
   controls, voice, Studio, check-up, do not disturb, start with Windows, quit.
 - Ctrl+Shift+Q makes him leave instantly.
 
-VOICE INPUT NEEDS
-- A microphone, and Windows Settings > Privacy > Microphone > let desktop apps use it.
-- English speech recognition (Settings > Time & language > Speech).
+LISTENING NEEDS
+- A microphone (a headset works best), and Windows Settings > Privacy & security >
+  Microphone > "Let desktop apps access your microphone" switched on.
+- The little mic next to his head glows when he hears sound. If it never glows,
+  the microphone is muted or blocked.
+- He understands English for now. Kinyarwanda comes later.
 
 TO REMOVE HIM
 Quit him from the tray, then delete the Dude folder.

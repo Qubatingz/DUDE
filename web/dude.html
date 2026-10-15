@@ -178,12 +178,16 @@ details.more summary::before{content:"\25B8  "}
 details.more[open] summary::before{content:"\25BE  "}
 .more-in{display:flex;flex-direction:column;gap:14px;padding-top:8px}
 /* on screen: a little ear that shows he's listening, and what he heard */
-.ear{position:absolute;left:0;top:0;z-index:1001;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#1c5a34;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);pointer-events:none;transition:background .2s,opacity .3s}
+.ear{position:absolute;left:0;top:0;z-index:1001;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#1c5a34;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 calc(var(--lvl,0) * 8px) rgba(90,220,140,.38);pointer-events:none;transition:background .2s,opacity .3s}
 .ear svg{width:12px;height:12px}
 .ear.paused{background:#6b6880}
 .ear.err{background:var(--bad)}
 .ear.hit{animation:earhit .6s ease-out}
-@keyframes earhit{0%{transform:scale(1.5)}100%{transform:scale(1)}}
+@keyframes earhit{0%{scale:1.5}100%{scale:1}}
+/* while his voice or his ears download: a small progress pill under his feet */
+.getting{position:absolute;left:0;top:0;z-index:1001;padding:3px 10px 3px 8px;border-radius:999px;background:rgba(16,14,30,.8);color:#f1eff9;font:12px var(--font-ui);white-space:nowrap;pointer-events:none;display:flex;align-items:center;gap:6px}
+.getting i{display:block;width:44px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);overflow:hidden}
+.getting i b{display:block;height:100%;width:var(--p,0%);background:#5ad88c;transition:width .4s}
 .heard{position:absolute;left:0;top:0;z-index:1001;max-width:260px;padding:4px 10px;border-radius:999px;background:rgba(16,14,30,.78);color:#f1eff9;font:13px var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .sec{display:flex;flex-direction:column;gap:8px}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -701,7 +705,7 @@ html.desktop .studio{bottom:0}
           <button class="btn" id="voiceTest" type="button">Test voice</button>
         </div>
         <div class="seg" id="engineSeg" role="radiogroup" aria-label="Which voice"><button type="button" role="radio" data-eng="dude">Dude's voice</button><button type="button" role="radio" data-eng="windows">Windows</button><button type="button" role="radio" data-eng="me">My voice</button></div>
-        <div class="lasttime" id="dvBox" hidden></div>
+        <div class="lasttime" id="dvBox" hidden><div id="dvMsg"></div><div id="earsMsg"></div><div class="card-row" id="dvBtns" hidden><button class="btn sm primary" type="button" id="dvRetry">Try again</button><button class="btn sm" type="button" id="dvLog">Problem log</button></div></div>
         <div class="lasttime" id="myVoiceBox" hidden>
           <div id="myVoiceStatus"></div>
           <div class="card-row"><button class="btn sm primary" type="button" id="myVoiceRec">Record my voice</button><button class="btn sm" type="button" id="myVoiceTest">Test</button><button class="btn sm danger" type="button" id="myVoiceDel">Delete my recording</button></div>
@@ -1024,6 +1028,7 @@ html.desktop .studio{bottom:0}
   <div class="badge" id="badge" hidden></div>
   <div class="ear" id="ear" hidden aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5.5" y="1.8" width="5" height="8.2" rx="2.5"/><path d="M3 7.6a5 5 0 0 0 10 0M8 12.6v2"/></svg></div>
   <div class="heard" id="heard" hidden aria-hidden="true"></div>
+  <div class="getting" id="getting" hidden aria-hidden="true"><span id="gettingTxt"></span><i><b></b></i></div>
   <div class="card" id="card" role="dialog" aria-labelledby="cardTitle" hidden></div>
   <div class="bubble" id="bubble" role="status" aria-live="polite" title="Click to close" hidden><span class="btxt" id="btxt"></span><span class="fb" hidden><button type="button" data-fb="up" aria-label="That was funny" title="Funny! More like this">&#128514;</button><button type="button" data-fb="down" aria-label="Not funny" title="Not funny. Never again">&#128078;</button></span></div>
   <div class="fx" id="fx" aria-hidden="true"></div>
@@ -1594,7 +1599,7 @@ for (const w of wins) {
 const canSpeak = 'speechSynthesis' in window;
 let voiceOn = DESKTOP ? !!store.get('voiceOn', true) : false, voices = [];
 /* always listening (Windows app, only while he's switched on) */
-const hear = { on: false, ready: false, paused: false, convoUntil: 0, lastAudible: 0, followUp: false, err: '' };
+const hear = { on: false, ready: false, paused: false, convoUntil: 0, lastAudible: 0, followUp: false, err: '', mode: '', earsSt: null, hint: '' };
 function loadVoices() { try { voices = speechSynthesis.getVoices() || []; } catch (e) { voices = []; } try { fillVoices(); } catch (e) {} }
 if (canSpeak) { loadVoices(); try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (e) {} }
 function pickVoice() {
@@ -1705,19 +1710,49 @@ async function playClip(id, key) {
 /* "Dude's voice": voice 1 (warm and friendly), made on the laptop. Until it has downloaded, the Windows voice fills in. */
 const dv = { status: null, cache: new Map(), told: false };
 const engineNow = () => voiceCfg.engine || (DESKTOP ? 'dude' : 'windows');
-const useDudeVoice = () => DESKTOP && engineNow() === 'dude' && !!dv.status && dv.status.engine;
+const useDudeVoice = () => DESKTOP && engineNow() === 'dude';
+const dvBusy = st => !!st && ['downloading', 'unpacking', 'loading'].includes(st.state);
+// his real voice broke (not just downloading): say why, once, then the Windows voice fills in
+function dvTrouble() {
+  const st = dv.status || {};
+  if (dv.troubleTold) return;
+  dv.troubleTold = true;
+  const why = (!st.engine && st.engineError) || st.error || 'something went wrong';
+  setTimeout(() => say(`My real voice isn't working: ${why.replace(/\.?$/, '.')} I'll use the Windows voice for now. Say "fix your voice" to try again.`, { reply: true, ms: 14000, emo: 'concerned' }), 400);
+}
+// his voice is still downloading: he talks in his bubble, and says once what's going on
+function dvNote() {
+  const st = dv.status;
+  if (dv.noteTold || !st || !dudeOn) return;
+  dv.noteTold = true;
+  setTimeout(() => {
+    const st = dv.status || {};
+    if (st.state === 'ready') return;
+    const how = st.state === 'downloading' ? `Downloading my real voice: ${Math.round((st.progress || 0) * 100)}% (one time).` : st.state === 'error' ? `My real voice is still downloading (${String(st.error).replace(/\.$/, '').toLowerCase()}), I'll keep trying.` : 'Warming up my real voice.';
+    say(`${how} Until it's ready I'll talk in bubbles. No robot voice, promise.`, { reply: true, ms: 9000, emo: 'excited' });
+  }, 3200);
+}
 const dvSpeed = () => clamp(voiceCfg.rate / 1.05, .8, 1.35);
-function chunks(text) {   // sentences, glued together when they're short, so he starts talking fast
+function chunks(text) {   // sentences, glued together when they're short. The first piece stays short, so he starts talking fast
   const parts = String(text).match(/[^.!?]+[.!?]*["”')]*\s*/g) || [String(text)], out = [];
-  for (const p of parts) { const t = p.trim(); if (!t) continue; if (out.length && (out[out.length - 1].length < 40 || t.length < 12) && out[out.length - 1].length + t.length < 170) out[out.length - 1] += ' ' + t; else out.push(t); }
+  for (const p of parts) {
+    const t = p.trim(); if (!t) continue;
+    const prev = out[out.length - 1], first = out.length === 1;
+    if (prev && (first ? prev.length < 20 && prev.length + t.length < 70 : (prev.length < 40 || t.length < 12) && prev.length + t.length < 150)) out[out.length - 1] += ' ' + t; else out.push(t);
+  }
+  // a long first sentence: cut it at a comma (the rest is made while he says the first part)
+  if (out.length && out[0].length > 90) { const m = out[0].slice(25).search(/[,;:]\s/); if (m >= 0 && m + 25 < out[0].length - 20) { const cut = m + 26; out.splice(0, 1, out[0].slice(0, cut).trim(), out[0].slice(cut).trim()); } }
   return out.length ? out : [String(text)];
 }
 async function prepareDudeVoice() { if (!DESKTOP) return null; const st = await KD.dvPrepare().catch(() => null); if (st) dv.status = st; renderMyVoice(); return st; }
 async function speakDude(text, key) {
   const tok = ++voiceTok, st = dv.status;
   if (!st || st.state !== 'ready') {
-    if (st && st.engine && !['downloading', 'loading'].includes(st.state) && !(st.state === 'error' && dv.failedAt && Date.now() - dv.failedAt < 6e5)) prepareDudeVoice();
-    releaseTalk(key, null); speak(text, true); return;
+    // something broke: the Windows voice, and he tells you why (once)
+    if (st && (!st.engine || (st.state === 'error' && !(st.errKind === 'net' && st.fails <= 3)))) { dvTrouble(); releaseTalk(key, null); speak(text, true); return; }
+    // still coming: no robot voice, he just talks in his bubble
+    if (st && !dvBusy(st)) prepareDudeVoice();
+    releaseTalk(key, null); dvNote(); return;
   }
   const parts = chunks(text);
   const gen = t => { const c = dv.cache.get(t); if (c) return Promise.resolve(c); return timeoutP(KD.dvSay(t, dvSpeed()).catch(e => ({ error: String(e) })), 30000).then(r => { if (r && r.samples) { dv.cache.set(t, r); if (dv.cache.size > 60) dv.cache.delete(dv.cache.keys().next().value); } return r; }); };
@@ -1725,7 +1760,12 @@ async function speakDude(text, key) {
   for (let i = 0; i < parts.length; i++) {
     const r = await next; if (tok !== voiceTok) return;
     if (i + 1 < parts.length) next = gen(parts[i + 1]);   // make the next sentence while this one plays
-    if (!r || !r.samples) { if (i === 0) { releaseTalk(key, null); speak(text, true); } return; }
+    if (!r || !r.samples) {
+      // too slow (an old laptop, or busy with music): no robot voice, the bubble says it. A real error: the Windows voice.
+      KD.log('voice', 'a line came out empty: ' + ((r && r.error) || 'too slow (over 30 s)'));
+      if (i === 0) { releaseTalk(key, null); if (r && r.error) speak(text, true); }
+      return;
+    }
     const d = queueSamples(r.samples, r.sampleRate, i === 0);
     if (i === 0) releaseTalk(key, d * text.length / Math.max(1, parts[0].length));
   }
@@ -1774,7 +1814,10 @@ function trimAudio(x, sr) {
 }
 function micError(e) {
   const s = String(e && (e.name + ' ' + e.message));
-  return /denied|NotAllowed|Permission/i.test(s) ? "I can't use the microphone. Allow it in Windows Settings > Privacy > Microphone." : /NotFound|device/i.test(s) ? "I can't find a microphone." : "Recording didn't work. Try again?";
+  return /denied|NotAllowed|Permission|Security/i.test(s) ? 'Windows is blocking my microphone. Open Settings > Privacy & security > Microphone and switch on "Let desktop apps access your microphone".'
+    : /NotFound|Overconstrained|device not found/i.test(s) ? "I can't find a microphone. Plug one in (a headset works), then switch me off and on."
+    : /NotReadable|TrackStart|Could not start|in use/i.test(s) ? 'Another app is holding the microphone, or Windows blocked it. Close that app, or check Settings > Privacy & security > Microphone.'
+    : "The microphone didn't start. Try switching me off and on.";
 }
 
 /* ================= speech bubble ================= */
@@ -4044,11 +4087,16 @@ function renderMyVoice() {
   box.hidden = eng !== 'me'; dvb.hidden = eng !== 'dude';
   for (const id of ['voicePresets', 'voiceSelWrap', 'pitchWrap']) $('#' + id).hidden = eng !== 'windows';   // those only change the Windows voice
   if (eng === 'dude') {
-    dvb.textContent = !DESKTOP ? "His real voice works in the Windows app." : !ds ? 'Checking...' : !ds.engine ? 'This Dude download is missing the voice engine. Get the newest Dude.'
-      : ds.state === 'downloading' ? `Downloading his voice... ${Math.round(ds.progress * 100)}% (one time, about 130 MB). The Windows voice fills in until then.`
-      : ds.state === 'loading' ? 'Warming up his voice...' : ds.state === 'error' ? 'His voice had a problem: ' + ds.error + ' Using the Windows voice for now.'
-      : ds.state === 'ready' ? 'Voice 1: warm and friendly. Made right here on your laptop.' : ds.hasPack ? 'Loading his voice...' : 'His voice downloads the first time he talks (one time, about 130 MB).';
+    $('#dvMsg').textContent = !DESKTOP ? "His real voice works in the Windows app." : !ds ? 'Checking...' : !ds.engine ? 'His voice engine could not start: ' + (ds.engineError || 'unknown problem')
+      : ds.state === 'downloading' ? `Downloading his voice... ${Math.round(ds.progress * 100)}% (${ds.mb || 0} of about ${ds.sizeMb || 130} MB, one time). He talks in bubbles until then.`
+      : ds.state === 'unpacking' ? 'Unpacking his voice...' : ds.state === 'loading' ? 'Warming up his voice...' : ds.state === 'error' ? 'His voice had a problem: ' + ds.error + ' Using the Windows voice for now.'
+      : ds.state === 'ready' ? 'Voice 1: warm and friendly. Made right here on your laptop.' : ds.hasPack ? 'Loading his voice...' : 'His voice downloads by itself (one time, about 130 MB).';
   }
+  const es = hear.earsSt;
+  $('#earsMsg').textContent = !DESKTOP ? '' : !es ? '' : es.state === 'ready' ? 'His ears: ready. He understands you right here on your laptop.'
+    : es.state === 'downloading' ? `His ears: downloading ${Math.round(es.progress * 100)}% (${es.mb || 0} of about ${es.sizeMb || 120} MB, one time). Windows listens for him until then.`
+    : es.state === 'unpacking' || es.state === 'loading' ? 'His ears: almost ready...' : es.state === 'error' ? 'His ears had a problem: ' + es.error : '';
+  $('#dvBtns').hidden = !DESKTOP || !((ds && (ds.state === 'error' || !ds.engine)) || (es && es.state === 'error'));
   if (box.hidden) return;
   let msg;
   if (!DESKTOP) msg = 'In the Windows app he learns your voice from a 15-second recording, right on your laptop.';
@@ -4107,11 +4155,20 @@ if (DESKTOP) {
   // Dude's voice (voice 1) is his voice from now on, unless you chose your own voice
   if (!store.get('dvSet', false)) { if (voiceCfg.engine !== 'me') { voiceCfg.engine = 'dude'; store.set('voice', voiceCfg); } store.set('dvSet', true); }
   KD.onDvStatus(st => {
-    const was = dv.status && dv.status.state; dv.status = st; renderMyVoice();
-    if (st.state === 'error') dv.failedAt = Date.now();
-    if (st.state === 'ready' && was && was !== 'ready' && !dv.told && engineNow() === 'dude' && dudeOn && voiceOn) { dv.told = true; setTimeout(() => say(pick(["Hold on. Is that... my real voice? Yes! Finally.", "New voice unlocked. I sound expensive now."]), { emo: 'excited', voice: true, reply: true }), 900); }
+    const was = dv.status && dv.status.state; dv.status = st; renderMyVoice(); renderGetting();
+    if (st.state === 'error') {
+      dv.failedAt = Date.now();
+      // the internet dropped? try again by himself a bit later (not when the engine itself is broken)
+      clearTimeout(dv.retryT);
+      if (st.engine && st.fails <= 3 && engineNow() === 'dude') dv.retryT = setTimeout(prepareDudeVoice, [0, 60e3, 180e3, 600e3][st.fails]);
+    }
+    if (st.state === 'ready') { dv.troubleTold = false; clearTimeout(dv.retryT); }
+    if (st.state === 'ready' && was && was !== 'ready' && !dv.told && engineNow() === 'dude' && dudeOn && voiceOn) { dv.told = true; setTimeout(() => say(pick(["Hold on. Is that... my real voice? Yes! Finally. No more robot.", "New voice unlocked. I sound expensive now."]), { emo: 'excited', voice: true, reply: true }), 900); }
   });
-  KD.dvStatus().then(st => { dv.status = st; renderMyVoice(); if (engineNow() === 'dude' && st.engine && (st.hasPack || voiceOn)) prepareDudeVoice(); }).catch(() => {});
+  // his real voice gets ready right away (it downloads once, the first time), so he never has to use the robot voice
+  KD.dvStatus().then(st => { dv.status = st; renderMyVoice(); if (engineNow() === 'dude') prepareDudeVoice(); }).catch(() => {});
+  $('#dvRetry').addEventListener('click', () => { userPing(); voiceFix(); });
+  $('#dvLog').addEventListener('click', () => { userPing(); KD.logOpen(); say("That's my problem log. If something's broken, send that file to whoever is fixing me.", { reply: true, emo: 'chill', ms: 7000 }); });
 }
 renderMyVoice();
 renderTeach();
@@ -4232,9 +4289,15 @@ const escRe = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function renderPower() {
   powerBtn.setAttribute('aria-checked', String(dudeOn));
   $('#powerTxt').textContent = `${petName} is ${dudeOn ? 'on' : 'off'}`;
-  $('#powerSub').textContent = !dudeOn ? 'Switch him on and he comes back.' : !DESKTOP ? 'Type below to talk to him.' : hear.err ? hear.err : hear.on ? `Listening. Say "${petName}..." and talk.` : 'Not listening. Tap Talk to talk.';
+  const es = hear.earsSt, earsComing = es && ['downloading', 'unpacking', 'loading'].includes(es.state);
+  $('#powerSub').textContent = !dudeOn ? 'Switch him on and he comes back.' : !DESKTOP ? 'Type below to talk to him.' : hear.err ? hear.err
+    : !hear.on ? 'Not listening. Tap Talk to talk.'
+    : hear.mode === 'ears' ? (hear.ready ? `Listening. Say "${petName}..." and talk.` : 'Starting the microphone...')
+    : earsComing ? `Getting his ears: ${Math.round((es.progress || 0) * 100)}%.` + (hear.mode === 'windows' && hear.ready ? ' Windows listens until then.' : '')
+    : es && es.state === 'error' && hear.mode !== 'ears' ? `His ears had a problem: ${es.error} Say "fix your voice" to try again.`
+    : `Listening. Say "${petName}..." and talk.`;
   const hs = $('#hearSw'); if (hs) hs.setAttribute('aria-checked', String(!!store.get('hear', true)));
-  renderBig();
+  renderBig(); renderGetting();
 }
 function setPower(on, o = {}) {
   if (on === dudeOn) { renderPower(); return; }
@@ -4264,13 +4327,75 @@ function greetOn() {
 powerBtn.addEventListener('click', () => { userPing(); setPower(!dudeOn); });
 
 /* ================= always listening (Windows app): say his name and talk ================= */
+// His own ears: this page takes the microphone sound (16 kHz) and passes it on; Whisper works out the words on this laptop.
+// Until his ears are downloaded, Windows speech recognition listens for him (hear.mode 'windows').
 function hearSync() {
   const want = DESKTOP && !!KD.hearStart && dudeOn && !!store.get('hear', true);
   if (want && !hear.on) {
-    hear.on = true; hear.ready = false; hear.err = '';
-    KD.hearStart().then(r => { if (r && !r.ok) { hear.on = false; hear.err = r.error || 'Listening could not start.'; renderPower(); } }).catch(() => {});
-  } else if (!want && hear.on) { hear.on = false; hear.ready = false; hear.paused = false; KD.hearStop(); }
+    hear.on = true; hear.ready = false; hear.err = ''; hear.hint = '';
+    KD.hearStart().then(r => {
+      if (!hear.on) return;
+      if (r && r.mode) hear.mode = r.mode;
+      if (r && !r.ok) { hear.on = false; hear.err = r.error || 'Listening could not start.'; }
+      else if (hear.mode === 'ears') earsStart();
+      renderPower();
+    }).catch(() => {});
+  } else if (!want && hear.on) { hear.on = false; hear.ready = false; hear.paused = false; hear.mode = ''; earsStop(); KD.hearStop(); }
   renderPower();
+}
+const earsCap = { on: false, starting: false, stream: null, ctx: null, node: null, src: null, level: 0, maxLvl: 0, t0: 0, warned: false };
+// 48 kHz (or 44.1 kHz) to 16 kHz: average each group of samples (a simple low-pass), carrying the remainder over
+function downsampler(ratio) {
+  let pos = 0, carry = new Float32Array(0);
+  return x => {
+    const a = new Float32Array(carry.length + x.length); a.set(carry); a.set(x, carry.length);
+    const out = new Float32Array(Math.max(0, Math.floor((a.length - pos) / ratio))); let n = 0;
+    while (pos + ratio <= a.length && n < out.length) { const s0 = Math.floor(pos), s1 = Math.floor(pos + ratio); let sum = 0; for (let k = s0; k < s1; k++) sum += a[k]; out[n++] = sum / Math.max(1, s1 - s0); pos += ratio; }
+    const keep = Math.floor(pos); carry = a.slice(keep); pos -= keep;
+    return out.subarray(0, n);
+  };
+}
+async function earsStart() {
+  if (earsCap.on || earsCap.starting || !navigator.mediaDevices) return;
+  earsCap.starting = true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+    if (!hear.on || hear.mode !== 'ears') { stream.getTracks().forEach(t => t.stop()); return; }
+    let ctx; try { ctx = new AudioContext({ sampleRate: 16000 }); } catch (e) { ctx = new AudioContext(); }
+    const src = ctx.createMediaStreamSource(stream), node = ctx.createScriptProcessor(2048, 1, 1);
+    const down = ctx.sampleRate === 16000 ? null : downsampler(ctx.sampleRate / 16000);
+    node.onaudioprocess = e => {
+      const x = e.inputBuffer.getChannelData(0);
+      let sq = 0; for (let i = 0; i < x.length; i++) sq += x[i] * x[i];
+      const rms = Math.sqrt(sq / x.length);
+      earsCap.level = Math.max(rms, earsCap.level * .8); if (rms > earsCap.maxLvl) earsCap.maxLvl = rms;
+      if (hear.paused || !dudeOn) return;   // he's talking: he doesn't listen to himself
+      const y = down ? down(x) : new Float32Array(x);
+      if (y.length) KD.earsAudio(y);
+    };
+    src.connect(node); node.connect(ctx.destination);   // (the node outputs silence; it only needs to run)
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    Object.assign(earsCap, { on: true, stream, ctx, node, src, t0: performance.now(), maxLvl: 0, warned: false });
+    const track = stream.getAudioTracks()[0];
+    KD.log('ears', `microphone on: ${track ? track.label : '?'} at ${ctx.sampleRate} Hz`);
+    if (track) track.addEventListener('ended', () => {
+      KD.log('ears', 'microphone went away'); earsStop(); hear.ready = false; hear.err = 'I lost the microphone. Is it still plugged in?'; renderPower();
+      setTimeout(() => { if (hear.on && hear.mode === 'ears' && !earsCap.on) { hear.err = ''; earsStart(); } }, 6000);
+    });
+    hear.ready = true; hear.err = ''; renderPower();
+  } catch (e) {
+    hear.ready = false; hear.err = micError(e); renderPower();
+    KD.log('ears', 'microphone failed: ' + (e && (e.name + ' ' + e.message)));
+    if (dudeOn) say(hear.err, { reply: true, ms: 12000, emo: 'concerned' });
+  } finally { earsCap.starting = false; }
+}
+function earsStop() {
+  const c = earsCap;
+  if (c.node) c.node.onaudioprocess = null;
+  try { if (c.src) c.src.disconnect(); if (c.node) c.node.disconnect(); } catch (e) {}
+  if (c.stream) c.stream.getTracks().forEach(t => t.stop());
+  if (c.ctx) c.ctx.close().catch(() => {});
+  Object.assign(c, { on: false, stream: null, ctx: null, node: null, src: null, level: 0 });
 }
 // he lets go of the mic while he talks, so he never answers his own voice
 function hearTick(now) {
@@ -4282,32 +4407,99 @@ function hearTick(now) {
     hear.paused = p; KD.hearPause(p);
     if (!p && hear.followUp) { hear.followUp = false; hear.convoUntil = Math.max(hear.convoUntil, now + 9000); }
   }
+  // a microphone that only sends silence (muted, or blocked by Windows): tell him once
+  if (earsCap.on && !earsCap.warned && now - earsCap.t0 > 15000 && earsCap.maxLvl < 1e-4) {
+    earsCap.warned = true; KD.log('ears', 'the microphone sends only silence');
+    hear.hint = "I only hear silence from your microphone. It may be muted, or Windows is blocking it: Settings > Privacy & security > Microphone.";
+    if (dudeOn) say(hear.hint, { reply: true, ms: 14000, emo: 'concerned' });
+  }
 }
 function heardCaption(t) {
   heardEl.textContent = '\u{1F399} ' + t; heardEl.hidden = false;
   earEl.classList.remove('hit'); void earEl.offsetWidth; earEl.classList.add('hit');
   clearTimeout(heardTimer); heardTimer = setTimeout(() => { heardEl.hidden = true; }, 3400);
 }
+// his name, and the ways a computer tends to mishear "Dude" (and "hey Dude")
+const NAME_ALTS = "dude|dudes|dood|doode|dewd|duude|doed|do'd|the dude";
 function onHeard(text, conf) {
   const now = performance.now();
   if (!dudeOn || !ready || hear.paused || now - hear.lastAudible < 700) return;   // that was probably his own voice
-  const nm = escRe(petName.toLowerCase());
-  const call = new RegExp(`^\\s*(?:(?:hey|yo|ok|okay|hi|hello)\\s+)?(?:dude|dood|${nm})\\b[\\s,.!?]*`, 'i');
-  const called = call.test(text) || new RegExp(`\\b(?:dude|${nm})\\b`, 'i').test(text);
+  text = String(text).replace(/\s+/g, ' ').trim();
+  const nm = escRe(petName.toLowerCase()), alts = nm === 'dude' ? NAME_ALTS : `${NAME_ALTS}|${nm}`;
+  const call = new RegExp(`^\\s*(?:(?:hey|hay|he|hi|yo|ok|okay|hello|oh|ah|a)[\\s,.!]+)?(?:${alts})\\b[\\s,.!?]*`, 'i');
+  const called = call.test(text) || new RegExp(`\\b(?:${alts})\\b`, 'i').test(text);
   const inConvo = now < hear.convoUntil;
   if (!called && !inConvo) return;
   if (!called && conf < .35) return;
-  const q = text.replace(call, '').trim();
+  const q = text.replace(call, '').replace(/^[\s,.!?]+/, '').replace(/(?<=\w)\.$/, '').trim();
   heardCaption(text);
   hear.convoUntil = now + 15000;
-  if (!q || /^(dude|yo|hey|hello|hi)[.!?]*$/i.test(q)) { say(pick(['Yeah?', 'Talk to me.', "I'm listening.", "Yo, what's up?"]), { voice: true, reply: true, emo: 'happy' }); return; }
+  KD.log('ears', `heard (${text.length} letters)`);
+  // just his name: he shows he's listening (in his bubble, so his voice doesn't cover what you say next)
+  if (!q || /^(dude|yo|hey|hello|hi)[.!?]*$/i.test(q)) { setGest('listen', 3); say(pick(['Yeah?', 'Talk to me.', "I'm listening.", "Yo, what's up?"]), { reply: true, emo: 'happy', ms: 4000 }); return; }
   talk(q);
 }
 if (DESKTOP && KD.onHear) KD.onHear(ev => {
-  if (ev.type === 'ready') { hear.ready = true; hear.err = ''; renderPower(); }
-  else if (ev.type === 'error') { hear.on = false; hear.ready = false; hear.err = ev.error; renderPower(); if (dudeOn) say(ev.error, { reply: true, ms: 9000, emo: 'concerned' }); }
+  if (ev.type === 'mode') {
+    hear.mode = ev.mode;
+    if (ev.mode === 'ears' && hear.on) { hear.err = ''; earsStart(); }
+    else if (ev.mode !== 'ears') earsStop();
+    renderPower();
+  }
+  else if (ev.type === 'ears') {
+    const was = hear.earsSt && hear.earsSt.state; hear.earsSt = ev; renderGetting(); renderMyVoice(); renderPower();
+    if (ev.state === 'ready' && was && was !== 'ready' && dudeOn && hear.on) setTimeout(() => say(`New ears! Now I can really hear you. Say "${petName}" and talk to me.`, { voice: true, reply: true, emo: 'excited' }), 1200);
+  }
+  else if (ev.type === 'ready') { if (hear.mode !== 'ears') { hear.ready = true; hear.err = ''; renderPower(); } }
+  else if (ev.type === 'error') { if (hear.mode === 'ears') return; hear.on = false; hear.ready = false; hear.err = ev.error; renderPower(); if (dudeOn) say(ev.error, { reply: true, ms: 9000, emo: 'concerned' }); }
   else if (ev.type === 'heard') onHeard(ev.text, ev.conf);
 });
+if (DESKTOP && KD.earsStatus) KD.earsStatus().then(st => { if (!hear.earsSt) { hear.earsSt = st; renderGetting(); renderPower(); } }).catch(() => {});
+/* the little progress pill while his voice or his ears download */
+const gettingEl = $('#getting');
+function renderGetting() {
+  const gettingEl = document.getElementById('getting');   // (this can run before the page has finished setting up)
+  if (!gettingEl) return;
+  const v = dv.status, e = hear.earsSt, busy = st => st && ['downloading', 'unpacking', 'loading'].includes(st.state);
+  let txt = '', p = 0;
+  const label = (st, what) => st.state === 'downloading' ? `Getting my ${what} ${Math.round((st.progress || 0) * 100)}%` : st.state === 'unpacking' ? `Unpacking my ${what}...` : `Warming up my ${what}...`;
+  if (engineNow() === 'dude' && busy(v)) { txt = label(v, 'voice'); p = v.state === 'downloading' ? v.progress : 1; }
+  else if (hear.on && busy(e)) { txt = label(e, 'ears'); p = e.state === 'downloading' ? e.progress : 1; }
+  gettingEl.hidden = !txt || !dudeOn;
+  if (txt) { $('#gettingTxt').textContent = txt; gettingEl.style.setProperty('--p', Math.round((p || 0) * 100) + '%'); }
+}
+/* "fix your voice": try his voice (and his ears) again */
+async function voiceFix() {
+  if (!DESKTOP) { say('My real voice works in the Windows app.', { reply: true, emo: 'cheeky' }); return; }
+  dv.troubleTold = false; dv.noteTold = false;
+  if (engineNow() !== 'dude') setVoice({ engine: 'dude' });
+  say('Okay, fixing myself. One sec...', { reply: true, emo: 'thinking', ms: 6000 });
+  const st = await KD.voiceRetry().catch(() => null);
+  if (st) { dv.status = st; renderMyVoice(); renderGetting(); }
+  if (st && st.state === 'ready') say('Fixed. This is my real voice. Better, right?', { reply: true, voice: true, forceVoice: true, emo: 'excited' });
+  else if (st && st.state === 'error') say(`Still broken: ${(!st.engine && st.engineError) || st.error} Tap "Problem log" in Settings and send that file to whoever is fixing me.`, { reply: true, ms: 14000, emo: 'concerned' });
+}
+/* "can you hear me?" / "why do you sound like a robot?": he explains his voice and his ears in plain words */
+function voiceReport() {
+  const v = dv.status, e = hear.earsSt, out = [];
+  if (!DESKTOP) { reply('My real voice and my ears work in the Windows app.'); return; }
+  if (engineNow() === 'windows') out.push("You picked the Windows voice. Say \"use your real voice\" and I'll switch.");
+  else if (engineNow() === 'me') out.push("I'm talking in your voice.");
+  else if (!v) out.push("I'm still checking my voice.");
+  else if (!v.engine) out.push(`My voice engine can't start: ${v.engineError}`);
+  else if (v.state === 'ready') out.push(`My real voice works${voiceOn ? '' : ', but the sound is off. Tap Voice to switch it on'}.`);
+  else if (v.state === 'downloading') out.push(`My real voice is downloading: ${Math.round(v.progress * 100)}%.`);
+  else if (v.state === 'error') out.push(`My real voice has a problem: ${v.error}`);
+  else out.push('My real voice is warming up.');
+  if (!hear.on) out.push("I'm not listening right now. Say \"start listening\" or switch it on in Settings.");
+  else if (hear.err) out.push(hear.err);
+  else if (hear.hint) out.push(hear.hint);
+  else if (hear.mode === 'ears') out.push('My ears work. Say my name and talk.');
+  else if (e && e.state === 'downloading') out.push(`My ears are downloading: ${Math.round(e.progress * 100)}%. Windows listens for me until then.`);
+  else if (e && e.state === 'error') out.push(`My ears have a problem: ${e.error}`);
+  else out.push('Windows is listening for me.');
+  reply(out.join(' '), { emo: 'chill', ms: 14000 });
+}
 const hearSw = $('#hearSw');
 if (hearSw) {
   $('#hearRow').hidden = !DESKTOP;
@@ -4318,6 +4510,11 @@ function powerCmd(t) {
   if (/^(turn (yourself )?off|switch (yourself )?off|shut ?down|power off|go away|log ?off|disappear|bye( bye)?|goodbye|good night)[.!]*$/.test(t)) { setPower(false); return true; }
   if (/^(stop listening|don'?t listen|mic off|mute (the )?mic)\b/.test(t)) { store.set('hear', false); hearSync(); reply('Okay, I stopped listening. Tap Talk when you need me.', { emo: 'chill' }); return true; }
   if (/^(start listening|listen to me|mic on)\b/.test(t)) { store.set('hear', true); hearSync(); reply("I'm all ears. Just say my name.", { emo: 'happy' }); return true; }
+  // his voice and his ears
+  if (/^(please )?(fix|repair|reload|restart) (your|ur) (voice|ears|sound|mic)\b|^try (your|ur) (real )?voice again\b/.test(t)) { voiceFix(); return true; }
+  if (/^(use|switch to|go back to) (your|ur) (real|own|normal|dude'?s?) voice\b/.test(t)) { setVoice({ engine: 'dude' }); renderMyVoice(); dv.noteTold = false; if (dv.status && dv.status.state === 'ready') reply('Back to my real voice.', { emo: 'happy', forceVoice: true }); else { prepareDudeVoice(); reply('Switching to my real voice. Give me a moment.', { emo: 'happy' }); } return true; }
+  if (/\b(why do you|you) (sound|talk) (like a )?(robot|weird|strange|different)|what'?s wrong with (your|ur) (voice|ears)|(can|do) you (hear|understand) me|voice status|are you listening\b/.test(t)) { voiceReport(); return true; }
+  if (/^(open|show)( me)? (your|ur|the) (problem )?log\b/.test(t)) { KD.logOpen && KD.logOpen(); reply('Here is my problem log.', { emo: 'chill' }); return true; }
   return false;
 }
 
@@ -4851,7 +5048,19 @@ function render(dt, now) {
   // the little mic next to him while he listens, and a caption of what he just heard
   const showEar = hear.on && dudeOn && petEl.style.display !== 'none';
   if (earEl.hidden === showEar) earEl.hidden = !showEar;
-  if (showEar) { earEl.classList.toggle('paused', hear.paused || !hear.ready); earEl.style.transform = `translate(${clamp(pet.x + W * .34, 4, deskW - 26).toFixed(0)}px,${(headTop + 4).toFixed(0)}px)`; }
+  if (showEar) {
+    earEl.classList.toggle('paused', hear.paused || !hear.ready); earEl.classList.toggle('err', !!hear.err);
+    earEl.style.transform = `translate(${clamp(pet.x + W * .34, 4, deskW - 26).toFixed(0)}px,${(headTop + 4).toFixed(0)}px)`;
+    // the ring around the mic grows when he hears sound, so you can see the microphone works
+    const lv = earsCap.on && !hear.paused ? clamp(Math.sqrt(earsCap.level) * 4 - .15, 0, 1) : 0;
+    if (Math.abs(lv - (earEl._lv || 0)) > .03) { earEl._lv = lv; earEl.style.setProperty('--lvl', lv.toFixed(2)); }
+  }
+  if (!gettingEl.hidden) {
+    // beside him at knee height (the side away from his mic), so it never covers his face or his speech bubble
+    const gw = gettingEl.offsetWidth, left = pet.x - W * .42 - gw, right = pet.x + W * .42;
+    const gx = left >= 6 ? left : clamp(right, 6, deskW - gw - 6), gy = pet.y - H * .3;
+    gettingEl.style.transform = `translate(${gx.toFixed(0)}px,${Math.max(6, gy).toFixed(0)}px)`;
+  }
   if (!heardEl.hidden) {
     const hw = heardEl.offsetWidth, right = pet.x + W * .45;
     const hx = right + hw < deskW - 6 ? right : clamp(pet.x - W * .45 - hw, 6, deskW - hw - 6);
@@ -4907,6 +5116,6 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__kito = { get paintCur() { return paintCur; }, sipNow() { paintSip = true; }, dailyQuestion, eveningCheck, get todos() { return todos; }, get journal() { return journal; }, setLook, enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard, think, morning, night, interview, missionCheck, onDudeEvent, lifeTick, rateLine, get teach() { return teach; }, get taste() { return taste; }, get day() { return day; }, get thinkState() { return thinkState; }, get flow() { return flow; }, canSpeakNow, lineFor, wordToday, playRule, studioThought, onFlOpened, renameFlow, nameAll, learnMyVoice, get myVoice() { return myVoice; }, playSamples, _hurry() { lastReplyAt = -1e9; thinkState.bootAt -= 1e6; thinkState.lastApp = -1e9; thinkState.ruleAt = {}; } };
+window.__kito = { get paintCur() { return paintCur; }, sipNow() { paintSip = true; }, dailyQuestion, eveningCheck, get todos() { return todos; }, get journal() { return journal; }, setLook, enterStudio, exitStudio, applyOutfit, renderDays, doMove, say, faceStatic, setEmo, startFid, perf, pet, talk, openWin, renderView, showCard, think, morning, night, interview, missionCheck, onDudeEvent, lifeTick, rateLine, get teach() { return teach; }, get taste() { return taste; }, get day() { return day; }, get thinkState() { return thinkState; }, get flow() { return flow; }, canSpeakNow, lineFor, wordToday, playRule, studioThought, onFlOpened, renameFlow, nameAll, learnMyVoice, get myVoice() { return myVoice; }, get hear() { return hear; }, get dv() { return dv; }, get earsCap() { return earsCap; }, onHeard, voiceFix, voiceReport, playSamples, _hurry() { lastReplyAt = -1e9; thinkState.bootAt -= 1e6; thinkState.lastApp = -1e9; thinkState.ruleAt = {}; } };
 })();
 </script>

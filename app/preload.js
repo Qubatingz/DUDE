@@ -28,6 +28,14 @@ contextBridge.exposeInMainWorld('kitoDesktop', {
   hearStop: () => ipcRenderer.send('dude:hear:stop'),
   hearPause: on => ipcRenderer.send('dude:hear:pause', !!on),
   onHear: on('dude:hear'),
+  // his ears: microphone sound (16 kHz) goes to the main process, where Whisper works out the words
+  earsAudio: samples => ipcRenderer.send('dude:ears:audio', samples),
+  earsStatus: () => ipcRenderer.invoke('dude:ears:status'),
+  voiceRetry: () => ipcRenderer.invoke('dude:voice:retry'),
+  // his problem log
+  logOpen: () => ipcRenderer.invoke('dude:log:open'),
+  logTail: () => ipcRenderer.invoke('dude:log:tail'),
+  log: (area, msg) => ipcRenderer.send('dude:log', String(area), String(msg)),
   // what he knows: your laptop, and things you gave him to learn
   laptopStats: () => ipcRenderer.invoke('dude:laptop:stats'),
   learnPick: () => ipcRenderer.invoke('dude:learn:pick'),

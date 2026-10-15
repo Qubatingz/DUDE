@@ -40,7 +40,9 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 - **Question of the day:** a different creative question every day (your sound, your career, your life, a bit of English). He remembers your answers and brings them back later.
 - **Calendar:** "Dude, studio session with Eric Saturday at 3." He reminds you 30 minutes before, pops up even when he's switched off, and tells you what's on every morning. "What's on today?" shows your day.
 - **Quick facts, free:** "Dude, who is Burna Boy?" He looks it up on Wikipedia.
-- **His own voice:** a warm, natural voice (Kokoro, free, runs on your laptop, one-time 130 MB download). Windows voices and your own voice are still there.
+- **His own voice:** a warm, natural voice (Kokoro, free, runs on your laptop, one-time 130 MB download that starts by itself and resumes if the internet drops). Until it's ready he talks in bubbles, never the robot voice. Windows voices and your own voice are still there.
+- **His own ears:** say "Dude..." and talk. Whisper (tiny English model) and Silero VAD understand you right on your laptop (one-time 120 MB download); Windows speech recognition fills in until then. The mic next to his head glows when he hears sound.
+- **When something's wrong, he says so:** "Dude, can you hear me?", "why do you sound like a robot?", "fix your voice". A small problem log (Brain tab > His voice > Problem log) shows what went wrong.
 - **Daily mission:** every morning he asks for the one thing you'll do today, and checks on it in the evening.
 - **English practice:** word of the day, small challenges, better ways to say things.
 - **Calms overthinking:** say "I'm overthinking" and he walks you to one small next step.
@@ -66,7 +68,7 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 
 ## Privacy
 
-Dude asks before he touches anything. Access to your folders, apps and recent files is off until you turn it on in the **Access** tab, and if he needs a folder you haven't allowed, he asks first. He only reads file names, sizes and dates, never what is inside your files, except your FL Studio projects if you allow "Look inside music projects" (tempo, time spent, samples, read-only). He never moves or deletes anything, and renames a project only when you click Rename. His memory stays on your laptop and **Forget everything** wipes it. Your API key is encrypted with Windows' own protection and only goes to Claude.
+Dude asks before he touches anything. Access to your folders, apps and recent files is off until you turn it on in the **Access** tab, and if he needs a folder you haven't allowed, he asks first. He only reads file names, sizes and dates, never what is inside your files, except your FL Studio projects if you allow "Look inside music projects" (tempo, time spent, samples, read-only). He never moves or deletes anything, and renames a project only when you click Rename. His memory stays on your laptop and **Forget everything** wipes it. What you say to him is turned into words on your laptop; the sound is kept in memory for a few seconds and never recorded, saved or sent. Your API key is encrypted with Windows' own protection and only goes to Claude.
 
 ## Project layout
 
@@ -84,9 +86,16 @@ Dude asks before he touches anything. Access to your folders, apps and recent fi
 | `app/docs.js` | Reads the text inside your documents in the background (one at a time) and searches it: "which file talks about...". |
 | `app/knowledge.js`, `app/reader.js` | Learning: reads PDF, Word, PowerPoint, text and web pages, makes a short summary, answers questions from them. |
 | `app/dudevoice.js` | "Dude's voice": his natural voice (voice 1), made on your laptop (sherpa-onnx + Kokoro). |
-| `app/hear.ps1` | Always listening while he's on: Windows speech recognition, one line per sentence, pauses while he talks. |
+| `app/ears.js` | His ears: Whisper tiny.en + Silero VAD (sherpa-onnx) turn your microphone sound into words, on your laptop. |
+| `app/engine.js` | Loads the speech engine once and explains in plain words why, if it can't. |
+| `app/fetcher.js` | One-time downloads (voice, ears): one at a time, resumes after a drop, plain-words errors. |
+| `app/log.js` | His problem log (`%APPDATA%\Dude\dude-log.txt`): what went wrong with his voice, ears and downloads. Never what you say. |
+| `app/hear.ps1` | Windows speech recognition, used until his own ears are ready: one line per sentence, pauses while he talks. |
 | `app/voice.js` | "My voice": copies your voice from a short recording, on your laptop (sherpa-onnx). |
 | `ci/voice-smoke.js` | Build check on a real Windows machine that the voice engine loads and talks. |
+| `ci/pe-imports.js` | Lists the Windows DLLs the voice engine needs and copies the Visual C++ runtime next to it. |
+| `ci/dudevoice-smoke.js` | Build check of his voice on Windows, and how fast it talks. |
+| `ci/fixtures/dude-today.wav` | A recording of "Dude, what's on today?" his ears must understand in the Windows self-test (`DUDE_SELFTEST`). |
 | `app/settings.js` | Permissions, allowed folders, the encrypted API key. |
 | `app/windows.ps1` | Reads where your open windows are so he can stand on them, and which app is in front so he can stay quiet. |
 | `app/listen.ps1` | Push-to-talk speech recognition using Windows' built-in recognizer. |

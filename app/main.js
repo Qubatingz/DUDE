@@ -11,6 +11,9 @@ const memory = require('./memory');
 const habits = require('./habits');
 const voice = require('./voice');
 const dudeVoice = require('./dudevoice');
+const ears = require('./ears');
+const engine = require('./engine');
+const { log, tail: logTail, where: logFile } = require('./log');
 const laptop = require('./laptop');
 const knowledge = require('./knowledge');
 const studio = require('./studio');
@@ -18,7 +21,10 @@ const { readFlp } = require('./flp');
 const { createBrain } = require('./brain');
 
 app.setAppUserModelId('com.dude.desktoppet');
-if (!app.requestSingleInstanceLock()) { app.quit(); }
+// build check (CI): DUDE_SELFTEST=<result.json> runs his voice and ears once in a fresh folder, then quits
+const SELFTEST = process.env.DUDE_SELFTEST || '';
+if (SELFTEST) app.setPath('userData', path.join(os.tmpdir(), 'dude-selftest-' + process.pid));
+else if (!app.requestSingleInstanceLock()) { app.quit(); }
 
 let win = null, tray = null, watcher = null, quitting = false;
 const workArea = () => screen.getPrimaryDisplay().workArea;
@@ -208,6 +214,10 @@ const dvEmit = () => send('dude:dvStatus', dudeVoice.status());
 ipcMain.handle('dude:dv:status', () => dudeVoice.status());
 ipcMain.handle('dude:dv:prepare', () => dudeVoice.prepare(dvEmit));
 ipcMain.handle('dude:dv:say', (e, text, speed) => dudeVoice.say(text, speed));
+// his problem log (voice, ears, downloads): open the folder, or read the last lines
+ipcMain.handle('dude:log:open', () => { log('app', 'problem log opened'); shell.showItemInFolder(logFile()); return true; });
+ipcMain.handle('dude:log:tail', () => logTail(30));
+ipcMain.on('dude:log', (e, area, msg) => log(String(area).slice(0, 12), msg));
 function afterSettings() {
   // his memory of the whole laptop: on when you allow it, forgotten completely when you switch it off
   if (settings.get().perms.laptop) laptop.ensure(laptopDone); else if (laptop.stats().state !== 'idle' || laptop.stats().files) laptop.wipe();
@@ -271,17 +281,48 @@ function listen() {
 ipcMain.handle('dude:listen', () => listen());
 
 /* ================= always listening (only while Dude is switched on) ================= */
-// hear.ps1 keeps Windows speech recognition running and prints each sentence it hears. Nothing is recorded or saved.
-// While Dude himself is talking, a small "pause" file tells it to stop listening, so he doesn't hear his own voice.
-let hearer = null, hearWant = false, hearFails = 0;
+// His ears (ears.js): your microphone sound comes from his page, Whisper works out the words, right here on the laptop.
+// Until his ears have downloaded (or if they can't load), Windows speech recognition (hear.ps1) fills in.
+// While Dude himself is talking, he stops listening, so he doesn't hear his own voice. Nothing is recorded or saved.
+let hearer = null, hearWant = false, hearFails = 0, hearMode = '';
 const pauseFile = () => path.join(os.tmpdir(), `dude-hear-pause-${process.pid}`);
+const earsEmit = () => send('dude:hear', Object.assign({ type: 'ears' }, ears.status()));
+const onEarsHeard = h => send('dude:hear', { type: 'heard', text: h.text, conf: h.conf, by: 'ears' });
+function useEars() {
+  if (!hearWant || !ears.ready()) return false;
+  winHearStop();
+  ears.listen(true, onEarsHeard);
+  if (hearMode !== 'ears') log('ears', 'listening with his own ears');
+  hearMode = 'ears';
+  send('dude:hear', { type: 'mode', mode: 'ears' });
+  return true;
+}
+let earsRetry = 0;
+function earsGet() {
+  clearTimeout(earsRetry);
+  ears.prepare(earsEmit).then(st => {
+    if (st.state === 'ready') { useEars(); return; }
+    if (hearWant && !hearer && hearMode !== 'windows') winHearStart();
+    // the internet dropped? try again by himself a bit later
+    if (st.errKind === 'net' && st.fails <= 3) earsRetry = setTimeout(() => { if (hearWant) earsGet(); }, [0, 60e3, 180e3, 600e3][st.fails]);
+  }).catch(() => {});
+}
 function hearStart() {
   hearWant = true;
-  if (process.platform !== 'win32') return { ok: false, error: 'Listening works on Windows only.' };
-  if (hearer) return { ok: true };
+  if (useEars()) return { ok: true, mode: 'ears' };
+  // his ears aren't ready: get them (after his voice, which starts downloading first), and let Windows listen until then
+  setTimeout(earsGet, 1500);
+  if (process.platform !== 'win32') return { ok: true, mode: 'waiting' };
+  return winHearStart();
+}
+function winHearStart() {
+  if (process.platform !== 'win32' || !hearWant) return { ok: false, error: 'Listening works on Windows only.' };
+  if (hearer) return { ok: true, mode: 'windows' };
   try { fs.unlinkSync(pauseFile()); } catch (e) {}
   try { hearer = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'hear.ps1'), pauseFile()], { windowsHide: true }); }
-  catch (e) { hearer = null; return { ok: false, error: 'Listening could not start.' }; }
+  catch (e) { hearer = null; log('hear', 'Windows listening could not start: ' + e.message); return { ok: false, error: 'Listening could not start.' }; }
+  hearMode = 'windows';
+  send('dude:hear', { type: 'mode', mode: 'windows' });
   let buf = '', failed = false;
   const me = hearer;
   me.stdout.on('data', d => {
@@ -289,24 +330,44 @@ function hearStart() {
     let i;
     while ((i = buf.indexOf('\n')) >= 0) {
       const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
-      if (line === 'READY') { hearFails = 0; send('dude:hear', { type: 'ready' }); }
-      else if (line.startsWith('OK:')) { const m = line.match(/^OK:([\d.]+):(.*)$/); if (m && m[2].trim()) send('dude:hear', { type: 'heard', conf: +m[1], text: m[2].trim() }); }
-      else if (line.startsWith('ERR:')) { failed = true; send('dude:hear', { type: 'error', error: VOICE_ERR[line.slice(4).trim()] || 'Listening stopped.' }); }
+      if (line === 'READY') { hearFails = 0; log('hear', 'Windows listening ready'); send('dude:hear', { type: 'ready' }); }
+      else if (line.startsWith('OK:')) { const m = line.match(/^OK:([\d.]+):(.*)$/); if (m && m[2].trim()) send('dude:hear', { type: 'heard', conf: +m[1], text: m[2].trim(), by: 'windows' }); }
+      else if (line.startsWith('ERR:')) {
+        failed = true; log('hear', 'Windows listening: ' + line);
+        // his own ears are coming: don't scare you with a Windows problem in the meantime
+        const st = ears.status();
+        if (!['downloading', 'unpacking', 'loading'].includes(st.state)) send('dude:hear', { type: 'error', error: VOICE_ERR[line.slice(4).trim()] || 'Listening stopped.' });
+      }
     }
   });
   me.on('error', () => {});
   me.on('exit', () => {
     if (hearer === me) hearer = null;
     // it stopped by itself (not because of an error message): start it again, but don't keep trying forever
-    if (hearWant && !quitting && !failed && ++hearFails <= 3) setTimeout(() => { if (hearWant && !hearer) hearStart(); }, 2000 * hearFails);
+    if (hearWant && hearMode === 'windows' && !quitting && !failed && ++hearFails <= 3) setTimeout(() => { if (hearWant && !hearer && hearMode === 'windows') winHearStart(); }, 2000 * hearFails);
   });
-  return { ok: true };
+  return { ok: true, mode: 'windows' };
 }
-function hearStop() { hearWant = false; if (hearer) { try { hearer.kill(); } catch (e) {} hearer = null; } try { fs.unlinkSync(pauseFile()); } catch (e) {} }
-function hearPause(on) { try { if (on) fs.writeFileSync(pauseFile(), '1'); else fs.unlinkSync(pauseFile()); } catch (e) {} }
+function winHearStop() { if (hearer) { const h = hearer; hearer = null; try { h.kill(); } catch (e) {} } try { fs.unlinkSync(pauseFile()); } catch (e) {} }
+function hearStop() { hearWant = false; hearMode = ''; winHearStop(); ears.listen(false); }
+function hearPause(on) {
+  if (on) ears.reset();
+  try { if (on) fs.writeFileSync(pauseFile(), '1'); else fs.unlinkSync(pauseFile()); } catch (e) {}
+}
 ipcMain.handle('dude:hear:start', () => hearStart());
 ipcMain.on('dude:hear:stop', () => hearStop());
 ipcMain.on('dude:hear:pause', (e, on) => hearPause(!!on));
+// microphone sound from his page (16 kHz, about 8 times a second), only while his ears are on
+ipcMain.on('dude:ears:audio', (e, samples) => { if (hearMode === 'ears') ears.feed(samples); });
+ipcMain.handle('dude:ears:status', () => ears.status());
+// "try again" (his voice and his ears)
+ipcMain.handle('dude:voice:retry', async () => {
+  engine.retry();
+  const v = await dudeVoice.prepare(dvEmit);
+  if (hearWant && !ears.ready()) earsGet();
+  return v;
+});
+
 
 /* ================= what's on screen: windows + the app in front ================= */
 let focus = { exe: '', title: '', app: '', fullscreen: false, quiet: false };
@@ -394,7 +455,54 @@ function createTray() {
 ipcMain.on('kito:through', (e, v) => { if (win && !win.isDestroyed()) win.setIgnoreMouseEvents(!!v, { forward: true }); });
 ipcMain.on('kito:quit', () => { quitting = true; app.quit(); });
 
+/* ================= build check: his voice, his ears and his page, on a real Windows machine ================= */
+function readWav16(p) {
+  const b = fs.readFileSync(p); let o = 12, sr = 16000, ch = 1, data = null;
+  while (o + 8 <= b.length) { const id = b.toString('ascii', o, o + 4), n = b.readUInt32LE(o + 4); if (id === 'fmt ') { ch = b.readUInt16LE(o + 10); sr = b.readUInt32LE(o + 12); } if (id === 'data') { data = b.subarray(o + 8, o + 8 + n); break; } o += 8 + n + (n & 1); }
+  if (!data || sr !== 16000) throw new Error('need a 16 kHz 16-bit wav');
+  const out = new Float32Array(Math.floor(data.length / 2 / ch)); for (let i = 0; i < out.length; i++) out[i] = data.readInt16LE(i * 2 * ch) / 32768;
+  return out;
+}
+async function selfTest() {
+  const out = { ok: false }, step = (k, v) => { out[k] = v; log('selftest', `${k}: ${JSON.stringify(v).slice(0, 400)}`); };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const finish = code => { try { fs.writeFileSync(SELFTEST, JSON.stringify(out, null, 2)); } catch (e) {} app.exit(code); };
+  setTimeout(() => { step('timeout', true); finish(3); }, 20 * 60e3);
+  try {
+    step('engine', { ok: engine.ok(), why: engine.why() });
+    let t0 = Date.now();
+    const v = await dudeVoice.prepare(() => {});
+    step('voice', { state: v.state, error: v.error, rtf: v.rtf, secs: Math.round((Date.now() - t0) / 1000) });
+    if (v.state === 'ready') { const a = await dudeVoice.say('Yo Quba! Studio session with Eric at three. Matcha first, then we cook.'); step('voiceSay', { secs: a.samples ? +(a.samples.length / a.sampleRate).toFixed(2) : 0, error: a.error || '' }); }
+    t0 = Date.now();
+    const st = await ears.prepare(() => {});
+    step('ears', { state: st.state, error: st.error, rtf: st.rtf, secs: Math.round((Date.now() - t0) / 1000) });
+    const heard = [];
+    if (st.state === 'ready' && process.env.DUDE_SELFTEST_WAV) {
+      ears.listen(true, h => heard.push(h.text));
+      const w = readWav16(process.env.DUDE_SELFTEST_WAV), all = new Float32Array(8000 + w.length + 24000); all.set(w, 8000);
+      for (let i = 0; i < all.length; i += 2000) { ears.feed(all.slice(i, i + 2000)); await sleep(15); }
+      for (let i = 0; i < 100 && !heard.length; i++) await sleep(100);
+      ears.listen(false);
+      step('earsHeard', heard);
+    }
+    // his page loads and runs without errors
+    settings.load();
+    const errors = [];
+    createWindow();
+    win.webContents.on('console-message', (...a) => { const ev = a[0] || {}, lv = ev.level ?? a[1], msg = ev.message ?? a[2]; if (lv === 'error' || lv === 3) errors.push(String(msg).slice(0, 300)); });
+    await new Promise(r => win.webContents.once('did-finish-load', r));
+    await sleep(9000);
+    const page = await win.webContents.executeJavaScript('({ dude: !!window.__kito, on: !!document.querySelector("#powerBtn") })').catch(e => ({ error: String(e) }));
+    step('page', Object.assign(page, { errors }));
+    out.ok = engine.ok() && !!(out.voiceSay && out.voiceSay.secs > 1) && st.state === 'ready' && (!process.env.DUDE_SELFTEST_WAV || heard.some(t => /\bdude\b/i.test(t))) && page.dude && !errors.some(e => /Uncaught/.test(e));
+  } catch (e) { step('crash', String((e && e.stack) || e)); }
+  out.log = logTail(60);
+  finish(out.ok ? 0 : 1);
+}
+
 app.whenReady().then(() => {
+  if (SELFTEST) { selfTest(); return; }
   settings.load();
   createWindow();
   createTray();
@@ -410,4 +518,4 @@ app.whenReady().then(() => {
 app.on('second-instance', () => cmd('wake'));   // opening Dude again switches him on
 app.on('before-quit', () => { quitting = true; hearStop(); laptop.stop(); laptop.flush(); memory.save(); if (watcher) { try { watcher.kill(); } catch (e) {} } });
 app.on('will-quit', () => globalShortcut.unregisterAll());
-app.on('window-all-closed', () => app.quit());
+app.on('window-all-closed', () => { if (!SELFTEST) app.quit(); });

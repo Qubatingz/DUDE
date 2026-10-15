@@ -46,13 +46,36 @@ jobs:
           $p = Start-Process -FilePath ".\dude\Dude.exe" -ArgumentList @("ci\voice-smoke.js", ".\dude\resources\app") -Wait -PassThru -NoNewWindow -RedirectStandardOutput out.txt -RedirectStandardError err.txt
           Get-Content out.txt, err.txt
           if ($p.ExitCode -ne 0) { exit 1 }
-      - name: Check "Dude's voice" (voice 1) on Windows
+      - name: Give the voice engine the Windows parts it needs (Visual C++ runtime)
+        shell: pwsh
+        run: |
+          $env:ELECTRON_RUN_AS_NODE = "1"
+          $p = Start-Process -FilePath ".\dude\Dude.exe" -ArgumentList @("ci\pe-imports.js", ".\dude\resources\app\node_modules\sherpa-onnx-win-x64", "--copy-vc-runtime") -Wait -PassThru -NoNewWindow -RedirectStandardOutput pe.txt -RedirectStandardError pe-err.txt
+          Get-Content pe.txt, pe-err.txt
+          $msg = (Get-Content pe.txt | Select-String "Visual C\+\+|No Visual") -join " "
+          Write-Output "::notice title=Engine parts::$msg"
+          if ($p.ExitCode -ne 0) { exit 1 }
+      - name: Check "Dude's voice" (voice 1) on Windows, and how fast it talks
         shell: pwsh
         run: |
           $env:ELECTRON_RUN_AS_NODE = "1"
           $p = Start-Process -FilePath ".\dude\Dude.exe" -ArgumentList @("ci\dudevoice-smoke.js", ".\dude\resources\app") -Wait -PassThru -NoNewWindow -RedirectStandardOutput out2.txt -RedirectStandardError err2.txt
           Get-Content out2.txt, err2.txt
           if ($p.ExitCode -ne 0) { exit 1 }
+      - name: Run Dude himself - voice, ears (hears a recording) and his page
+        shell: pwsh
+        run: |
+          $env:DUDE_SELFTEST = "$PWD\selftest.json"
+          $env:DUDE_SELFTEST_WAV = "$PWD\ci\fixtures\dude-today.wav"
+          $p = Start-Process -FilePath ".\dude\Dude.exe" -PassThru
+          if (-not $p.WaitForExit(1500000)) { $p.Kill(); "Dude did not finish in 25 minutes" }
+          if (-not (Test-Path selftest.json)) { "no result"; exit 1 }
+          Get-Content selftest.json
+          $r = Get-Content selftest.json -Raw | ConvertFrom-Json
+          Write-Output "::notice title=Dude's voice::$($r.voice.state) in $($r.voice.secs) s, $($r.voice.rtf) s per second of speech $($r.voice.error)"
+          Write-Output "::notice title=Dude's ears::$($r.ears.state) in $($r.ears.secs) s, $($r.ears.rtf) s per sentence, heard: $($r.earsHeard -join ' / ') $($r.ears.error)"
+          Write-Output "::notice title=Dude's page::loaded $($r.page.dude), errors: $($r.page.errors.Count) $($r.page.errors -join ' | ')"
+          if (-not $r.ok) { exit 1 }
       - name: Check the listening scripts start on Windows
         shell: powershell
         run: |
@@ -62,4 +85,11 @@ jobs:
           if (-not $p.WaitForExit(30000)) { $p.Kill(); "hear.ps1 kept running (it found a microphone)" }
           $out = Get-Content hear.txt -Raw; "hear.ps1 said: $out"
           if ($out -notmatch "READY|ERR:") { exit 1 }
-
+      - name: Upload Dude (with the Windows parts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dude-for-Windows
+          path: dude/
+          retention-days: 90
+          compression-level: 9
+          overwrite: true

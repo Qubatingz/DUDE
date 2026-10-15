@@ -1,8 +1,10 @@
 Dude uses these free, open-source pieces. Thank you to their authors.
 
 - Electron (MIT) - https://www.electronjs.org
-- sherpa-onnx (Apache-2.0) - the voice engine for "My voice" - https://github.com/k2-fsa/sherpa-onnx
+- sherpa-onnx (Apache-2.0) - his voice and his ears - https://github.com/k2-fsa/sherpa-onnx
 - ONNX Runtime (MIT), included with sherpa-onnx - https://onnxruntime.ai
+- Microsoft Visual C++ runtime files (msvcp140.dll, vcruntime140*.dll), if present next to the
+  voice engine: redistributed under the Microsoft Visual Studio license terms
 - pdf.js (Apache-2.0) - reads PDFs you give him to learn - https://mozilla.github.io/pdf.js
 - Fonts: Patrick Hand, Bagel Fat One, Atkinson Hyperlegible (SIL Open Font License 1.1), see fonts/FONTS-LICENSE.txt
 
@@ -12,8 +14,11 @@ Downloaded only when you switch on "My voice" (not part of this download):
 - Vocos vocoder (MIT)
 - eSpeak NG pronunciation data (GPL-3.0) - https://github.com/espeak-ng/espeak-ng
 
-Downloaded the first time he talks with "Dude's voice" (not part of this download):
-- Kokoro-82M voice model (Apache-2.0), voice "am_michael" - https://huggingface.co/hexgrad/Kokoro-82M
-- eSpeak NG pronunciation data (GPL-3.0), included with the model
+Downloaded the first time you start him (not part of this download):
+- His voice: Kokoro-82M voice model (Apache-2.0), voice "am_michael" - https://huggingface.co/hexgrad/Kokoro-82M
+- eSpeak NG pronunciation data (GPL-3.0), included with the voice model
+- His ears: Whisper tiny.en speech recognition model (MIT) by OpenAI - https://github.com/openai/whisper
+  (converted for sherpa-onnx by the k2-fsa project)
+- Silero VAD (MIT), which tells when someone is talking - https://github.com/snakers4/silero-vad
 
 Quick facts come from Wikipedia (text under CC BY-SA 4.0) - https://www.wikipedia.org

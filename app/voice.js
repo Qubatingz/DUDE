@@ -2,12 +2,13 @@
 // You record about 15 seconds inside Dude. The voice model (about 160 MB) downloads once, the first time
 // you switch it on, and stays in Dude's folder in AppData. Your recording never leaves this laptop.
 // Engine: sherpa-onnx (Apache-2.0) with the ZipVoice voice-copying model and the Vocos vocoder.
-const { app, net } = require('electron');
+const { app } = require('electron');
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
 const os = require('os');
-const { spawn } = require('child_process');
+const { download, untar } = require('./fetcher');
+const engine = require('./engine');
 
 const MODEL_NAME = 'sherpa-onnx-zipvoice-distill-int8-zh-en-emilia';
 const MODEL_URL = process.env.DUDE_VOICE_MODEL_URL || `https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/${MODEL_NAME}.tar.bz2`;
@@ -26,40 +27,8 @@ let progress = 0, error = '', tts = null, sherpa = null, ref = null, busy = Prom
 function hasPack() { return fs.existsSync(path.join(modelDir(), 'decoder.int8.onnx')) && fs.existsSync(vocoderPath()); }
 function status() { return { state, progress, error, hasPack: hasPack(), hasRef: !!(ref || fs.existsSync(refJson())), refText: ref ? ref.text : readRefText(), engine: engineOk() }; }
 function readRefText() { try { return JSON.parse(fs.readFileSync(refJson(), 'utf8')).text || ''; } catch (e) { return ''; } }
-function engineOk() { try { sherpa = sherpa || require('sherpa-onnx-node'); return true; } catch (e) { return false; } }
+function engineOk() { sherpa = engine.load(); return !!sherpa; }
 
-/* ---------- download the model once ---------- */
-async function download(url, dest, onBytes) {
-  const r = await net.fetch(url);
-  if (!r.ok) throw new Error(`Download failed (${r.status})`);
-  const total = +r.headers.get('content-length') || 0;
-  const tmp = dest + '.part';
-  const out = fs.createWriteStream(tmp);
-  let got = 0;
-  const reader = r.body.getReader();
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      got += value.length;
-      if (!out.write(Buffer.from(value))) await new Promise(res => out.once('drain', res));
-      onBytes(got, total);
-    }
-  } finally { await new Promise(res => out.end(res)); }
-  if (total && got < total) throw new Error('Download was cut off. Check the internet and try again.');
-  await fsp.rename(tmp, dest);
-}
-function untar(file, into) {
-  return new Promise((resolve, reject) => {
-    // Windows 10 and 11 come with tar.exe, which understands .tar.bz2
-    const bin = process.platform === 'win32' ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe') : 'tar';
-    const p = spawn(bin, ['-xjf', file, '-C', into], { windowsHide: true });
-    let err = '';
-    p.stderr.on('data', d => { err += d; });
-    p.on('error', e => reject(new Error('Could not unpack the voice model: ' + e.message)));
-    p.on('exit', c => c === 0 ? resolve() : reject(new Error('Could not unpack the voice model. ' + err.slice(0, 200))));
-  });
-}
 async function ensurePack(emit) {
   if (hasPack()) return;
   await fsp.mkdir(dir(), { recursive: true });
@@ -80,7 +49,7 @@ async function prepare(emit = () => {}) {
   if (preparing) return preparing;
   preparing = (async () => {
     try {
-      if (!engineOk()) throw new Error('The voice engine is missing from this Dude download.');
+      if (!engineOk()) throw new Error(engine.why());
       await ensurePack(emit);
       state = 'loading'; emit();
       const Z = modelDir();
