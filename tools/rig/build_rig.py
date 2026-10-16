@@ -22,14 +22,19 @@ BONES = [
     ('neck', 'chest', (466, 300), (465, 238)),
     ('head', 'neck', (465, 238), (465, 110)),
     ('jaw', 'head', (465, 186), (465, 214)),
+    ('brow', 'head', (465, 128), (465, 118)),
     ('shoulderL', 'chest', (440, 292), (368, 322)),
     ('upperArmL', 'shoulderL', (368, 322), (292, 482)),
     ('foreArmL', 'upperArmL', (292, 482), (234, 600)),
-    ('handL', 'foreArmL', (234, 600), (206, 688)),
+    ('handL', 'foreArmL', (234, 600), (220, 630)),
+    ('thumbL', 'handL', (231, 622), (236, 664)),
+    ('fingersL', 'handL', (213, 628), (199, 698)),
     ('shoulderR', 'chest', (492, 292), (562, 322)),
     ('upperArmR', 'shoulderR', (562, 322), (646, 482)),
     ('foreArmR', 'upperArmR', (646, 482), (707, 600)),
-    ('handR', 'foreArmR', (707, 600), (735, 688)),
+    ('handR', 'foreArmR', (707, 600), (712, 630)),
+    ('thumbR', 'handR', (710, 624), (700, 668)),
+    ('fingersR', 'handR', (722, 628), (737, 698)),
     ('thighL', 'root', (420, 515), (410, 765)),
     ('shinL', 'thighL', (410, 765), (412, 1000)),
     ('footL', 'shinL', (412, 1000), (352, 1085)),
@@ -64,9 +69,11 @@ region['waist'] = torso & (yy >= 400)
 face_low = head & (yy >= 187) & (yy < 222) & (xx > 432) & (xx < 498)
 region['jaw'] = face_low
 region['neck'] = head & (yy >= 222)
-region['head'] = head & ~face_low & (yy < 222)
+brow_band = head & (yy >= 114) & (yy < 133) & (xx > 416) & (xx < 514)
+region['brow'] = brow_band
+region['head'] = head & ~face_low & ~brow_band & (yy < 222)
 for side, grp in (('L', armL), ('R', armR)):
-    names = [f'upperArm{side}', f'foreArm{side}', f'hand{side}']
+    names = [f'upperArm{side}', f'foreArm{side}', f'hand{side}', f'thumb{side}', f'fingers{side}']
     d = np.stack([seg_dist(xx, yy, BONES[BI[n]][2], BONES[BI[n]][3]) for n in names])
     near = d.argmin(0)
     for k, n in enumerate(names): region[n] = grp & (near == k)
@@ -77,7 +84,8 @@ for side, grp in (('L', legL), ('R', legR)):
     for k, n in enumerate(names): region[n] = grp & (near == k)
 
 # ---------- smooth weights: geodesic distance (through Dude, not across gaps) to each bone's region ----------
-SIG = {'default': 16.0, 'jaw': 5.0, 'head': 10.0, 'neck': 12.0, 'chest': 26.0, 'waist': 26.0}
+SIG = {'default': 20.0, 'jaw': 5.0, 'brow': 4.0, 'head': 10.0, 'neck': 12.0, 'chest': 26.0, 'waist': 26.0,
+       'handL': 9.0, 'handR': 9.0, 'thumbL': 6.0, 'thumbR': 6.0, 'fingersL': 7.0, 'fingersR': 7.0}
 walk = nd.binary_dilation(mask, iterations=3)
 cost = np.where(walk, 1.0, -1.0)   # negative = can't pass
 Wt = np.zeros((len(BONES), H0, W0), np.float32)
@@ -117,15 +125,33 @@ M = 18
 x0, y0, x1, y1 = int(max(0, xs.min() - M)), int(max(0, ys.min() - M)), int(min(W0, xs.max() + M + 1)), int(min(H0, ys.max() + M + 1))
 cw, ch = x1 - x0, y1 - y0
 tex = img[y0:y1, x0:x1]
-# a little dark mouth sprite in the corner of the texture (shown when his jaw opens)
+# little sprites in the empty top-left corner of the texture: his mouth shapes and an eyelid (for blinking)
 tex = tex.copy()
-MW, MH = 28, 16
-mouth = Image.new('RGBA', (MW, MH), (0, 0, 0, 0)); d = ImageDraw.Draw(mouth)
-d.ellipse((1, 1, MW - 2, MH - 2), fill=(38, 14, 16, 255))
-d.ellipse((6, MH - 6, MW - 7, MH - 2), fill=(120, 50, 55, 255))   # a hint of tongue
-mx, my = 2, 2   # top-left corner (empty there)
-assert tex[my:my + MH, mx:mx + MW, 3].max() == 0, 'mouth spot not empty'
-tex[my:my + MH, mx:mx + MW] = np.asarray(mouth)
+MW, MH = 28, 18
+def sprite(draw_fn, w=MW, h=MH):
+    im = Image.new('RGBA', (w * 4, h * 4), (0, 0, 0, 0)); d = ImageDraw.Draw(im); draw_fn(d, w * 4, h * 4)
+    return np.asarray(im.resize((w, h), Image.LANCZOS))
+DARK, TEETH, TONGUE = (30, 12, 13, 255), (210, 202, 188, 255), (96, 42, 44, 255)
+def m_a(d, w, h):   # "ah": open
+    d.ellipse((4, 4, w - 4, h - 4), fill=DARK); d.rectangle((w * .22, 4, w * .78, h * .3), fill=TEETH); d.ellipse((w * .25, h * .62, w * .75, h - 6), fill=TONGUE)
+def m_o(d, w, h):   # "oh": round
+    d.ellipse((w * .25, 6, w * .75, h - 6), fill=DARK); d.ellipse((w * .34, h * .62, w * .66, h - 10), fill=TONGUE)
+def m_e(d, w, h):   # "ee": wide, teeth showing
+    d.rounded_rectangle((4, h * .28, w - 4, h * .72), radius=h * .2, fill=DARK); d.rectangle((w * .14, h * .3, w * .86, h * .5), fill=TEETH)
+def lid(d, w, h):   # a closed eyelid: almond-shaped skin, a little shadow on top, lashes along the bottom curve
+    skin, shade, lash = (122, 98, 82, 245), (104, 82, 68, 245), (40, 28, 24, 255)
+    d.ellipse((2, 2, w - 2, h * 1.6), fill=skin)
+    d.ellipse((6, 2, w - 6, h * .55), fill=shade)
+    d.arc((4, -h * .9, w - 4, h - 5), start=20, end=160, fill=lash, width=7)
+SPR = {}
+x = 2
+for name, fn in (('mouthA', m_a), ('mouthO', m_o), ('mouthE', m_e), ('lid', lid)):
+    sp = sprite(fn)
+    assert tex[2:2 + MH, x:x + MW, 3].max() == 0, 'sprite spot not empty'
+    tex[2:2 + MH, x:x + MW] = sp
+    SPR[name] = {'u': x, 'v': 2, 'w': MW, 'h': MH}
+    x += MW + 4
+mx, my = SPR['mouthA']['u'], SPR['mouthA']['v']
 Image.fromarray(tex, 'RGBA').save(os.path.join(out, 'rig.png'))
 
 # group bit masks (each group dilated a little, so neighbouring groups overlap by 2 px: no hairline cracks)
@@ -133,11 +159,11 @@ bits = np.zeros((ch, cw), np.uint8)
 for gi, g in enumerate(GROUPS):
     gm = nd.binary_dilation(G[g], iterations=2)[y0:y1, x0:x1]
     bits |= (gm.astype(np.uint8) << gi)
-bits[my:my + MH, mx:mx + MW] |= (1 << GROUPS.index('head'))
+for sp in SPR.values(): bits[sp['v']:sp['v'] + sp['h'], sp['u']:sp['u'] + sp['w']] |= (1 << GROUPS.index('head'))
 Image.fromarray(bits * 4, 'L').save(os.path.join(out, 'rig-groups.png'))   # x4 so the values survive any scaling; shader divides
 
 # ---------- meshes ----------
-STEP = 6
+STEP = 5
 def top4(px, py):
     w = Wt[:, py, px]
     idx = np.argsort(-w)[:4]
@@ -172,7 +198,8 @@ bones = []
 for name, parent, a, b in BONES:
     bones.append({'name': name, 'parent': parent, 'x': a[0] - x0, 'y': a[1] - y0, 'x2': b[0] - x0, 'y2': b[1] - y0})
 rig = {'w': cw, 'h': ch, 'groups': GROUPS, 'bones': bones, 'meshes': meshes,
-       'mouth': {'u': mx, 'v': my, 'w': MW, 'h': MH, 'x': int(463 - x0), 'y': float(186.5 - y0)},
+       'mouth': {'u': mx, 'v': my, 'w': MW, 'h': MH, 'x': int(463 - x0), 'y': float(186.5 - y0)}, 'sprites': SPR,
+       'eyes': [{'x': 442 - x0, 'y': 135.5 - y0, 'w': 21, 'h': 9}, {'x': 489 - x0, 'y': 135.5 - y0, 'w': 21, 'h': 9}],
        'feet': int(ys.max() - y0), 'origin': [x0, y0]}
 json.dump(rig, open(os.path.join(out, 'rig.json'), 'w'), separators=(',', ':'))
 print('crop', x0, y0, x1, y1, 'size', cw, ch, 'json', os.path.getsize(os.path.join(out, 'rig.json')) // 1024, 'KB')
