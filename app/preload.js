@@ -33,7 +33,8 @@ contextBridge.exposeInMainWorld('kitoDesktop', {
   earsStatus: () => ipcRenderer.invoke('dude:ears:status'),
   voiceRetry: () => ipcRenderer.invoke('dude:voice:retry'),
   // his problem log
-  logOpen: () => ipcRenderer.invoke('dude:log:open'),
+  logOpen: extra => ipcRenderer.invoke('dude:log:open', extra || {}),
+  version: () => ipcRenderer.invoke('dude:version'),
   logTail: () => ipcRenderer.invoke('dude:log:tail'),
   log: (area, msg) => ipcRenderer.send('dude:log', String(area), String(msg)),
   // what he knows: your laptop, and things you gave him to learn

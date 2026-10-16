@@ -42,7 +42,8 @@ Each download stays available for 90 days. To make a fresh one, open the Actions
 - **Quick facts, free:** "Dude, who is Burna Boy?" He looks it up on Wikipedia.
 - **His own voice:** a warm, natural voice (Kokoro, free, runs on your laptop, one-time 130 MB download that starts by itself and resumes if the internet drops). Until it's ready he talks in bubbles, never the robot voice. Windows voices and your own voice are still there.
 - **His own ears:** say "Dude..." and talk. Whisper (tiny English model) and Silero VAD understand you right on your laptop (one-time 120 MB download); Windows speech recognition fills in until then. The mic next to his head glows when he hears sound.
-- **When something's wrong, he says so:** "Dude, can you hear me?", "why do you sound like a robot?", "fix your voice". A small problem log (Brain tab > His voice > Problem log) shows what went wrong.
+- **When something's wrong, he says so:** "Dude, can you hear me?", "why do you sound like a robot?", "fix your voice". Say **"open your log"** and his problem log lands on your Desktop ("Dude problem log.txt"), opens, and is copied, ready to paste.
+- **New download, no fuss:** start the new Dude and he closes an older Dude that's still running (and moves "Start with Windows" to the new folder). His version shows at the top of his panel.
 - **Daily mission:** every morning he asks for the one thing you'll do today, and checks on it in the evening.
 - **English practice:** word of the day, small challenges, better ways to say things.
 - **Calms overthinking:** say "I'm overthinking" and he walks you to one small next step.

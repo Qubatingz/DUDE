@@ -10,6 +10,9 @@ HOW TO START
    Click "More info", then "Run anyway".
 4. Dude appears at the bottom of your screen, asks your name,
    and asks before he looks at anything.
+5. Got a new Dude? Just start the new one: if an older Dude is still
+   running, the new one closes it and takes over. Then delete the old folder.
+   (His version is at the top of his panel, like "Dude Control v1.7.1".)
 
 ON / OFF
 - Click his face in the tray (near the clock) to switch him on or off.
@@ -30,8 +33,9 @@ HIS VOICE AND HIS EARS (the first time you start him)
   are ready, Windows listens for him.
 - Not working? Say "Dude, can you hear me?" or "Dude, why do you sound like a robot?"
   and he tells you what's wrong. "Dude, fix your voice" tries again.
-- Brain tab > His voice > Problem log opens a small file that shows what went
-  wrong. Send that file to whoever is fixing him.
+- Say "Dude, open your log": a file called "Dude problem log.txt" appears on
+  your Desktop and opens, and it's copied too. Paste it (Ctrl+V) to whoever
+  is fixing him.
 
 HE REMEMBERS AND LEARNS
 - "Where's the contract from last month?" "What did I download yesterday?"

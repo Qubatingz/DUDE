@@ -4,7 +4,7 @@ const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage, globalShor
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
-const { spawn, execFile } = require('child_process');
+const { spawn, execFile, execFileSync } = require('child_process');
 const settings = require('./settings');
 const files = require('./files');
 const memory = require('./memory');
@@ -24,7 +24,65 @@ app.setAppUserModelId('com.dude.desktoppet');
 // build check (CI): DUDE_SELFTEST=<result.json> runs his voice and ears once in a fresh folder, then quits
 const SELFTEST = process.env.DUDE_SELFTEST || '';
 if (SELFTEST) app.setPath('userData', path.join(os.tmpdir(), 'dude-selftest-' + process.pid));
-else if (!app.requestSingleInstanceLock()) { app.quit(); }
+// Only one Dude at a time. Opening the same Dude again just wakes him up.
+// But if an OLDER Dude from another folder is still running (in the tray, or started with Windows),
+// this one takes over: otherwise the old one keeps running and the new download never gets a chance.
+const ME = { exe: process.execPath, version: app.getVersion() };
+let haveLock = !!SELFTEST || app.requestSingleInstanceLock(ME);
+const sameExe = (a, b) => path.resolve(String(a || '')).toLowerCase() === path.resolve(String(b || '')).toLowerCase();
+const verNum = v => { const [a = 0, b = 0, c = 0] = String(v || '0').split('.').map(n => parseInt(n, 10) || 0); return a * 1e6 + b * 1e3 + c; };
+function versionAt(exe) { try { return JSON.parse(fs.readFileSync(path.join(path.dirname(exe), 'resources', 'app', 'package.json'), 'utf8')).version || ''; } catch (e) { return ''; } }
+// other running Dude.exe copies that live in a different folder: [{ pid, exe }]
+function otherCopies() {
+  if (process.platform !== 'win32') return [];
+  try {
+    // (sent base64-encoded, so no quote marks get lost on the way to PowerShell)
+    const ps = "[Console]::OutputEncoding = [Text.Encoding]::UTF8; Get-CimInstance Win32_Process -Filter \"Name='Dude.exe'\" | ForEach-Object { '' + $_.ProcessId + '|' + $_.ParentProcessId + '|' + $_.ExecutablePath }";
+    const out = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(ps, 'utf16le').toString('base64')],
+      { timeout: 12000, windowsHide: true, encoding: 'utf8' });
+    return parseCopies(out, process.pid, process.execPath);
+  } catch (e) { log('app', 'could not list other Dudes: ' + (e && e.message)); return []; }
+}
+// lines "pid|parent pid|path". Not this Dude, and not this Dude's own helper processes.
+function parseCopies(out, myPid, myExe) {
+  return String(out || '').replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => { const [pid, ppid, ...rest] = l.split('|'); return { pid: +pid, ppid: +ppid, exe: rest.join('|').trim() }; })
+    .filter(o => o.pid && o.pid !== myPid && o.ppid !== myPid && o.exe && !sameExe(o.exe, myExe));
+}
+const sleepMs = ms => new Promise(r => setTimeout(r, ms));
+async function takeOver() {
+  if (haveLock) return true;
+  const retry = async n => { for (let i = 0; i < n && !haveLock; i++) { await sleepMs(400); haveLock = app.requestSingleInstanceLock(ME); } return haveLock; };
+  const others = otherCopies();
+  if (!others.length) {
+    // nothing from another folder is running: this same Dude is already open (he wakes up and this copy leaves),
+    // or another copy just stepped aside for this one
+    if (await retry(3)) { log('app', 'the other Dude stepped aside'); fixStartWithWindows(); return true; }
+    return false;
+  }
+  const exes = [...new Set(others.map(o => o.exe))];
+  const newest = exes.reduce((m, e) => Math.max(m, verNum(versionAt(e))), 0);
+  if (newest > verNum(ME.version)) { log('app', `a newer Dude is already running (${exes.join(', ')}), so this one leaves`); return false; }
+  log('app', `taking over from another Dude: ${exes.map(e => `${e} (${versionAt(e) || 'old'})`).join(', ')}`);
+  if (!(await retry(8))) {   // a new enough Dude steps aside by himself; an old one has to be closed
+    try { execFileSync('taskkill.exe', ['/F', '/T', ...others.flatMap(o => ['/PID', String(o.pid)])], { timeout: 12000, windowsHide: true }); } catch (e) {}
+    await retry(20);
+  }
+  log('app', haveLock ? 'took over' : 'the old Dude did not let go; starting anyway');
+  fixStartWithWindows();
+  return true;
+}
+// "Start with Windows" still points at the old Dude's folder: point it at this one
+function fixStartWithWindows() {
+  if (process.platform !== 'win32') return;
+  try {
+    const out = execFileSync('reg.exe', ['query', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'], { timeout: 8000, windowsHide: true, encoding: 'utf8' });
+    const hit = out.split(/\r?\n/).map(l => l.match(/^\s+(.+?)\s+REG_\w+\s+(.*)$/)).filter(Boolean).filter(m => /dude\.exe/i.test(m[2]) && !m[2].toLowerCase().includes(process.execPath.toLowerCase()));
+    if (!hit.length) return;
+    for (const m of hit) { try { execFileSync('reg.exe', ['delete', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run', '/v', m[1], '/f'], { timeout: 8000, windowsHide: true }); } catch (e) {} }
+    app.setLoginItemSettings({ openAtLogin: true });
+    log('app', 'Start with Windows now opens this Dude');
+  } catch (e) {}
+}
 
 let win = null, tray = null, watcher = null, quitting = false;
 const workArea = () => screen.getPrimaryDisplay().workArea;
@@ -215,8 +273,34 @@ ipcMain.handle('dude:dv:status', () => dudeVoice.status());
 ipcMain.handle('dude:dv:prepare', () => dudeVoice.prepare(dvEmit));
 ipcMain.handle('dude:dv:say', (e, text, speed) => dudeVoice.say(text, speed));
 // his problem log (voice, ears, downloads): open the folder, or read the last lines
-ipcMain.handle('dude:log:open', () => { log('app', 'problem log opened'); shell.showItemInFolder(logFile()); return true; });
+// "open your log": a report you can find easily. It goes on the Desktop as "Dude problem log.txt", opens in Notepad,
+// and is copied, so you can paste it straight into a message (Ctrl+V). Only notes about his voice, ears and downloads.
+function problemReport(extra = {}) {
+  const v = dudeVoice.status(), e = ears.status(), cpu = os.cpus();
+  const lines = [
+    `Dude ${ME.version}  |  ${new Date().toString().slice(0, 24)}`,
+    `Running from: ${process.execPath}`,
+    `Windows: ${os.version()} ${os.release()} ${os.arch()}  |  ${cpu.length} x ${(cpu[0] && cpu[0].model || '?').trim()}  |  ${Math.round(os.totalmem() / 1e9)} GB memory`,
+    `Speech engine: ${engine.ok() ? 'works' : 'broken: ' + engine.why()}`,
+    `His voice: ${v.state}${v.state === 'downloading' ? ' ' + Math.round(v.progress * 100) + '%' : ''}${v.error ? ' (' + v.error + ')' : ''}, fails ${v.fails}, speed ${v.rtf || '?'} s per second of speech`,
+    `His ears: ${e.state}${e.state === 'downloading' ? ' ' + Math.round(e.progress * 100) + '%' : ''}${e.error ? ' (' + e.error + ')' : ''}, fails ${e.fails}`,
+    `Listening with: ${hearMode || 'nothing'}  |  voice picked in his panel: ${extra.engine || '?'}  |  sound ${extra.voiceOn === false ? 'off' : 'on'}`,
+    '', '--- his notes ---', logTail(150)
+  ];
+  return lines.join('\r\n');
+}
+ipcMain.handle('dude:log:open', async (e, extra) => {
+  log('app', 'problem log opened');
+  const text = problemReport(extra || {});
+  try { clipboard.writeText(text); } catch (er) {}
+  let f = '';
+  try { f = path.join(app.getPath('desktop'), 'Dude problem log.txt'); fs.writeFileSync(f, text); } catch (er) { f = ''; }
+  if (f) { const r = await shell.openPath(f); if (r) shell.showItemInFolder(f); }
+  else shell.showItemInFolder(logFile());
+  return { desktop: !!f, copied: true };
+});
 ipcMain.handle('dude:log:tail', () => logTail(30));
+ipcMain.handle('dude:version', () => ME.version);
 ipcMain.on('dude:log', (e, area, msg) => log(String(area).slice(0, 12), msg));
 function afterSettings() {
   // his memory of the whole laptop: on when you allow it, forgotten completely when you switch it off
@@ -446,7 +530,7 @@ function buildMenu() {
 }
 function createTray() {
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'tray.png')));
-  tray.setToolTip('Dude');
+  tray.setToolTip(`Dude ${ME.version}`);
   tray.setContextMenu(buildMenu());
   tray.on('click', () => cmd('power'));   // the tray icon is his on/off button
   tray.on('right-click', () => tray.setContextMenu(buildMenu()));
@@ -501,8 +585,10 @@ async function selfTest() {
   finish(out.ok ? 0 : 1);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (SELFTEST) { selfTest(); return; }
+  if (!haveLock && !(await takeOver())) { app.quit(); return; }
+  log('app', `Dude ${ME.version} started`);
   settings.load();
   createWindow();
   createTray();
@@ -515,7 +601,12 @@ app.whenReady().then(() => {
   screen.on('display-added', fitToScreen);
   screen.on('display-removed', fitToScreen);
 });
-app.on('second-instance', () => cmd('wake'));   // opening Dude again switches him on
+app.on('second-instance', (e, argv, cwd, other) => {
+  // a newer Dude from another folder is starting: step aside so he can take over
+  // (DUDE_TEST_OLD: the build check pretends to be an old Dude that doesn't step aside)
+  if (!process.env.DUDE_TEST_OLD && other && other.exe && !sameExe(other.exe, process.execPath) && verNum(other.version) >= verNum(ME.version)) { log('app', `Dude ${other.version} from ${other.exe} is taking over`); quitting = true; app.quit(); return; }
+  cmd('wake');   // opening the same Dude again switches him on
+});
 app.on('before-quit', () => { quitting = true; hearStop(); laptop.stop(); laptop.flush(); memory.save(); if (watcher) { try { watcher.kill(); } catch (e) {} } });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => { if (!SELFTEST) app.quit(); });

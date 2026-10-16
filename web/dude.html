@@ -425,6 +425,7 @@ html.desktop .demo-note{display:none}
 .script{font:18px/1.35 var(--font-hand);background:#fff;border:1.5px dashed var(--line);border-radius:9px;padding:9px 11px}
 .btn.rec{background:var(--bad);border-color:var(--bad);color:#fff}
 #myVoiceBox .card-row{margin-top:8px}
+.win-title .ver{font-weight:500;font-size:11px;opacity:.55;margin-left:4px}
 .lasttime div+div{margin-top:4px}
 .card .chips{margin-top:-2px}
 
@@ -517,7 +518,7 @@ html.desktop .studio{bottom:0}
   </section>
 
   <section class="win" id="win-pet" data-title="Dude Control" aria-label="Pet controls">
-    <header class="win-bar"><span class="win-title"><span class="dot"></span><span class="petName">Dude</span> Control</span>
+    <header class="win-bar"><span class="win-title"><span class="dot"></span><span class="petName">Dude</span> Control <span class="ver" id="verTag" hidden></span></span>
       <span class="win-btns"><button class="wb" type="button" data-act="min" aria-label="Minimize">&#8211;</button></span>
     </header>
     <div class="tabs" role="tablist" aria-label="Control sections">
@@ -1709,8 +1710,9 @@ async function playClip(id, key) {
 }
 /* "Dude's voice": voice 1 (warm and friendly), made on the laptop. Until it has downloaded, the Windows voice fills in. */
 const dv = { status: null, cache: new Map(), told: false };
+let dudeVersion = '';
 const engineNow = () => voiceCfg.engine || (DESKTOP ? 'dude' : 'windows');
-const useDudeVoice = () => DESKTOP && engineNow() === 'dude';
+const useDudeVoice = () => DESKTOP && (engineNow() === 'dude' || (engineNow() === 'me' && !useMyVoice()));   // "my voice" not ready yet: his own voice, not the robot
 const dvBusy = st => !!st && ['downloading', 'unpacking', 'loading'].includes(st.state);
 // his real voice broke (not just downloading): say why, once, then the Windows voice fills in
 function dvTrouble() {
@@ -4154,6 +4156,8 @@ if (DESKTOP) {
   KD.voiceStatus().then(st => { myVoice.status = st; renderMyVoice(); if (voiceCfg.engine === 'me' && st.hasRef && st.engine) prepareMyVoice(); }).catch(() => {});
   // Dude's voice (voice 1) is his voice from now on, unless you chose your own voice
   if (!store.get('dvSet', false)) { if (voiceCfg.engine !== 'me') { voiceCfg.engine = 'dude'; store.set('voice', voiceCfg); } store.set('dvSet', true); }
+  if (!store.get('dvSet2', false)) { if (voiceCfg.engine === 'windows') { voiceCfg.engine = 'dude'; store.set('voice', voiceCfg); } store.set('dvSet2', true); }   // 1.7.1: no more robot voice from an old setting
+  if (KD.version) KD.version().then(v => { dudeVersion = v || ''; const t = $('#verTag'); if (t && v) { t.textContent = 'v' + v; t.hidden = false; } }).catch(() => {});
   KD.onDvStatus(st => {
     const was = dv.status && dv.status.state; dv.status = st; renderMyVoice(); renderGetting();
     if (st.state === 'error') {
@@ -4168,7 +4172,7 @@ if (DESKTOP) {
   // his real voice gets ready right away (it downloads once, the first time), so he never has to use the robot voice
   KD.dvStatus().then(st => { dv.status = st; renderMyVoice(); if (engineNow() === 'dude') prepareDudeVoice(); }).catch(() => {});
   $('#dvRetry').addEventListener('click', () => { userPing(); voiceFix(); });
-  $('#dvLog').addEventListener('click', () => { userPing(); KD.logOpen(); say("That's my problem log. If something's broken, send that file to whoever is fixing me.", { reply: true, emo: 'chill', ms: 7000 }); });
+  $('#dvLog').addEventListener('click', () => { userPing(); openProblemLog(); });
 }
 renderMyVoice();
 renderTeach();
@@ -4477,12 +4481,19 @@ async function voiceFix() {
   const st = await KD.voiceRetry().catch(() => null);
   if (st) { dv.status = st; renderMyVoice(); renderGetting(); }
   if (st && st.state === 'ready') say('Fixed. This is my real voice. Better, right?', { reply: true, voice: true, forceVoice: true, emo: 'excited' });
-  else if (st && st.state === 'error') say(`Still broken: ${(!st.engine && st.engineError) || st.error} Tap "Problem log" in Settings and send that file to whoever is fixing me.`, { reply: true, ms: 14000, emo: 'concerned' });
+  else if (st && st.state === 'error') say(`Still broken: ${(!st.engine && st.engineError) || st.error} Say "open your log" and send what pops up to whoever is fixing me.`, { reply: true, ms: 14000, emo: 'concerned' });
+}
+// his problem log, made easy to send: it lands on the Desktop ("Dude problem log.txt"), opens, and is copied
+async function openProblemLog() {
+  if (!DESKTOP || !KD.logOpen) { reply('My problem log is in the Windows app.', { emo: 'chill' }); return; }
+  const r = await KD.logOpen({ engine: engineNow(), voiceOn }).catch(() => null);
+  reply(r && r.desktop ? 'Done. My problem log is on your Desktop ("Dude problem log.txt") and I copied it. Just paste it (Ctrl+V) to whoever is fixing me.' : 'Here is my problem log. I copied it too, so you can paste it (Ctrl+V).', { emo: 'chill', ms: 12000 });
 }
 /* "can you hear me?" / "why do you sound like a robot?": he explains his voice and his ears in plain words */
 function voiceReport() {
   const v = dv.status, e = hear.earsSt, out = [];
   if (!DESKTOP) { reply('My real voice and my ears work in the Windows app.'); return; }
+  if (dudeVersion) out.push(`I'm Dude ${dudeVersion}.`);
   if (engineNow() === 'windows') out.push("You picked the Windows voice. Say \"use your real voice\" and I'll switch.");
   else if (engineNow() === 'me') out.push("I'm talking in your voice.");
   else if (!v) out.push("I'm still checking my voice.");
@@ -4514,7 +4525,8 @@ function powerCmd(t) {
   if (/^(please )?(fix|repair|reload|restart) (your|ur) (voice|ears|sound|mic)\b|^try (your|ur) (real )?voice again\b/.test(t)) { voiceFix(); return true; }
   if (/^(use|switch to|go back to) (your|ur) (real|own|normal|dude'?s?) voice\b/.test(t)) { setVoice({ engine: 'dude' }); renderMyVoice(); dv.noteTold = false; if (dv.status && dv.status.state === 'ready') reply('Back to my real voice.', { emo: 'happy', forceVoice: true }); else { prepareDudeVoice(); reply('Switching to my real voice. Give me a moment.', { emo: 'happy' }); } return true; }
   if (/\b(why do you|you) (sound|talk) (like a )?(robot|weird|strange|different)|what'?s wrong with (your|ur) (voice|ears)|(can|do) you (hear|understand) me|voice status|are you listening\b/.test(t)) { voiceReport(); return true; }
-  if (/^(open|show)( me)? (your|ur|the) (problem )?log\b/.test(t)) { KD.logOpen && KD.logOpen(); reply('Here is my problem log.', { emo: 'chill' }); return true; }
+  if (/^(open|show|send|give me)( me)? (your|ur|the|a) (problem )?(log|report)\b|^(problem|bug) report\b/.test(t)) { openProblemLog(); return true; }
+  if (/^(what|which) version (are you|is this)\b|^your version\b/.test(t)) { reply(dudeVersion ? `I'm Dude ${dudeVersion}.` : "I'm the browser demo of Dude.", { emo: 'smug' }); return true; }
   return false;
 }
 

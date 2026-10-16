@@ -76,6 +76,34 @@ jobs:
           Write-Output "::notice title=Dude's ears::$($r.ears.state) in $($r.ears.secs) s, $($r.ears.rtf) s per sentence, heard: $($r.earsHeard -join ' / ') $($r.ears.error)"
           Write-Output "::notice title=Dude's page::loaded $($r.page.dude), errors: $($r.page.errors.Count) $($r.page.errors -join ' | ')"
           if (-not $r.ok) { exit 1 }
+      - name: A new Dude takes over from an old one that is still running
+        shell: pwsh
+        run: |
+          Copy-Item -Recurse dude dude-old
+          $pj = "dude-old\resources\app\package.json"
+          (Get-Content $pj -Raw) -replace '"version": "[^"]+"', '"version": "1.6.0"' | Set-Content $pj
+          $fail = 0
+          # 1: an old Dude (1.7 and before) that doesn't step aside: the new one closes it
+          # 2: a Dude that does step aside by himself (1.7.1 and later)
+          foreach ($case in @("old Dude that holds on", "Dude that steps aside")) {
+            if ($case -like "old*") { $env:DUDE_TEST_OLD = "1" } else { Remove-Item Env:DUDE_TEST_OLD -ErrorAction SilentlyContinue }
+            $null = Start-Process -FilePath ".\dude-old\Dude.exe" -PassThru
+            Start-Sleep 15
+            Remove-Item Env:DUDE_TEST_OLD -ErrorAction SilentlyContinue
+            $null = Start-Process -FilePath ".\dude\Dude.exe" -PassThru
+            Start-Sleep 25
+            $left = @(Get-CimInstance Win32_Process -Filter "Name='Dude.exe'" | Select-Object ProcessId, ParentProcessId, ExecutablePath)
+            $left | Format-Table -AutoSize | Out-String -Width 300 | Write-Output
+            $oldLeft = @($left | Where-Object { $_.ExecutablePath -like "*dude-old*" }).Count
+            $newLeft = @($left | Where-Object { $_.ExecutablePath -and $_.ExecutablePath -notlike "*dude-old*" }).Count
+            Get-Content "$env:APPDATA\Dude\dude-log.txt" -Tail 8 -ErrorAction SilentlyContinue
+            Get-Process Dude -ErrorAction SilentlyContinue | Stop-Process -Force
+            Start-Sleep 3
+            Write-Output "::notice title=Takes over from an $case::old Dude processes left: $oldLeft, new Dude processes: $newLeft"
+            if ($oldLeft -ne 0 -or $newLeft -eq 0) { $fail = 1 }
+          }
+          Remove-Item -Recurse -Force dude-old -ErrorAction SilentlyContinue
+          exit $fail
       - name: Check the listening scripts start on Windows
         shell: powershell
         run: |
