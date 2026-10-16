@@ -90,6 +90,7 @@ Dude asks before he touches anything. Access to your folders, apps and recent fi
 | `app/ears.js` | His ears: Whisper tiny.en + Silero VAD (sherpa-onnx) turn your microphone sound into words, on your laptop. |
 | `app/engine.js` | Loads the speech engine once and explains in plain words why, if it can't. |
 | `app/fetcher.js` | One-time downloads (voice, ears): one at a time, resumes after a drop, plain-words errors. |
+| `app/unpack.js` | Dude's own unzip tool for his voice and ears (.tar.bz2), for Windows 10, whose tar.exe can't open them. bzip2 by seek-bzip (MIT, `app/vendor/seek-bzip`). |
 | `app/log.js` | His problem log (`%APPDATA%\Dude\dude-log.txt`): what went wrong with his voice, ears and downloads. Never what you say. |
 | `app/hear.ps1` | Windows speech recognition, used until his own ears are ready: one line per sentence, pauses while he talks. |
 | `app/voice.js` | "My voice": copies your voice from a short recording, on your laptop (sherpa-onnx). |

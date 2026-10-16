@@ -35,8 +35,8 @@ async function ensurePack(emit) {
       state = 'downloading'; progress = 0; emit();
       await download(MODEL_URL, tar, (g, t) => { mb = g / 1e6; const p = t ? g / t * .95 : Math.min(.9, g / (SIZE_MB * 1e6)); if (p - progress > .01) { progress = p; emit(); } });
     }
-    state = 'unpacking'; progress = .97; emit();
-    try { await untar(tar, dir()); }
+    state = 'unpacking'; progress = 0; emit();
+    try { await untar(tar, dir(), [], p => { if (p - progress >= .02 || p === 1) { progress = p; emit(); } }); }
     catch (e) { await fsp.unlink(tar).catch(() => {}); if (e.damaged && round < 2) continue; throw e; }
     await fsp.unlink(tar).catch(() => {});
     if (hasPack()) break;

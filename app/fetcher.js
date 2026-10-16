@@ -8,6 +8,7 @@ const fsp = fs.promises;
 const path = require('path');
 const { spawn } = require('child_process');
 const { log } = require('./log');
+const { untarBz2 } = require('./unpack');
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const STALL_MS = 40000;   // no new bytes for this long: the connection is stuck, reconnect
@@ -85,18 +86,35 @@ function download(url, dest, onBytes = () => {}) {
   return job;
 }
 
-// unpack a .tar.bz2 (Windows 10 and 11 come with tar.exe). members: only these files (optional).
-function untar(file, into, members = []) {
+// unpack a .tar.bz2. members: only these files (optional). onProgress(0..1) (optional).
+// Windows 11's tar.exe does it fast. Windows 10's tar.exe can't open .bz2 ("unable to run bzip2"), so then Dude
+// unpacks it himself (unpack.js). DUDE_UNPACK=js always uses Dude's own (the Windows build check tests it that way).
+let tarExeNoBz2 = false;
+function untar(file, into, members = [], onProgress = () => {}) {
+  const name = path.basename(file), own = () => {
+    const t0 = Date.now();
+    log('download', `unpacking ${name} myself`);
+    return untarBz2(file, into, members, onProgress).then(r => { log('download', `unpacked ${name} myself: ${r.files} files in ${Math.round((Date.now() - t0) / 1000)} s`); return r; },
+      e => { log('download', `unpacking ${name} myself failed: ${e.message}`); const er = new Error(e.damaged ? 'The download was damaged. I will download it again.' : "I couldn't unpack the download: " + e.message); er.damaged = !!e.damaged; throw er; });
+  };
+  if (!/\.bz2$/i.test(file)) return tarExe(file, into, members);
+  if (tarExeNoBz2 || process.env.DUDE_UNPACK === 'js') return own();
+  return tarExe(file, into, members).catch(e => {
+    if (/bzip2|initialize filter|could not start|missing/i.test(e.detail || e.message)) tarExeNoBz2 = true;   // this Windows' tar can't do it: don't even try next time
+    return own();
+  });
+}
+function tarExe(file, into, members = []) {
   return new Promise((resolve, reject) => {
     const bin = process.platform === 'win32' ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe') : 'tar';
     const p = spawn(bin, ['-xjf', file, '-C', into, ...members], { windowsHide: true });
     let err = '';
     p.stderr.on('data', d => { err += d; });
-    p.on('error', e => { log('download', `unpack ${path.basename(file)} could not start: ${e.message}`); reject(new Error("I couldn't unpack the download (tar.exe is missing on this Windows).")); });
+    p.on('error', e => { log('download', `unpack ${path.basename(file)} could not start: ${e.message}`); const er = new Error("I couldn't unpack the download (tar.exe is missing on this Windows)."); er.detail = 'could not start'; reject(er); });
     p.on('exit', c => {
       if (c === 0) return resolve();
-      log('download', `unpack ${path.basename(file)} failed (${c}): ${err.slice(0, 300)}`);
-      const e = new Error('The download was damaged. I will download it again.'); e.damaged = true; reject(e);
+      log('download', `unpack ${path.basename(file)} with tar.exe failed (${c}): ${err.slice(0, 300)}`);
+      const e = new Error('The download was damaged. I will download it again.'); e.damaged = true; e.detail = err; reject(e);
     });
   });
 }

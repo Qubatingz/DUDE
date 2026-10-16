@@ -4466,9 +4466,9 @@ function renderGetting() {
   if (!gettingEl) return;
   const v = dv.status, e = hear.earsSt, busy = st => st && ['downloading', 'unpacking', 'loading'].includes(st.state);
   let txt = '', p = 0;
-  const label = (st, what) => st.state === 'downloading' ? `Getting my ${what} ${Math.round((st.progress || 0) * 100)}%` : st.state === 'unpacking' ? `Unpacking my ${what}...` : `Warming up my ${what}...`;
-  if (engineNow() === 'dude' && busy(v)) { txt = label(v, 'voice'); p = v.state === 'downloading' ? v.progress : 1; }
-  else if (hear.on && busy(e)) { txt = label(e, 'ears'); p = e.state === 'downloading' ? e.progress : 1; }
+  const label = (st, what) => st.state === 'downloading' ? `Getting my ${what} ${Math.round((st.progress || 0) * 100)}%` : st.state === 'unpacking' ? `Unpacking my ${what} ${Math.round((st.progress || 0) * 100)}%` : `Warming up my ${what}...`;
+  if (engineNow() === 'dude' && busy(v)) { txt = label(v, 'voice'); p = v.state === 'loading' ? 1 : v.progress; }
+  else if (hear.on && busy(e)) { txt = label(e, 'ears'); p = e.state === 'loading' ? 1 : e.progress; }
   gettingEl.hidden = !txt || !dudeOn;
   if (txt) { $('#gettingTxt').textContent = txt; gettingEl.style.setProperty('--p', Math.round((p || 0) * 100) + '%'); }
 }

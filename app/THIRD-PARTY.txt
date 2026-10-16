@@ -6,6 +6,7 @@ Dude uses these free, open-source pieces. Thank you to their authors.
 - Microsoft Visual C++ runtime files (msvcp140.dll, vcruntime140*.dll), if present next to the
   voice engine: redistributed under the Microsoft Visual Studio license terms
 - pdf.js (Apache-2.0) - reads PDFs you give him to learn - https://mozilla.github.io/pdf.js
+- seek-bzip (MIT) - unpacks his voice and ears on Windows 10 - https://github.com/cscott/seek-bzip (in vendor/seek-bzip, with its LICENSE)
 - Fonts: Patrick Hand, Bagel Fat One, Atkinson Hyperlegible (SIL Open Font License 1.1), see fonts/FONTS-LICENSE.txt
 
 Downloaded only when you switch on "My voice" (not part of this download):

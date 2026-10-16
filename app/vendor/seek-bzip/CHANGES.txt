@@ -1,0 +1,2 @@
+Taken from seek-bzip 2.0.0 (https://github.com/cscott/seek-bzip, MIT, see LICENSE): lib/ and LICENSE only.
+Changed for Dude: "new Buffer(n)" -> "Buffer.alloc(n)" (the old form is deprecated in Node).

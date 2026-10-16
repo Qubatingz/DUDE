@@ -48,9 +48,9 @@ async function ensurePack(emit) {
         state = 'downloading'; progress = 0; emit();
         await download(URL_ASR, tar, (g, t) => { mb = g / 1e6; const p = t ? g / t * .95 : Math.min(.9, g / (SIZE_MB * 1e6)); if (p - progress > .01) { progress = p; emit(); } });
       }
-      state = 'unpacking'; progress = .96; emit();
+      state = 'unpacking'; progress = 0; emit();
       // only the small (int8) model files: the big ones and the test sounds are not needed
-      try { await untar(tar, dir(), FILES.map(f => `${NAME}/${f}`)); }
+      try { await untar(tar, dir(), FILES.map(f => `${NAME}/${f}`), p => { if (p - progress >= .02 || p === 1) { progress = p; emit(); } }); }
       catch (e) { await fsp.unlink(tar).catch(() => {}); if (e.damaged && round < 2) continue; throw e; }
       await fsp.unlink(tar).catch(() => {});
     }
