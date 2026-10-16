@@ -17,14 +17,17 @@ H0, W0 = mask.shape
 # ---------- bones: name, parent, start, end ----------
 BONES = [
     ('root', None, (468, 505), (468, 420)),
-    ('spine', 'root', (468, 498), (466, 300)),
-    ('neck', 'spine', (466, 300), (465, 238)),
+    ('waist', 'root', (468, 498), (467, 400)),
+    ('chest', 'waist', (467, 400), (466, 300)),
+    ('neck', 'chest', (466, 300), (465, 238)),
     ('head', 'neck', (465, 238), (465, 110)),
     ('jaw', 'head', (465, 186), (465, 214)),
-    ('upperArmL', 'spine', (368, 322), (292, 482)),
+    ('shoulderL', 'chest', (440, 292), (368, 322)),
+    ('upperArmL', 'shoulderL', (368, 322), (292, 482)),
     ('foreArmL', 'upperArmL', (292, 482), (234, 600)),
     ('handL', 'foreArmL', (234, 600), (206, 688)),
-    ('upperArmR', 'spine', (562, 322), (646, 482)),
+    ('shoulderR', 'chest', (492, 292), (562, 322)),
+    ('upperArmR', 'shoulderR', (562, 322), (646, 482)),
     ('foreArmR', 'upperArmR', (646, 482), (707, 600)),
     ('handR', 'foreArmR', (707, 600), (735, 688)),
     ('thighL', 'root', (420, 515), (410, 765)),
@@ -56,7 +59,8 @@ def seg_dist(px, py, a, b):
     t = np.clip(((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy), 0, 1)
     return np.hypot(px - (ax + t * dx), py - (ay + t * dy))
 region = {}
-region['spine'] = torso
+region['chest'] = torso & (yy < 400)
+region['waist'] = torso & (yy >= 400)
 face_low = head & (yy >= 187) & (yy < 222) & (xx > 432) & (xx < 498)
 region['jaw'] = face_low
 region['neck'] = head & (yy >= 222)
@@ -73,7 +77,7 @@ for side, grp in (('L', legL), ('R', legR)):
     for k, n in enumerate(names): region[n] = grp & (near == k)
 
 # ---------- smooth weights: geodesic distance (through Dude, not across gaps) to each bone's region ----------
-SIG = {'default': 16.0, 'jaw': 5.0, 'head': 10.0, 'neck': 12.0}
+SIG = {'default': 16.0, 'jaw': 5.0, 'head': 10.0, 'neck': 12.0, 'chest': 26.0, 'waist': 26.0}
 walk = nd.binary_dilation(mask, iterations=3)
 cost = np.where(walk, 1.0, -1.0)   # negative = can't pass
 Wt = np.zeros((len(BONES), H0, W0), np.float32)
@@ -104,7 +108,7 @@ for side, grp in (('L', armL), ('R', armR)):
     sel = grp & (yy < 500)
     other = Wt[:, sel].copy()
     keep = other * wa[sel]   # the arm's own weights, scaled
-    keep[BI['spine']] += (1 - wa[sel])
+    keep[BI['chest']] += (1 - wa[sel])
     Wt[:, sel] = keep / keep.sum(0, keepdims=True)
 
 # ---------- crop ----------

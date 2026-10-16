@@ -174,13 +174,13 @@
     for (const n in REST) add(n, 'r', REST[n].r);
     // always: breathing, a little sway, eyes-level looking
     const br = Math.sin(t * 2 * Math.PI / 3.8);
-    add('spine', 's', 0); b.spine.s = 1; b.spine.sy = 1 + br * .006;
+    add('chest', 's', 0); b.chest.s = 1; b.chest.sy = 1 + br * .007;
     add('upperArmL', 'r', -br * .8 * D); add('upperArmR', 'r', br * .8 * D);
     root.x += noise(t * .35, 1) * 2.5;
     add('head', 'r', noise(t * .4, 5) * 1.6 * D);
     const lx = clamp(this.look.x / 400, -1, 1), ly = clamp(this.look.y / 400, -1, 1);
     let jaw = 0;
-    const lookAt = (k = 1) => { add('head', 'r', lx * 9 * D * k); add('neck', 'r', lx * 3 * D * k); add('head', 'x', -ly * 4 * k); add('head', 'y', lx * 3 * k); add('spine', 'r', lx * 1.2 * D * k); };
+    const lookAt = (k = 1) => { add('head', 'r', lx * 9 * D * k); add('neck', 'r', lx * 3 * D * k); add('head', 'x', -ly * 4 * k); add('head', 'y', lx * 3 * k); add('chest', 'r', lx * 1.2 * D * k); };
 
     if (s === 'idle') {
       lookAt(.8);
@@ -190,7 +190,7 @@
       lookAt(.6);
       add('head', 'r', (-6 + Math.sin(st * 2.2) * 2.5) * D);          // head tilted, small nods
       add('head', 'x', Math.max(0, Math.sin(st * 2.6)) * 3);
-      add('spine', 'r', -1.5 * D);
+      add('waist', 'r', -1.5 * D);
     } else if (s === 'talk') {
       lookAt(.5);
       const lvl = this.talk >= 0 ? this.talk : clamp(Math.abs(Math.sin(st * 9.1) * Math.sin(st * 3.3 + 1)) * 1.3, 0, 1);
@@ -205,7 +205,7 @@
       const g = ease(clamp(st / .45, 0, 1)), w = Math.sin(st * 2 * Math.PI * 1.8);
       // elbow stays low (his big sleeve doesn't like going up), forearm up next to his head
       add('upperArmR', 'r', g * -34 * D); add('foreArmR', 'r', g * (-128 + w * 20) * D); add('handR', 'r', g * (-8 + w * 18) * D);
-      add('head', 'r', g * -4 * D); add('spine', 'r', g * -1.5 * D);
+      add('head', 'r', g * -4 * D); add('chest', 'r', g * -1.5 * D);
       jaw = .25 * g;
     } else if (s === 'point') {
       // the arm on the side of the target points at it: elbow low, forearm aims (his big sleeve doesn't like going up)
@@ -228,12 +228,12 @@
       // both arms swing the same way, elbows a little out
       add('upperArmL', 'r', (4 + sw * 13) * D); add('foreArmL', 'r', (14 + sw * 8) * D); add('handL', 'r', (10 + sw * 6) * D);
       add('upperArmR', 'r', (-4 + sw * 13) * D); add('foreArmR', 'r', (-14 + sw * 8) * D); add('handR', 'r', (-10 + sw * 6) * D);
-      add('spine', 'r', 0); b.spine.sy = (b.spine.sy || 1) - down * .012;
-      add('upperArmL', 'y', -down * 4); add('upperArmR', 'y', -down * 4);
-      add('head', 'r', (sw * 5) * D); add('head', 'x', down * 5); add('spine', 'r', sw * 3 * D); root.x += sw * 6;
+      b.chest.sy = (b.chest.sy || 1) - down * .012;
+      add('shoulderL', 'r', down * 4 * D); add('shoulderR', 'r', -down * 4 * D);   // shoulders bounce
+      add('head', 'r', (sw * 5) * D); add('head', 'x', down * 5); add('waist', 'r', sw * 2 * D); add('chest', 'r', sw * 2.5 * D); root.x += sw * 6;
     } else if (s === 'shrug') {
       const g = Math.sin(clamp(st / 1.4, 0, 1) * Math.PI);
-      add('upperArmL', 'y', -9 * g); add('upperArmR', 'y', -9 * g);
+      add('shoulderL', 'r', 13 * D * g); add('shoulderR', 'r', -13 * D * g);   // shoulders up
       add('upperArmL', 'r', 6 * D * g); add('upperArmR', 'r', -6 * D * g);
       add('foreArmL', 'r', 34 * D * g); add('foreArmR', 'r', -34 * D * g); add('handL', 'r', 25 * D * g); add('handR', 'r', -25 * D * g);
       add('head', 'r', -8 * D * g); add('neck', 'y', 3 * g); jaw = .15 * g;

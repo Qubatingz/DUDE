@@ -1,6 +1,6 @@
 # Dude's bones (the rig)
 
-Painted Dude on a skeleton of 17 bones, so the app can pose him live (look at you, talk, wave, point, dance)
+Painted Dude on a skeleton of 20 bones, so the app can pose him live (look at you, talk, wave, point, dance)
 instead of only playing video clips.
 
 1. `art/dude-apose.jpg`: one picture of Dude in an A-pose on a blue background (made with an image AI).
